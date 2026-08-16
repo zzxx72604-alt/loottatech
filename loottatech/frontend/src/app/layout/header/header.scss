@@ -170,3 +170,19 @@
 
   &:hover { background: #000; }
 }
+
+/* Make the theme toggle discoverable rather than a bare symbol */
+.icon-label {
+  margin-left: 5px;
+  font-size: 12px;
+}
+
+@media (max-width: 900px) {
+  .icon-label { display: none; }
+}
+
+.coins {
+  background: var(--brand-ink);
+  color: var(--brand);
+  font-weight: 700;
+}

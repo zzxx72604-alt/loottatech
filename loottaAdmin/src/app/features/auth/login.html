@@ -1,0 +1,57 @@
+<div class="wrap">
+  <div class="panel card">
+    <div class="brand">
+      <span class="mark">L</span>
+      <span>Lootta<b>Tech</b></span>
+    </div>
+
+    <h1>Admin sign in</h1>
+    <p class="sub">Staff accounts only.</p>
+
+    <form #loginForm="ngForm" (ngSubmit)="onSubmit(loginForm)" novalidate>
+      <div class="field">
+        <label for="email">Email</label>
+        <input
+          id="email"
+          name="email"
+          type="text"
+          autocomplete="username"
+          [(ngModel)]="credentials.email"
+          #emailField="ngModel"
+          required
+          email
+        />
+        @if (emailField.invalid && emailField.touched) {
+          <p class="err">Enter a valid email address.</p>
+        }
+      </div>
+
+      <div class="field">
+        <label for="password">Password</label>
+        <input
+          id="password"
+          name="password"
+          type="password"
+          autocomplete="current-password"
+          [(ngModel)]="credentials.password"
+          #passwordField="ngModel"
+          required
+        />
+        @if (passwordField.invalid && passwordField.touched) {
+          <p class="err">Password is required.</p>
+        }
+      </div>
+
+      @if (error()) { <p class="alert bad">{{ error() }}</p> }
+
+      <button type="submit" class="btn btn-primary wide" [disabled]="submitting()">
+        {{ submitting() ? 'Signing in…' : 'Sign in' }}
+      </button>
+    </form>
+
+    <div class="demo">
+      <b>Demo account</b>
+      <p>admin&#64;loottatech.com / Admin123</p>
+    </div>
+  </div>
+</div>

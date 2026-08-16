@@ -1,5 +1,103 @@
 <h1 class="sr-only">LoottaTech — affordable new and second-hand technology</h1>
 
+@if (showSections()) {
+  <!-- ------------------------------------------------------------ hero -->
+  <section class="hero">
+    <div class="hero-copy">
+      <p class="eyebrow">Second-hand &amp; new</p>
+      <h2>Great tech,<br />better price.</h2>
+      <p class="lede">
+        Tested phones, laptops and accessories from LoottaTech. Every used item is
+        checked, photographed honestly, and covered by a warranty.
+      </p>
+      <a class="hero-cta" href="#catalogue">Shop all products →</a>
+    </div>
+
+    <div class="hero-art" aria-hidden="true">
+      @for (p of newArrivals().slice(0, 3); track p.id) {
+        <img
+          [ngSrc]="p.images[0]"
+          ngSrcset="480w, 800w"
+          sizes="180px"
+          width="800"
+          height="800"
+          alt=""
+          priority
+        />
+      }
+    </div>
+  </section>
+
+  <!-- ----------------------------------------------------------- trust -->
+  <ul class="trust-row">
+    @for (t of trustPoints; track t.title) {
+      <li>
+        <span class="t-icon" aria-hidden="true">{{ t.icon }}</span>
+        <span class="t-text">
+          <b>{{ t.title }}</b>
+          <span>{{ t.note }}</span>
+        </span>
+      </li>
+    }
+  </ul>
+
+  <!-- ------------------------------------------------------ categories -->
+  <section class="strip">
+    <div class="strip-head"><h2>Shop by category</h2></div>
+    <div class="cat-tiles">
+      @for (c of categories(); track c.name) {
+        @if (c.name !== 'All') {
+          <button type="button" class="tile" (click)="category.set(c.name)">
+            <span class="tile-icon" aria-hidden="true">{{ icon(c.name) }}</span>
+            <span class="tile-name">{{ c.name }}</span>
+            <span class="tile-count">{{ c.count }} item{{ c.count === 1 ? '' : 's' }}</span>
+          </button>
+        }
+      }
+    </div>
+  </section>
+
+  <!-- ------------------------------------------------------ best deals -->
+  @if (bestDeals().length > 0) {
+    <section class="strip">
+      <div class="strip-head">
+        <h2>Best deals</h2>
+        <span class="strip-note">Biggest savings against retail price</span>
+      </div>
+      <div class="row-grid">
+        @for (p of bestDeals(); track p.id) {
+          <app-product-card
+            [product]="p"
+            (addToCart)="onAddToCart($event)"
+            (toggleWatch)="onToggleWatch($event)"
+          />
+        }
+      </div>
+    </section>
+  }
+
+  <!-- ---------------------------------------------------- new arrivals -->
+  <section class="strip">
+    <div class="strip-head">
+      <h2>Just arrived</h2>
+      <span class="strip-note">Latest items in the shop</span>
+    </div>
+    <div class="row-grid">
+      @for (p of newArrivals(); track p.id) {
+        <app-product-card
+          [product]="p"
+          (addToCart)="onAddToCart($event)"
+          (toggleWatch)="onToggleWatch($event)"
+        />
+      }
+    </div>
+  </section>
+}
+
+<h2 class="section-title" id="catalogue">
+  {{ hasFilters() ? 'Results' : 'All products' }}
+</h2>
+
 <div class="layout">
   <!-- ------------------------------------------------------ sidebar -->
   <aside class="sidebar">

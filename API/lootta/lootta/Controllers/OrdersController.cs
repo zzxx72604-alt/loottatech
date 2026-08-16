@@ -1,3 +1,5 @@
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using lootta.Data;
@@ -75,11 +77,56 @@ public class OrdersController : ControllerBase
 
         order.Subtotal = subtotal;
         order.DeliveryFee = DeliveryPricing.FeeFor(order.DeliveryOption);
-        order.Discount = 0;
+
+        // Signed in? Attach the order to the account. Guests stay anonymous.
+        var userId = CurrentUserIdOrNull();
+        order.UserId = userId;
+
+        /*
+         * Voucher discounts are worked out HERE, from the voucher row in the
+         * database. The browser only ever sends a code. Sending an amount
+         * would let anyone give themselves any discount they liked.
+         */
+        Voucher? voucher = null;
+        if (!string.IsNullOrWhiteSpace(dto.VoucherCode))
+        {
+            var code = dto.VoucherCode.Trim().ToUpperInvariant();
+            voucher = await _db.Vouchers.FirstOrDefaultAsync(v => v.Code == code);
+
+            if (voucher is null)
+                return BadRequest($"Voucher {code} does not exist.");
+            if (voucher.UserId != userId)
+                return BadRequest("That voucher belongs to another account.");
+            if (voucher.IsSpent)
+                return BadRequest("That voucher has already been used.");
+            if (voucher.IsExpired)
+                return BadRequest("That voucher has expired.");
+            if (subtotal < voucher.MinSpend)
+                return BadRequest($"That voucher needs a subtotal of at least {voucher.MinSpend:C}.");
+
+            order.Discount = voucher.DiscountFor(subtotal);
+            order.VoucherCode = voucher.Code;
+            order.VoucherId = voucher.Id;
+        }
+
         order.Total = order.Subtotal + order.DeliveryFee - order.Discount;
 
         _db.Orders.Add(order);
+
+        // Burn the voucher in the same save as the order, so it can never be
+        // spent twice even if two requests arrive together.
+        if (voucher is not null)
+        {
+            voucher.UsedAt = DateTime.UtcNow;
+        }
+
         await _db.SaveChangesAsync();
+
+        if (voucher is not null)
+        {
+            voucher.OrderId = order.Id;
+            await _db.SaveChangesAsync();
+        }
 
         return CreatedAtAction(nameof(GetByNumber),
             new { orderNumber = order.OrderNumber }, order.ToDto());
@@ -87,6 +134,7 @@ public class OrdersController : ControllerBase
 
     /// <summary>Admin: every order, newest first.</summary>
     [HttpGet]
+    [Authorize(Policy = "CanManageOrders")]
     public async Task<ActionResult<IEnumerable<OrderSummaryDto>>> GetAll([FromQuery] string? status)
     {
         var query = _db.Orders.Include(o => o.Items).AsNoTracking().AsQueryable();
@@ -107,6 +155,22 @@ public class OrdersController : ControllerBase
         return order is null ? NotFound($"No order with id {id}.") : Ok(order.ToDto());
     }
 
+    /// <summary>Orders belonging to the signed-in customer.</summary>
+    [HttpGet("mine")]
+    [Authorize]
+    public async Task<ActionResult<IEnumerable<OrderSummaryDto>>> Mine()
+    {
+        var userId = CurrentUserIdOrNull();
+        var orders = await _db.Orders
+            .Include(o => o.Items)
+            .Where(o => o.UserId == userId)
+            .OrderByDescending(o => o.CreatedAt)
+            .AsNoTracking()
+            .ToListAsync();
+
+        return Ok(orders.Select(o => o.ToSummary()));
+    }
+
     /// <summary>Customers track an order using the code on their receipt.</summary>
     [HttpGet("number/{orderNumber}")]
     public async Task<ActionResult<OrderDto>> GetByNumber(string orderNumber)
@@ -121,6 +185,7 @@ public class OrdersController : ControllerBase
 
     /// <summary>Admin: move an order along. Cancelling puts the stock back.</summary>
     [HttpPut("{id:int}/status")]
+    [Authorize(Policy = "CanManageOrders")]
     public async Task<ActionResult<OrderDto>> UpdateStatus(int id, UpdateOrderStatusDto dto)
     {
         if (!OrderMapping.TryParseStatus(dto.Status, out var status))
@@ -162,6 +227,13 @@ public class OrdersController : ControllerBase
     public ActionResult<IEnumerable<string>> GetStatuses() => Ok(OrderMapping.StatusNames);
 
     /* --------------------------------------------------------------------- */
+
+    /// <summary>The signed-in user's id, or null for a guest.</summary>
+    private int? CurrentUserIdOrNull()
+    {
+        var claim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        return int.TryParse(claim, out var id) ? id : null;
+    }
 
     private async Task<string> GenerateOrderNumberAsync()
     {

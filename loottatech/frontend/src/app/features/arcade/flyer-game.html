@@ -1,0 +1,26 @@
+<div
+  class="stage"
+  (click)="onTap($event)"
+  (touchstart)="onTap($event)"
+  (keydown.space)="onTap($event)"
+  (keydown.enter)="onTap($event)"
+  tabindex="0"
+  role="button"
+  [attr.aria-label]="phase() === 'playing' ? 'Tap to fly' : 'Tap to start'"
+>
+  <canvas #board aria-hidden="true"></canvas>
+
+  @if (phase() === 'ready') {
+    <div class="overlay">
+      <h3>Lootta Flyer</h3>
+      <p>Tap, click or press space to fly.<br />Dodge the shelves.</p>
+      <span class="cta">Tap to start</span>
+    </div>
+  } @else if (phase() === 'dead') {
+    <div class="overlay">
+      <h3>{{ score() }} point{{ score() === 1 ? '' : 's' }}</h3>
+      <p>Nice try.</p>
+      <span class="cta">Tap to play again</span>
+    </div>
+  }
+</div>

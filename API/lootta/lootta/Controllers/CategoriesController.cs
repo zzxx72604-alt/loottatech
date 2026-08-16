@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using lootta.Data;
@@ -53,6 +54,7 @@ public class CategoriesController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Policy = "AdminOnly")]
     public async Task<ActionResult<CategoryDto>> Create(CategoryWriteDto dto)
     {
         if (await _db.Categories.AnyAsync(c => c.Slug == dto.Slug))
@@ -73,6 +75,7 @@ public class CategoriesController : ControllerBase
     }
 
     [HttpPut("{id:int}")]
+    [Authorize(Policy = "AdminOnly")]
     public async Task<IActionResult> Update(int id, CategoryWriteDto dto)
     {
         var category = await _db.Categories.FindAsync(id);
@@ -91,6 +94,7 @@ public class CategoriesController : ControllerBase
     /// this too (DeleteBehavior.Restrict), but a clear message beats a 500.
     /// </summary>
     [HttpDelete("{id:int}")]
+    [Authorize(Policy = "AdminOnly")]
     public async Task<IActionResult> Delete(int id)
     {
         var category = await _db.Categories

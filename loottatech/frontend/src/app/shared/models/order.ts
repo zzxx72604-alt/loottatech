@@ -47,12 +47,15 @@ export interface Order {
   address: string;
   deliveryOption: DeliveryOption;
   note: string;
+  voucherCode: string;
   status: OrderStatus;
   createdAt: string;
 }
 
 export interface CreateOrderRequest {
   items: { productId: number; quantity: number }[];
+  /** Code only. The server looks up what it is worth. */
+  voucherCode?: string;
   customerName: string;
   phone: string;
   address: string;

@@ -1,0 +1,83 @@
+using System.ComponentModel.DataAnnotations;
+
+namespace lootta.Dtos;
+
+public class RegisterDto
+{
+    [Required, MaxLength(120)]
+    public string Name { get; set; } = string.Empty;
+
+    [Required, EmailAddress, MaxLength(160)]
+    public string Email { get; set; } = string.Empty;
+
+    /// <summary>Typed twice to catch typos. Checked on the server as well as in Angular.</summary>
+    [Required, EmailAddress, MaxLength(160)]
+    public string ConfirmEmail { get; set; } = string.Empty;
+
+    [Required, MinLength(6), MaxLength(100)]
+    public string Password { get; set; } = string.Empty;
+
+    [Required]
+    public string ConfirmPassword { get; set; } = string.Empty;
+
+    // NOTE: there is deliberately no Role property here. Registration always
+    // creates a Customer, so nobody can promote themselves by editing the body.
+}
+
+public class LoginDto
+{
+    [Required, EmailAddress]
+    public string Email { get; set; } = string.Empty;
+
+    [Required]
+    public string Password { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// An existing Admin creating another Admin. Requires an admin token — this
+/// is the only route to the Admin role, and it can never be reached by
+/// someone who isn't already one.
+/// </summary>
+public class CreateAdminDto
+{
+    [Required, MaxLength(120)]
+    public string Name { get; set; } = string.Empty;
+
+    [Required, EmailAddress, MaxLength(160)]
+    public string Email { get; set; } = string.Empty;
+
+    [Required, MinLength(6), MaxLength(100)]
+    public string Password { get; set; } = string.Empty;
+}
+
+public class ChangeRoleDto
+{
+    /// <summary>"Customer" or "Admin".</summary>
+    [Required]
+    public string Role { get; set; } = string.Empty;
+}
+
+/// <summary>Account row for the admin user list. No password hash, ever.</summary>
+public class UserRowDto
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public string Role { get; set; } = string.Empty;
+    public int Coins { get; set; }
+    public bool IsActive { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public int OrderCount { get; set; }
+}
+
+/// <summary>What the API returns after login. Note: no password, ever.</summary>
+public class AuthResultDto
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public string Role { get; set; } = string.Empty;
+    public int Coins { get; set; }
+    public string Token { get; set; } = string.Empty;
+    public DateTime ExpiresAt { get; set; }
+}

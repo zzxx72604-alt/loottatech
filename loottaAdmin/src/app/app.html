@@ -1,25 +1,31 @@
 <header class="bar">
   <div class="inner">
-    <a class="logo" routerLink="/products">
+    <a class="logo" routerLink="/dashboard">
       <span class="mark">L</span>
       <span>Lootta<b>Tech</b> <em>Admin</em></span>
     </a>
 
-    <nav>
-      <a routerLink="/products" routerLinkActive="on">Products</a>
-      <a routerLink="/orders" routerLinkActive="on">
-        Orders
-        @if (notifier.pendingCount() > 0) {
-          <span class="pill">{{ notifier.pendingCount() }}</span>
-        }
-      </a>
-      <a class="disabled" title="Coming next">Customers</a>
-    </nav>
+    @if (auth.isAdmin()) {
+      <nav>
+        <a routerLink="/dashboard" routerLinkActive="on">Dashboard</a>
+        <a routerLink="/products" routerLinkActive="on">Products</a>
+        <a routerLink="/orders" routerLinkActive="on">
+          Orders
+          @if (notifier.pendingCount() > 0) {
+            <span class="pill">{{ notifier.pendingCount() }}</span>
+          }
+        </a>
+      </nav>
 
-    <div class="status" [class.off]="!notifier.connected()">
-      <span class="dot"></span>
-      {{ notifier.connected() ? 'Live' : 'API offline' }}
-    </div>
+      <div class="right">
+        <div class="status" [class.off]="!notifier.connected()">
+          <span class="dot"></span>
+          {{ notifier.connected() ? 'Live' : 'API offline' }}
+        </div>
+        <span class="who">{{ auth.user()?.name }}</span>
+        <button type="button" class="out" (click)="signOut()">Sign out</button>
+      </div>
+    }
   </div>
 </header>
 
@@ -28,7 +34,7 @@
 </main>
 
 <!-- New orders arriving while the admin works. Polled every 10 seconds. -->
-@if (notifier.unseenCount() > 0) {
+@if (auth.isAdmin() && notifier.unseenCount() > 0) {
   <aside class="toasts" role="status" aria-live="polite">
     @for (order of notifier.unseen(); track order.id) {
       <button type="button" class="toast" (click)="open(order)">

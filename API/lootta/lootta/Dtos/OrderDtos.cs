@@ -29,6 +29,10 @@ public class CreateOrderDto
 
     [MaxLength(300)]
     public string Note { get; set; } = string.Empty;
+
+    /// <summary>Optional voucher CODE only. The server looks up its value.</summary>
+    [MaxLength(20)]
+    public string VoucherCode { get; set; } = string.Empty;
 }
 
 public class CreateOrderItemDto
@@ -65,6 +69,8 @@ public class OrderDto
     public decimal DeliveryFee { get; set; }
     public decimal Discount { get; set; }
     public decimal TotalPrice { get; set; }
+
+    public string VoucherCode { get; set; } = string.Empty;
 
     public string Status { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
@@ -110,6 +116,7 @@ public static class OrderMapping
         Address = order.Address,
         DeliveryOption = DeliveryPricing.Label(order.DeliveryOption),
         Note = order.Note,
+        VoucherCode = order.VoucherCode,
         Subtotal = order.Subtotal,
         DeliveryFee = order.DeliveryFee,
         Discount = order.Discount,

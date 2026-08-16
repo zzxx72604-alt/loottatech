@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using lootta.Data;
@@ -69,8 +70,9 @@ public class ProductsController : ControllerBase
         return Ok(ToDetailDto(product));
     }
 
-    /// <summary>Create a product. Admin only once JWT is added.</summary>
+    /// <summary>Create a product. Admin only.</summary>
     [HttpPost]
+    [Authorize(Policy = "CanManageProducts")]
     [ProducesResponseType(typeof(ProductDetailDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<ProductDetailDto>> Create(ProductWriteDto dto)
@@ -90,6 +92,7 @@ public class ProductsController : ControllerBase
 
     /// <summary>Replace a product's editable fields.</summary>
     [HttpPut("{id:int}")]
+    [Authorize(Policy = "CanManageProducts")]
     [ProducesResponseType(typeof(ProductDetailDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<ProductDetailDto>> Update(int id, ProductWriteDto dto)
@@ -119,6 +122,7 @@ public class ProductsController : ControllerBase
     /// files on disk are removed too so nothing is orphaned.
     /// </summary>
     [HttpDelete("{id:int}")]
+    [Authorize(Policy = "CanManageProducts")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(int id)
@@ -137,6 +141,7 @@ public class ProductsController : ControllerBase
 
     /// <summary>Hide or show a product without deleting it.</summary>
     [HttpPut("{id:int}/active")]
+    [Authorize(Policy = "CanManageProducts")]
     public async Task<IActionResult> SetActive(int id, [FromQuery] bool value)
     {
         var product = await _db.Products.FindAsync(id);

@@ -31,6 +31,16 @@ public class Order
     public decimal Discount { get; set; }
     public decimal Total { get; set; }
 
+    /// <summary>Set when a signed-in customer ordered. Guests leave it null.</summary>
+    public int? UserId { get; set; }
+    public User? User { get; set; }
+
+    /// <summary>The voucher that produced <see cref="Discount"/>, if any.</summary>
+    public int? VoucherId { get; set; }
+
+    [MaxLength(20)]
+    public string VoucherCode { get; set; } = string.Empty;
+
     public OrderStatus Status { get; set; } = OrderStatus.Pending;
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

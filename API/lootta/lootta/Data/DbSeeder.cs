@@ -14,6 +14,8 @@ public static class DbSeeder
 {
     public static async Task SeedAsync(LoottaDbContext db)
     {
+        await SeedUsersAsync(db);
+
         if (await db.Products.AnyAsync()) return;   // already stocked
 
         var phones = await db.Categories.FirstAsync(c => c.Slug == "phones");
@@ -109,6 +111,37 @@ public static class DbSeeder
         };
 
         db.Products.AddRange(products);
+        await db.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// Two demo accounts. Passwords are BCrypt-hashed here exactly as they are
+    /// at registration — the plain text never reaches the database.
+    /// </summary>
+    private static async Task SeedUsersAsync(LoottaDbContext db)
+    {
+        if (await db.Users.AnyAsync()) return;
+
+        db.Users.AddRange(
+            new User
+            {
+                Name = "Shop Admin",
+                Email = "admin@loottatech.com",
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword("Admin123"),
+                Role = UserRole.Admin,
+                Address = "Phnom Penh",
+                Coins = 0,
+            },
+            new User
+            {
+                Name = "Sok Dara",
+                Email = "dara@gmail.com",
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword("Dara123"),
+                Role = UserRole.Customer,
+                Address = "Phnom Penh",
+                Coins = 120,
+            });
+
         await db.SaveChangesAsync();
     }
 

@@ -1,11 +1,16 @@
 {
   "ConnectionStrings": {
     "DefaultConnection": "Server=localhost;Database=LoottaTech;Trusted_Connection=True;TrustServerCertificate=True;MultipleActiveResultSets=True"
+  },
+  "Jwt": {
+    "Key": "PUT-A-LONG-RANDOM-STRING-HERE-AT-LEAST-32-CHARACTERS",
+    "Issuer": "LoottaTechApi",
+    "Audience": "LoottaTechApps",
+    "ExpiryDays": 7
   }
 }
 
-// Pick the Server= value that matches your install:
-//   SQL Server (default instance) ......  Server=localhost;
-//   SQL Server Express .................  Server=localhost\\SQLEXPRESS;
-//   LocalDB (comes with Visual Studio) .  Server=(localdb)\\MSSQLLocalDB;
-//   SQL Server with a password .........  Server=localhost;User Id=sa;Password=YOUR_PASSWORD;
+// Server= values for different SQL Server installs:
+//   default instance ...  Server=localhost;
+//   SQL Express .........  Server=localhost\\SQLEXPRESS;
+//   LocalDB .............  Server=(localdb)\\MSSQLLocalDB;

@@ -13,6 +13,8 @@
 
   <ItemGroup>
     <!-- Talks to SQL Server -->
+    <PackageReference Include="BCrypt.Net-Next" Version="4.2.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.11" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.*" />
 
     <!-- Needed by "dotnet ef migrations" at design time only -->

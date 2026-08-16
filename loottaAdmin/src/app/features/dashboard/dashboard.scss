@@ -1,0 +1,164 @@
+.head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: var(--sp-4);
+
+  h1 { margin: 0; font-size: 20px; }
+  .sub { margin: 3px 0 0; font-size: 12.5px; color: var(--text-2); }
+}
+
+.pad { padding: var(--sp-6); text-align: center; color: var(--text-2); }
+.muted { color: var(--text-3); font-size: 13px; margin: 0; }
+
+/* --------------------------------------------------------------- tiles */
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-4);
+}
+
+.tile {
+  padding: var(--sp-4);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+
+  .label { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--text-3); }
+  .big { font-size: 26px; font-weight: 800; line-height: 1.15; }
+  .note { font-size: 11.5px; color: var(--text-2); }
+  .warn { color: var(--danger); }
+}
+
+/* -------------------------------------------------------------- blocks */
+
+.cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-3);
+}
+
+.block {
+  padding: var(--sp-4);
+
+  h2 {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: var(--text-3);
+    margin: 0 0 var(--sp-3);
+  }
+}
+
+.block-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+
+  .more { font-size: 12px; color: var(--text-2); &:hover { color: var(--price); } }
+}
+
+/* --------------------------------------------------------------- chart */
+
+.chart {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--sp-2);
+  height: 150px;
+}
+
+.bar-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  height: 100%;
+
+  .count { font-size: 12px; font-weight: 700; }
+  .bar-label { font-size: 9.5px; color: var(--text-3); text-align: center; line-height: 1.2; }
+}
+
+.bar-track {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  align-items: flex-end;
+}
+
+.bar {
+  width: 100%;
+  min-height: 3px;
+  border-radius: 4px 4px 0 0;
+  background: var(--border-strong);
+  /* Only height animates on load; it never reflows other content. */
+  transition: height 400ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  &.s-pending   { background: #f0c36d; }
+  &.s-confirmed,
+  &.s-preparing { background: #6ea8ee; }
+  &.s-shipping  { background: #9b86f0; }
+  &.s-completed { background: #4cc38a; }
+  &.s-cancelled { background: #e5646a; }
+}
+
+/* ---------------------------------------------------------- mini lists */
+
+.mini, .rows { list-style: none; margin: 0; padding: 0; }
+
+.mini li {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto auto;
+  gap: var(--sp-2);
+  align-items: center;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 12.5px;
+
+  &:last-child { border-bottom: 0; }
+
+  .num { font-family: ui-monospace, monospace; font-weight: 700; }
+  .who { color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .amt { font-weight: 700; }
+  .when { color: var(--text-3); font-size: 11px; }
+}
+
+.rows li {
+  display: grid;
+  grid-template-columns: 34px 1fr auto auto;
+  gap: var(--sp-3);
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 12.5px;
+
+  &:last-child { border-bottom: 0; }
+
+  img { width: 34px; height: 34px; object-fit: cover; border-radius: var(--radius-sm); }
+  .t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; &:hover { color: var(--price); } }
+  .v { color: var(--text-2); white-space: nowrap; }
+  .v.zero { color: var(--danger); font-weight: 700; }
+  .a { font-weight: 700; min-width: 52px; text-align: right; }
+}
+
+.badge {
+  font-size: 10px;
+  padding: 1px 7px;
+  color: #fff;
+  background: var(--text-3);
+
+  &.s-pending   { background: #e0932f; }
+  &.s-confirmed,
+  &.s-preparing { background: #2f7fe0; }
+  &.s-shipping  { background: #7c5cff; }
+  &.s-completed { background: var(--ok); }
+  &.s-cancelled { background: var(--danger); }
+}
+
+@media (max-width: 860px) {
+  .cols { grid-template-columns: 1fr; }
+  .mini li { grid-template-columns: auto 1fr auto; .who, .when { display: none; } }
+}

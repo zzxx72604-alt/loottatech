@@ -1,11 +1,14 @@
-export interface User {
-  id: string;
+export type Role = 'Customer' | 'Admin';
+
+/** Matches AuthResultDto in the ASP.NET Core API. Never contains a password. */
+export interface AuthUser {
+  id: number;
   name: string;
   email: string;
-  address: string;
-  isAdmin: boolean;
-  /** JWT. Sent back on every request by authInterceptor. */
+  role: Role;
+  coins: number;
   token: string;
+  expiresAt: string;
 }
 
 export interface LoginRequest {
@@ -16,6 +19,7 @@ export interface LoginRequest {
 export interface RegisterRequest {
   name: string;
   email: string;
+  confirmEmail: string;
   password: string;
-  address: string;
+  confirmPassword: string;
 }

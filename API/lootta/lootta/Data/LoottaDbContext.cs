@@ -17,6 +17,9 @@ public class LoottaDbContext : DbContext
     public DbSet<ProductSpec> ProductSpecs => Set<ProductSpec>();
     public DbSet<Order> Orders => Set<Order>();
     public DbSet<OrderItem> OrderItems => Set<OrderItem>();
+    public DbSet<User> Users => Set<User>();
+    public DbSet<Voucher> Vouchers => Set<Voucher>();
+    public DbSet<GameSession> GameSessions => Set<GameSession>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -98,6 +101,46 @@ public class LoottaDbContext : DbContext
                   .WithMany()
                   .HasForeignKey(i => i.ProductId)
                   .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // -------------------------------------------------------------- User
+        modelBuilder.Entity<User>(entity =>
+        {
+            // One account per email address, enforced by the database itself.
+            entity.HasIndex(u => u.Email).IsUnique();
+            entity.Property(u => u.Role).HasConversion<string>().HasMaxLength(20);
+
+            entity.HasMany(u => u.Vouchers)
+                  .WithOne(v => v.User)
+                  .HasForeignKey(v => v.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ----------------------------------------------------------- Voucher
+        modelBuilder.Entity<Voucher>(entity =>
+        {
+            entity.HasIndex(v => v.Code).IsUnique();
+            entity.Property(v => v.Type).HasConversion<string>().HasMaxLength(20);
+            entity.Property(v => v.Value).HasPrecision(18, 2);
+            entity.Property(v => v.MinSpend).HasPrecision(18, 2);
+            entity.Property(v => v.MaxDiscount).HasPrecision(18, 2);
+
+            // Computed in C#, not stored as columns.
+            entity.Ignore(v => v.IsSpent);
+            entity.Ignore(v => v.IsExpired);
+            entity.Ignore(v => v.IsUsable);
+        });
+
+        // ------------------------------------------------------- GameSession
+        modelBuilder.Entity<GameSession>(entity =>
+        {
+            entity.HasIndex(g => g.Token).IsUnique();
+            entity.Ignore(g => g.IsFinished);
+
+            entity.HasOne(g => g.User)
+                  .WithMany()
+                  .HasForeignKey(g => g.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
         });
 
         // ------------------------------------------------- seed: categories

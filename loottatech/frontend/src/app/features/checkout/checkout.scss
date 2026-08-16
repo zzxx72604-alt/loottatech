@@ -175,3 +175,11 @@ input[type='tel'] {
   color: var(--text-3);
   text-align: center;
 }
+
+.hint-inline {
+  margin: 5px 0 0;
+  font-size: 11.5px;
+  color: var(--text-3);
+
+  a { color: var(--price); font-weight: 600; }
+}

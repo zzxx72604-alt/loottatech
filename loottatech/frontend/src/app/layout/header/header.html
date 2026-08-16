@@ -27,9 +27,19 @@
         [attr.aria-label]="themeService.theme() === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'"
       >
         {{ themeService.theme() === 'dark' ? '☀' : '☾' }}
+        <span class="icon-label">{{ themeService.theme() === 'dark' ? 'Light' : 'Dark' }}</span>
       </button>
 
-      <a class="icon" routerLink="/my-orders">My orders</a>
+      @if (users.isLoggedIn()) {
+        <a class="icon coins" routerLink="/arcade" title="Lootta Arcade">
+          ◎ {{ users.coins() }}
+        </a>
+        <a class="icon" routerLink="/my-orders">My orders</a>
+        <button type="button" class="icon" (click)="signOut()">Sign out</button>
+      } @else {
+        <a class="icon" routerLink="/my-orders">My orders</a>
+        <a class="icon" routerLink="/login">Sign in</a>
+      }
 
       <a class="icon cart" routerLink="/cart">
         Cart

@@ -1,14 +1,14 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormsModule, NgForm } from '@angular/forms';
-import { Router, RouterLink, ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { UserService } from '../../../core/services/user.service';
 
 /**
  * TEMPLATE-DRIVEN form.
  *
- * Two fields, no cross-field rules — so `ngModel` plus template validators is
- * the right tool. Compare with register.ts, which uses a reactive form because
- * it needs a custom validator.
+ * Two fields and no cross-field rules, so `ngModel` with template validators
+ * is the right tool. Compare with register.ts, which uses a reactive form
+ * because it needs custom validators.
  */
 @Component({
   selector: 'app-login',
@@ -23,7 +23,6 @@ export class Login {
   private readonly route = inject(ActivatedRoute);
 
   protected credentials = { email: '', password: '' };
-
   protected readonly submitting = signal(false);
   protected readonly error = signal('');
 
@@ -42,8 +41,15 @@ export class Login {
         this.router.navigateByUrl(returnUrl);
       },
       error: (err) => {
+        const e = err as { status?: number; error?: unknown };
         this.error.set(
-          typeof err?.error === 'string' ? err.error : 'Email or password is incorrect.',
+          e.status === 0
+            ? "Can't reach the shop. Is the API running?"
+            : e.status === 429
+              ? 'Too many attempts. Please wait a few minutes.'
+              : typeof e.error === 'string'
+                ? e.error
+                : 'Email or password is incorrect.',
         );
         this.submitting.set(false);
       },

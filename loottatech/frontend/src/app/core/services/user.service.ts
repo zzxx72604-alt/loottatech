@@ -1,37 +1,33 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Observable, tap } from 'rxjs';
 import { ApiService } from './api.service';
-import { LoginRequest, RegisterRequest, User } from '../../shared/models/user';
+import { AuthUser, LoginRequest, RegisterRequest } from '../../shared/models/user';
 
 const STORAGE_KEY = 'lootta-user';
 
 /**
  * Who is signed in, as a signal.
  *
- * Any component can read `user()` or `isAdmin()` straight in its template and
- * Angular keeps it up to date — no subscriptions to manage or unsubscribe.
+ * Any component reads `user()` or `coins()` straight in its template and
+ * Angular keeps it current — no subscriptions to manage.
  */
 @Injectable({ providedIn: 'root' })
 export class UserService {
   private readonly api = inject(ApiService);
 
-  private readonly current = signal<User | null>(this.restore());
+  private readonly current = signal<AuthUser | null>(this.restore());
 
   readonly user = this.current.asReadonly();
   readonly isLoggedIn = computed(() => this.current() !== null);
-  readonly isAdmin = computed(() => this.current()?.isAdmin === true);
   readonly token = computed(() => this.current()?.token ?? null);
+  readonly coins = computed(() => this.current()?.coins ?? 0);
 
-  login(credentials: LoginRequest): Observable<User> {
-    return this.api
-      .post<User>('users/login', credentials)
-      .pipe(tap((user) => this.persist(user)));
+  login(credentials: LoginRequest): Observable<AuthUser> {
+    return this.api.post<AuthUser>('auth/login', credentials).pipe(tap((u) => this.persist(u)));
   }
 
-  register(details: RegisterRequest): Observable<User> {
-    return this.api
-      .post<User>('users/register', details)
-      .pipe(tap((user) => this.persist(user)));
+  register(details: RegisterRequest): Observable<AuthUser> {
+    return this.api.post<AuthUser>('auth/register', details).pipe(tap((u) => this.persist(u)));
   }
 
   logout(): void {
@@ -39,15 +35,36 @@ export class UserService {
     this.current.set(null);
   }
 
-  private persist(user: User): void {
+  /** Keeps the header balance in step after playing or redeeming. */
+  setCoins(coins: number): void {
+    const user = this.current();
+    if (!user) return;
+
+    const updated = { ...user, coins };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    this.current.set(updated);
+  }
+
+  private persist(user: AuthUser): void {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
     this.current.set(user);
   }
 
-  private restore(): User | null {
+  /**
+   * Restores the saved session, but discards it if the token has expired —
+   * otherwise the app looks signed in and then fails every request.
+   */
+  private restore(): AuthUser | null {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      return raw ? (JSON.parse(raw) as User) : null;
+      if (!raw) return null;
+
+      const user = JSON.parse(raw) as AuthUser;
+      if (new Date(user.expiresAt) <= new Date()) {
+        localStorage.removeItem(STORAGE_KEY);
+        return null;
+      }
+      return user;
     } catch {
       return null;
     }

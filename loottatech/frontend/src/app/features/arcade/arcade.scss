@@ -1,0 +1,269 @@
+.head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-4);
+  flex-wrap: wrap;
+
+  h1 { margin: 0; font-size: 21px; }
+  .sub { margin: 3px 0 0; font-size: 12.5px; color: var(--text-2); }
+}
+
+.balance {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  background: var(--brand);
+  color: var(--brand-ink);
+  padding: 7px var(--sp-4);
+  border-radius: var(--radius-pill);
+  font-weight: 700;
+
+  .coin { font-size: 15px; }
+  .amount { font-size: 18px; }
+  .unit { font-size: 11.5px; opacity: .7; font-weight: 600; }
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--sp-4);
+  margin-bottom: var(--sp-3);
+}
+
+.pad { text-align: center; color: var(--text-2); padding: var(--sp-6); }
+
+/* --------------------------------------------------------------- tier */
+
+.tier-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-3);
+}
+
+.tier-name {
+  display: block;
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.tier-note { font-size: 12px; color: var(--text-2); }
+
+.plays {
+  text-align: right;
+  b { display: block; font-size: 22px; line-height: 1; color: var(--price); }
+  span { font-size: 11px; color: var(--text-3); }
+  &.none b { color: var(--text-3); }
+}
+
+.bar {
+  height: 6px;
+  background: var(--surface-2);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+  margin-bottom: var(--sp-2);
+}
+
+.fill {
+  height: 100%;
+  background: var(--brand);
+  transition: width 400ms var(--ease);
+}
+
+.tier-goal {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--text-2);
+
+  a { color: var(--price); font-weight: 600; }
+}
+
+.welcome {
+  margin: var(--sp-3) 0 0;
+  padding: 8px var(--sp-3);
+  background: var(--surface-2);
+  border: 1px dashed var(--brand);
+  border-radius: var(--radius-sm);
+  font-size: 12.5px;
+}
+
+/* --------------------------------------------------------------- game */
+
+.tabs {
+  display: flex;
+  gap: var(--sp-1);
+  margin-bottom: var(--sp-3);
+
+  button {
+    border: 1px solid var(--border-strong);
+    background: var(--surface);
+    color: var(--text-2);
+    font-size: 13px;
+    padding: 6px var(--sp-4);
+    border-radius: var(--radius-pill);
+
+    &.on { background: var(--brand); border-color: var(--brand); color: var(--brand-ink); font-weight: 700; }
+  }
+}
+
+.hint { margin: 0 0 var(--sp-3); font-size: 12.5px; color: var(--text-2); text-align: center; }
+
+.note {
+  margin: 0 0 var(--sp-3);
+  padding: 8px var(--sp-3);
+  border-radius: var(--radius-sm);
+  font-size: 12.5px;
+  text-align: center;
+
+  &.good { background: rgba(0, 168, 112, .1); border: 1px solid var(--cond-new); }
+  &.bad { background: rgba(255, 59, 48, .1); border: 1px solid var(--sale); color: var(--sale); }
+}
+
+.locked { margin: var(--sp-3) 0 0; text-align: center; font-size: 12.5px; color: var(--text-3); }
+
+/* -------------------------------------------------------------- wheel */
+
+.wheel-wrap {
+  position: relative;
+  width: 260px;
+  margin: 0 auto var(--sp-4);
+}
+
+.pointer {
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 22px;
+  color: var(--price);
+  z-index: 2;
+}
+
+.wheel {
+  position: relative;
+  width: 260px;
+  height: 260px;
+  border-radius: 50%;
+  border: 6px solid var(--brand-ink);
+  background: conic-gradient(
+    var(--brand) 0deg 45deg, #fff3a0 45deg 90deg,
+    var(--brand) 90deg 135deg, #fff3a0 135deg 180deg,
+    var(--brand) 180deg 225deg, #fff3a0 225deg 270deg,
+    var(--brand) 270deg 315deg, #fff3a0 315deg 360deg
+  );
+  /* Only transform animates — the GPU handles it, nothing reflows. */
+  transition: transform 3s cubic-bezier(0.15, 0.9, 0.2, 1);
+}
+
+.wedge {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  padding-top: 16px;
+
+  span {
+    color: var(--brand-ink);
+    font-weight: 800;
+    font-size: 14px;
+  }
+}
+
+.spin-btn {
+  display: block;
+  width: 100%;
+  max-width: 260px;
+  margin: 0 auto;
+  border: 0;
+  background: var(--brand);
+  color: var(--brand-ink);
+  font-weight: 700;
+  font-size: 14px;
+  padding: 11px;
+  border-radius: var(--radius-pill);
+
+  &:disabled { opacity: .5; cursor: not-allowed; }
+}
+
+/* ----------------------------------------------------------- vouchers */
+
+.shop h2 { font-size: 14px; margin: 0 0 3px; }
+.shop .mine { margin-top: var(--sp-5); }
+
+.options {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: var(--sp-2);
+}
+
+.option {
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  padding: var(--sp-3);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+
+  &.locked { opacity: .55; }
+
+  .label { font-weight: 800; font-size: 15px; }
+  .desc { font-size: 11.5px; color: var(--text-3); flex: 1; }
+}
+
+.buy {
+  margin-top: var(--sp-2);
+  border: 0;
+  background: var(--brand-ink);
+  color: var(--brand);
+  font-weight: 700;
+  font-size: 12.5px;
+  padding: 6px;
+  border-radius: var(--radius-pill);
+
+  &:disabled { opacity: .5; cursor: not-allowed; }
+}
+
+.vouchers {
+  list-style: none;
+  margin: var(--sp-2) 0 0;
+  padding: 0;
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+    padding: 7px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 12.5px;
+
+    &:last-child { border-bottom: 0; }
+    &.spent { opacity: .45; text-decoration: line-through; }
+  }
+}
+
+.code {
+  border: 1px dashed var(--border-strong);
+  background: var(--surface-2);
+  color: var(--text);
+  font-family: ui-monospace, monospace;
+  font-weight: 700;
+  font-size: 12.5px;
+  padding: 3px 9px;
+  border-radius: var(--radius-sm);
+}
+
+.v-label { flex: 1; color: var(--text-2); }
+.v-state { font-size: 11px; color: var(--text-3); }
+
+@media (prefers-reduced-motion: reduce) {
+  .wheel { transition-duration: .01ms; }
+}
+
+@media (max-width: 480px) {
+  .wheel, .wheel-wrap { width: 220px; }
+  .wheel { height: 220px; }
+}

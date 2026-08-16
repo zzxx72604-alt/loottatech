@@ -1,0 +1,49 @@
+.stage {
+  position: relative;
+  width: 100%;
+  max-width: 360px;
+  margin: 0 auto;
+  border-radius: var(--radius);
+  overflow: hidden;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  border: 1px solid var(--border-strong);
+
+  &:focus-visible { outline: 2px solid var(--price); outline-offset: 2px; }
+}
+
+canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  /* Keeps the pixel art crisp when the canvas is scaled up. */
+  image-rendering: pixelated;
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  text-align: center;
+  background: rgba(20, 20, 22, 0.72);
+  color: #fff;
+  padding: var(--sp-4);
+
+  h3 { margin: 0; font-size: 22px; }
+  p { margin: 0; font-size: 13px; opacity: .8; line-height: 1.5; }
+}
+
+.cta {
+  margin-top: var(--sp-2);
+  background: var(--brand);
+  color: #1d1d20;
+  font-weight: 700;
+  font-size: 13px;
+  padding: 8px var(--sp-5);
+  border-radius: var(--radius-pill);
+}

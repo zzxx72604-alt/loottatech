@@ -2,6 +2,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { interval, startWith, switchMap } from 'rxjs';
 import { catchError, of } from 'rxjs';
+import { AuthService } from './auth.service';
 import { OrderApi } from './order-api.service';
 import { OrderSummary } from '../../shared/models/order';
 
@@ -23,6 +24,7 @@ const POLL_MS = 10_000;
 @Injectable({ providedIn: 'root' })
 export class OrderNotifier {
   private readonly api = inject(OrderApi);
+  private readonly auth = inject(AuthService);
 
   /** Every order, refreshed automatically. */
   readonly orders = signal<OrderSummary[]>([]);
@@ -44,7 +46,13 @@ export class OrderNotifier {
     interval(POLL_MS)
       .pipe(
         startWith(0),
-        switchMap(() => this.api.list().pipe(catchError(() => of(null)))),
+        // Skip polling entirely while signed out — otherwise every tick
+        // would 401 and bounce the admin back to the login screen.
+        switchMap(() =>
+          this.auth.isAdmin()
+            ? this.api.list().pipe(catchError(() => of(null)))
+            : of([] as OrderSummary[]),
+        ),
         takeUntilDestroyed(),
       )
       .subscribe((orders) => {

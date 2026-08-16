@@ -33,12 +33,12 @@
         [(ngModel)]="credentials.password"
         #passwordField="ngModel"
         required
-        minlength="5"
+        minlength="6"
       />
       @if (passwordField.invalid && passwordField.touched) {
         <p class="err">
           @if (passwordField.errors?.['required']) { Password is required. }
-          @else if (passwordField.errors?.['minlength']) { At least 5 characters. }
+          @else if (passwordField.errors?.['minlength']) { At least 6 characters. }
         </p>
       }
     </div>
@@ -57,8 +57,7 @@
   </p>
 
   <div class="demo">
-    <b>Demo accounts</b>
-    <p>Admin — admin&#64;loottatech.com / 12345</p>
-    <p>Customer — dara&#64;gmail.com / 12345</p>
+    <b>Demo account</b>
+    <p>dara&#64;gmail.com / Dara123</p>
   </div>
 </div>

@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { authGuard } from './core/guards/auth.guard';
 
 /**
  * Every route uses `loadComponent`, so the browser downloads only the page it
@@ -39,8 +40,24 @@ export const routes: Routes = [
       import('./features/order-confirmation/order-confirmation').then((m) => m.OrderConfirmation),
   },
   {
-    // Guest checkout only for now — the ASP.NET API has no authentication yet,
-    // so "my orders" is looked up from order numbers saved in this browser.
+    path: 'login',
+    title: 'Sign in — LoottaTech',
+    loadComponent: () => import('./features/auth/login/login').then((m) => m.Login),
+  },
+  {
+    path: 'register',
+    title: 'Create account — LoottaTech',
+    loadComponent: () => import('./features/auth/register/register').then((m) => m.Register),
+  },
+  {
+    path: 'arcade',
+    title: 'Lootta Arcade — LoottaTech',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/arcade/arcade').then((m) => m.Arcade),
+  },
+  {
+    // Guest checkout is still allowed, so this works from saved order numbers
+    // as well as from the signed-in account.
     path: 'my-orders',
     title: 'My orders — LoottaTech',
     loadComponent: () => import('./features/account/my-orders').then((m) => m.MyOrders),

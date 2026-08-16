@@ -47,6 +47,18 @@
         }
       </div>
 
+      @if (users.isLoggedIn()) {
+        <div class="field">
+          <label for="voucherCode">Voucher code (optional)</label>
+          <input id="voucherCode" type="text" formControlName="voucherCode"
+                 placeholder="LC-XXXXXX" style="text-transform: uppercase" />
+          <p class="hint-inline">
+            Earn vouchers in the <a routerLink="/arcade">arcade</a>. The discount is applied by
+            the server when the order is placed.
+          </p>
+        </div>
+      }
+
       <div class="field">
         <label for="note">Note (optional)</label>
         <input id="note" type="text" formControlName="note" placeholder="Landmark, delivery time…" />

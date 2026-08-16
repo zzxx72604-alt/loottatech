@@ -10,10 +10,10 @@ import { Router, RouterLink } from '@angular/router';
 import { UserService } from '../../../core/services/user.service';
 
 /**
- * Custom validator — a password must mix letters and numbers.
+ * A password must mix letters and numbers.
  *
- * Returns `null` when valid, or an error object when not. That object key
- * (`weakPassword`) is what the template checks to decide which message to show.
+ * Returns null when valid, or an error object when not. The key name
+ * (`weakPassword`) is what the template checks to pick a message.
  */
 export function passwordStrength(control: AbstractControl): ValidationErrors | null {
   const value: string = control.value ?? '';
@@ -26,21 +26,15 @@ export function passwordStrength(control: AbstractControl): ValidationErrors | n
 }
 
 /**
- * Cross-field validator, applied to the whole group rather than one control,
- * because it needs to see two values at once.
+ * Cross-field validators, applied to the GROUP rather than one control,
+ * because they need to see two values at once. A single control can never
+ * see its sibling.
  */
-export function passwordsMatch(group: AbstractControl): ValidationErrors | null {
-  const password = group.get('password')?.value;
-  const confirm = group.get('confirmPassword')?.value;
-  return password === confirm ? null : { passwordMismatch: true };
+export function fieldsMatch(a: string, b: string, errorKey: string) {
+  return (group: AbstractControl): ValidationErrors | null =>
+    group.get(a)?.value === group.get(b)?.value ? null : { [errorKey]: true };
 }
 
-/**
- * REACTIVE form.
- *
- * Chosen over template-driven here because of the two validators above —
- * custom rules live in TypeScript, where they can be read and tested.
- */
 @Component({
   selector: 'app-register',
   imports: [ReactiveFormsModule, RouterLink],
@@ -60,11 +54,16 @@ export class Register {
     {
       name: ['', [Validators.required, Validators.minLength(2)]],
       email: ['', [Validators.required, Validators.email]],
-      address: ['', [Validators.required, Validators.minLength(5)]],
-      password: ['', [Validators.required, Validators.minLength(5), passwordStrength]],
+      confirmEmail: ['', [Validators.required, Validators.email]],
+      password: ['', [Validators.required, Validators.minLength(6), passwordStrength]],
       confirmPassword: ['', [Validators.required]],
     },
-    { validators: passwordsMatch },
+    {
+      validators: [
+        fieldsMatch('email', 'confirmEmail', 'emailMismatch'),
+        fieldsMatch('password', 'confirmPassword', 'passwordMismatch'),
+      ],
+    },
   );
 
   protected control(name: string): AbstractControl | null {
@@ -76,6 +75,10 @@ export class Register {
     return !!c && c.invalid && c.touched;
   }
 
+  protected groupError(key: string, touchedField: string): boolean {
+    return !!this.form.errors?.[key] && !!this.form.get(touchedField)?.touched;
+  }
+
   protected onSubmit(): void {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
@@ -85,13 +88,16 @@ export class Register {
     this.submitting.set(true);
     this.error.set('');
 
-    const { name, email, address, password } = this.form.getRawValue();
-
-    this.users.register({ name, email, address, password }).subscribe({
-      next: () => this.router.navigateByUrl('/'),
+    this.users.register(this.form.getRawValue()).subscribe({
+      next: () => this.router.navigateByUrl('/arcade'),
       error: (err) => {
+        const e = err as { status?: number; error?: unknown };
         this.error.set(
-          typeof err?.error === 'string' ? err.error : 'Could not create the account.',
+          e.status === 0
+            ? "Can't reach the shop. Is the API running?"
+            : typeof e.error === 'string'
+              ? e.error
+              : 'Could not create the account.',
         );
         this.submitting.set(false);
       },

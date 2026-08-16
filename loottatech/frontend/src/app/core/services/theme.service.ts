@@ -27,6 +27,10 @@ export class ThemeService {
   private initial(): Theme {
     const saved = localStorage.getItem(STORAGE_KEY) as Theme | null;
     if (saved === 'light' || saved === 'dark') return saved;
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+
+    // Default to light. The brand is built around a bright yellow, which only
+    // reads correctly on a light background — so we don't follow the OS setting
+    // unless the visitor explicitly picks dark.
+    return 'light';
   }
 }

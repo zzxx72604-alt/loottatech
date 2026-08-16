@@ -1,0 +1,132 @@
+<header class="head">
+  <div>
+    <h1>Lootta Arcade</h1>
+    <p class="sub">Buy from the shop, earn plays, win coins, spend them on vouchers.</p>
+  </div>
+
+  <div class="balance">
+    <span class="coin">◎</span>
+    <span class="amount">{{ state()?.balance ?? users.coins() }}</span>
+    <span class="unit">coins</span>
+  </div>
+</header>
+
+@if (loading()) {
+  <div class="card pad">Loading the arcade…</div>
+} @else if (state(); as s) {
+
+  <!-- ------------------------------------------------------------ tier -->
+  <section class="card tier">
+    <div class="tier-top">
+      <div>
+        <span class="tier-name">{{ s.tier }}</span>
+        <span class="tier-note">
+          {{ s.playsPerDay }} play{{ s.playsPerDay === 1 ? '' : 's' }} a day ·
+          {{ s.lifetimeItems }} item{{ s.lifetimeItems === 1 ? '' : 's' }} bought
+        </span>
+      </div>
+
+      <div class="plays" [class.none]="!canPlay()">
+        <b>{{ playsLeft() }}</b>
+        <span>play{{ playsLeft() === 1 ? '' : 's' }} left today</span>
+      </div>
+    </div>
+
+    @if (s.nextTier) {
+      <div class="bar"><div class="fill" [style.width.%]="tierProgress()"></div></div>
+      <p class="tier-goal">
+        Buy {{ s.itemsToNextTier }} more item{{ s.itemsToNextTier === 1 ? '' : 's' }} to reach
+        <b>{{ s.nextTier }}</b> and unlock more daily plays.
+        <a routerLink="/">Browse the shop →</a>
+      </p>
+    } @else {
+      <p class="tier-goal">Top tier reached. Thanks for shopping with LoottaTech.</p>
+    }
+
+    @if (s.hasWelcomePlay) {
+      <p class="welcome">🎁 You have one free welcome play. Try it out.</p>
+    }
+  </section>
+
+  <!-- ------------------------------------------------------------ game -->
+  <section class="card game">
+    <div class="tabs" role="tablist">
+      <button type="button" role="tab" [attr.aria-selected]="mode() === 'flyer'"
+              [class.on]="mode() === 'flyer'" (click)="setMode('flyer')">Lootta Flyer</button>
+      <button type="button" role="tab" [attr.aria-selected]="mode() === 'wheel'"
+              [class.on]="mode() === 'wheel'" (click)="setMode('wheel')">Prize Wheel</button>
+    </div>
+
+    @if (message()) { <p class="note good">{{ message() }}</p> }
+    @if (error()) { <p class="note bad">{{ error() }}</p> }
+
+    @if (mode() === 'flyer') {
+      <p class="hint">
+        {{ s.coinsPerPoint }} coins per shelf you pass. Best so far: <b>{{ s.bestScore }}</b>
+      </p>
+
+      <app-flyer-game (wantsToStart)="startFlyer()" (gameOver)="onGameOver($event)" />
+
+      @if (!canPlay()) {
+        <p class="locked">No plays left today — buy something to earn more.</p>
+      }
+    } @else {
+      <div class="wheel-wrap">
+        <div class="pointer" aria-hidden="true">▼</div>
+        <div class="wheel" [style.transform]="'rotate(' + wheelAngle() + 'deg)'"
+             [class.spinning]="spinning()">
+          @for (prize of s.wheel; track $index; let i = $index) {
+            <div class="wedge" [style.transform]="'rotate(' + (i * 360 / s.wheel.length) + 'deg)'">
+              <span>{{ prize }}</span>
+            </div>
+          }
+        </div>
+      </div>
+
+      <button type="button" class="spin-btn" (click)="spin()"
+              [disabled]="busy() || spinning() || !canPlay()">
+        {{ spinning() ? 'Spinning…' : canPlay() ? 'Spend 1 play to spin' : 'No plays left' }}
+      </button>
+    }
+  </section>
+
+  <!-- -------------------------------------------------------- vouchers -->
+  @if (rewards(); as r) {
+    <section class="card shop">
+      <h2>Spend your coins</h2>
+      <p class="hint">Vouchers apply at checkout. Each one works once.</p>
+
+      <div class="options">
+        @for (option of r.catalog; track option.key) {
+          <div class="option" [class.locked]="!option.affordable">
+            <span class="label">{{ option.label }}</span>
+            <span class="desc">{{ option.description }}</span>
+            <button type="button" class="buy" (click)="redeem(option.key)"
+                    [disabled]="!option.affordable || busy()">
+              ◎ {{ option.coinCost }}
+            </button>
+          </div>
+        }
+      </div>
+
+      @if (r.vouchers.length > 0) {
+        <h2 class="mine">Your vouchers</h2>
+        <ul class="vouchers">
+          @for (v of r.vouchers; track v.id) {
+            <li [class.spent]="!v.usable">
+              <button type="button" class="code" (click)="copy(v.code)" title="Copy code">
+                {{ v.code }}
+              </button>
+              <span class="v-label">{{ v.label }} · min {{ v.minSpend }}</span>
+              <span class="v-state">
+                @if (v.usedAt) { used }
+                @else if (!v.usable) { expired }
+                @else { expires {{ v.expiresAt | date: 'MMM d' }} }
+              </span>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+  }
+}

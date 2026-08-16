@@ -1,0 +1,132 @@
+<header class="head">
+  <div>
+    <h1>Dashboard</h1>
+    <p class="sub">LoottaTech at a glance</p>
+  </div>
+  <button type="button" class="btn" (click)="load()">Refresh</button>
+</header>
+
+@if (error()) { <p class="alert bad">{{ error() }}</p> }
+
+@if (loading()) {
+  <div class="card pad">Loading…</div>
+} @else if (data(); as d) {
+
+  <!-- ------------------------------------------------------------ tiles -->
+  <div class="tiles">
+    <div class="card tile">
+      <span class="label">Revenue</span>
+      <span class="big">{{ d.totalRevenue | currency: 'USD' : 'symbol' : '1.2-2' }}</span>
+      <span class="note">{{ d.revenueThisWeek | currency: 'USD' : 'symbol' : '1.2-2' }} this week</span>
+    </div>
+
+    <div class="card tile">
+      <span class="label">Orders</span>
+      <span class="big">{{ d.orderCount }}</span>
+      <span class="note">
+        @if (d.pendingCount > 0) {
+          <b class="warn">{{ d.pendingCount }} waiting</b>
+        } @else { all handled }
+      </span>
+    </div>
+
+    <div class="card tile">
+      <span class="label">Products</span>
+      <span class="big">{{ d.productCount }}</span>
+      <span class="note">
+        {{ d.activeProductCount }} visible
+        @if (d.outOfStockCount > 0) { · <b class="warn">{{ d.outOfStockCount }} out of stock</b> }
+      </span>
+    </div>
+
+    <div class="card tile">
+      <span class="label">Stock value</span>
+      <span class="big">{{ d.stockValue | currency: 'USD' : 'symbol' : '1.0-0' }}</span>
+      <span class="note">at current selling prices</span>
+    </div>
+  </div>
+
+  <div class="cols">
+    <!-- --------------------------------------------------------- chart -->
+    <section class="card block">
+      <h2>Orders by status</h2>
+      <div class="chart">
+        @for (s of d.byStatus; track s.status) {
+          <div class="bar-col">
+            <span class="count">{{ s.count }}</span>
+            <div class="bar-track">
+              <div class="bar" [class]="statusClass(s.status)" [style.height]="barHeight(s.count)"></div>
+            </div>
+            <span class="bar-label">{{ s.status }}</span>
+          </div>
+        }
+      </div>
+    </section>
+
+    <!-- ------------------------------------------------- recent orders -->
+    <section class="card block">
+      <div class="block-head">
+        <h2>Recent orders</h2>
+        <a routerLink="/orders" class="more">View all →</a>
+      </div>
+
+      @if (d.recentOrders.length === 0) {
+        <p class="muted">No orders yet.</p>
+      } @else {
+        <ul class="mini">
+          @for (o of d.recentOrders; track o.id) {
+            <li>
+              <span class="num">{{ o.orderNumber }}</span>
+              <span class="who">{{ o.customerName }}</span>
+              <span class="badge" [class]="statusClass(o.status)">{{ o.status }}</span>
+              <span class="amt">{{ o.totalPrice | currency: 'USD' : 'symbol' : '1.2-2' }}</span>
+              <span class="when">{{ o.createdAt | date: 'MMM d' }}</span>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+  </div>
+
+  <div class="cols">
+    <!-- ------------------------------------------------- best sellers -->
+    <section class="card block">
+      <h2>Best sellers</h2>
+      @if (d.bestSellers.length === 0) {
+        <p class="muted">Nothing sold yet.</p>
+      } @else {
+        <ul class="rows">
+          @for (r of d.bestSellers; track r.id) {
+            <li>
+              @if (image(r.image)) { <img [src]="image(r.image)" [alt]="r.title" width="34" height="34" /> }
+              <a class="t" [routerLink]="['/products', r.id]">{{ r.title }}</a>
+              <span class="v">{{ r.value }} sold</span>
+              <span class="a">{{ r.amount | currency: 'USD' : 'symbol' : '1.0-0' }}</span>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+
+    <!-- ---------------------------------------------------- low stock -->
+    <section class="card block">
+      <h2>Running low</h2>
+      @if (d.lowStock.length === 0) {
+        <p class="muted">Everything is well stocked.</p>
+      } @else {
+        <ul class="rows">
+          @for (r of d.lowStock; track r.id) {
+            <li>
+              @if (image(r.image)) { <img [src]="image(r.image)" [alt]="r.title" width="34" height="34" /> }
+              <a class="t" [routerLink]="['/products', r.id]">{{ r.title }}</a>
+              <span class="v" [class.zero]="r.value === 0">
+                {{ r.value === 0 ? 'Out of stock' : r.value + ' left' }}
+              </span>
+              <span class="a">{{ r.amount | currency: 'USD' : 'symbol' : '1.0-0' }}</span>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+  </div>
+}

@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, Input, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
+import { NgOptimizedImage } from '@angular/common';
 import { ProductService } from '../../core/services/product.service';
 import { CartService } from '../../core/services/cart.service';
 import { ProductCard } from '../../shared/components/product-card/product-card';
@@ -16,7 +17,7 @@ interface CategoryCount {
 
 @Component({
   selector: 'app-catalog',
-  imports: [FormsModule, ProductCard, ProductCardSkeleton],
+  imports: [FormsModule, NgOptimizedImage, ProductCard, ProductCardSkeleton],
   templateUrl: './catalog.html',
   styleUrl: './catalog.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -117,6 +118,46 @@ export class Catalog {
     }
     return list;
   });
+
+  /** Biggest savings first — drives the "Best deals" strip. */
+  protected readonly bestDeals = computed(() =>
+    [...this.products()]
+      .filter((p) => discountPercent(p) > 0)
+      .sort((a, b) => discountPercent(b) - discountPercent(a))
+      .slice(0, 5),
+  );
+
+  /** Newest arrivals — the API returns newest first. */
+  protected readonly newArrivals = computed(() => this.products().slice(0, 5));
+
+  /** True only on the plain homepage, so search results stay uncluttered. */
+  protected readonly showSections = computed(
+    () => !this.hasFilters() && this.products().length > 0,
+  );
+
+  protected readonly categoryIcons: Record<string, string> = {
+    Phones: '📱',
+    Laptops: '💻',
+    Tablets: '📋',
+    Monitors: '🖥️',
+    Printers: '🖨️',
+    'PC Parts': '🧩',
+    Wearables: '⌚',
+    Gaming: '🎮',
+    Accessories: '🖱️',
+    Drones: '🚁',
+  };
+
+  protected icon(name: string): string {
+    return this.categoryIcons[name] ?? '📦';
+  }
+
+  protected readonly trustPoints = [
+    { icon: '🔍', title: 'Quality checked', note: 'Every used item is tested' },
+    { icon: '📷', title: 'Honest photos', note: 'We photograph the scratches too' },
+    { icon: '🛡️', title: 'Warranty included', note: 'Up to 12 months, stated per item' },
+    { icon: '🏪', title: 'Local shop', note: 'Phnom Penh, pickup available' },
+  ];
 
   protected readonly hasFilters = computed(
     () =>
