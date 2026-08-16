@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { CurrencyPipe, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { OrderApi } from '../../core/services/order-api.service';
+import { OrderNotifier } from '../../core/services/order-notifier.service';
 import {
   ORDER_STATUSES,
   Order,
@@ -20,11 +21,13 @@ import { environment } from '../../../environments/environment';
 })
 export class OrderList {
   private readonly api = inject(OrderApi);
+  private readonly notifier = inject(OrderNotifier);
 
   protected readonly statuses = ORDER_STATUSES;
   protected readonly fileBase = environment.fileBase;
 
-  protected readonly orders = signal<OrderSummary[]>([]);
+  /** Comes from the poller, so the table refreshes itself every 10 seconds. */
+  protected readonly orders = this.notifier.orders;
   protected readonly loading = signal(true);
   protected readonly error = signal('');
   protected readonly filter = signal<OrderStatus | ''>('');
@@ -50,23 +53,15 @@ export class OrderList {
   );
 
   constructor() {
-    this.load();
+    // Opening this page clears the "new order" toasts.
+    this.notifier.markSeen();
+    this.notifier.refreshNow();
+    this.loading.set(false);
   }
 
   protected load(): void {
-    this.loading.set(true);
     this.error.set('');
-
-    this.api.list().subscribe({
-      next: (orders) => {
-        this.orders.set(orders);
-        this.loading.set(false);
-      },
-      error: (err) => {
-        this.error.set(this.explain(err));
-        this.loading.set(false);
-      },
-    });
+    this.notifier.refreshNow();
   }
 
   protected toggle(order: OrderSummary): void {
@@ -128,7 +123,7 @@ export class OrderList {
   }
 
   private patch(id: number, changes: Partial<OrderSummary>): void {
-    this.orders.update((list) => list.map((o) => (o.id === id ? { ...o, ...changes } : o)));
+    this.notifier.patch(id, changes);
   }
 
   private explain(err: unknown): string {
