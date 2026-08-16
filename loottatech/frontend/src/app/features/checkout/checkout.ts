@@ -4,7 +4,6 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { CartService } from '../../core/services/cart.service';
 import { OrderService } from '../../core/services/order.service';
-import { UserService } from '../../core/services/user.service';
 import { DELIVERY_OPTIONS, DeliveryOption } from '../../shared/models/order';
 
 /**
@@ -27,7 +26,6 @@ export class Checkout {
   private readonly orders = inject(OrderService);
   private readonly router = inject(Router);
 
-  protected readonly users = inject(UserService);
   protected readonly deliveryOptions = DELIVERY_OPTIONS;
 
   protected readonly submitting = signal(false);
@@ -46,9 +44,9 @@ export class Checkout {
   protected readonly total = computed(() => this.subtotal() + this.deliveryFee());
 
   protected readonly form = this.fb.nonNullable.group({
-    customerName: [this.users.user()?.name ?? '', [Validators.required, Validators.minLength(2)]],
+    customerName: ['', [Validators.required, Validators.minLength(2)]],
     phone: ['', [Validators.required, Validators.pattern(/^[0-9+\s-]{8,15}$/)]],
-    address: [this.users.user()?.address ?? '', [Validators.required, Validators.minLength(5)]],
+    address: ['', [Validators.required, Validators.minLength(5)]],
     deliveryOption: ['Standard Delivery' as DeliveryOption, [Validators.required]],
     note: [''],
   });

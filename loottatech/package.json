@@ -6,12 +6,13 @@
     "node": ">=20"
   },
   "scripts": {
-    "dev": "concurrently -k -n WEB,API -c yellow,green \"cd frontend && npm start\" \"cd backend && npm start\"",
+    "dev": "cd frontend && npm start",
     "start": "cd backend/built && node server.js",
     "prebuild": "cd backend && npm run build",
     "build": "cd frontend && npm run build",
     "postinstall": "cd frontend && npm install && cd ../backend && npm install",
-    "images": "node tools/optimize-images.mjs"
+    "images": "node tools/optimize-images.mjs",
+    "dev:legacy-node": "concurrently -k -n WEB,API -c yellow,green \"cd frontend && npm start\" \"cd backend && npm start\""
   },
   "devDependencies": {
     "concurrently": "^8.2.2",

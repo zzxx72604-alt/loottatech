@@ -3,7 +3,6 @@ import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { CartService } from '../../core/services/cart.service';
 import { ThemeService } from '../../core/services/theme.service';
-import { UserService } from '../../core/services/user.service';
 
 @Component({
   selector: 'app-header',
@@ -17,7 +16,6 @@ export class Header {
 
   protected readonly cart = inject(CartService);
   protected readonly themeService = inject(ThemeService);
-  protected readonly users = inject(UserService);
 
   protected readonly term = signal('');
 
@@ -38,10 +36,5 @@ export class Header {
   protected quickSearch(value: string): void {
     this.term.set(value);
     this.search();
-  }
-
-  protected signOut(): void {
-    this.users.logout();
-    this.router.navigateByUrl('/');
   }
 }

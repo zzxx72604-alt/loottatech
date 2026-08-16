@@ -1,16 +1,15 @@
 <header class="head">
   <div>
     <h1>My orders</h1>
-    <p class="sub">Signed in as {{ users.user()?.email }}</p>
+    <p class="sub">Orders placed from this browser.</p>
   </div>
-  <button type="button" class="ghost" (click)="users.logout()">Sign out</button>
 </header>
 
 @if (loading()) {
   <div class="card"><div class="skeleton line"></div><div class="skeleton line w40"></div></div>
 } @else if (orders().length === 0) {
   <div class="card empty">
-    <p>You haven't ordered anything yet.</p>
+    <p>No orders from this browser yet.</p>
     <a routerLink="/" class="primary">Browse products</a>
   </div>
 } @else {

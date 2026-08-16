@@ -29,15 +29,7 @@
         {{ themeService.theme() === 'dark' ? '☀' : '☾' }}
       </button>
 
-      @if (users.isLoggedIn()) {
-        <a class="icon" routerLink="/account/orders">Hi, {{ users.user()?.name }}</a>
-        @if (users.isAdmin()) {
-          <a class="icon admin" routerLink="/admin">Admin</a>
-        }
-        <button type="button" class="icon" (click)="signOut()">Sign out</button>
-      } @else {
-        <a class="icon" routerLink="/login">Sign in</a>
-      }
+      <a class="icon" routerLink="/my-orders">My orders</a>
 
       <a class="icon cart" routerLink="/cart">
         Cart

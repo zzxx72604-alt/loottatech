@@ -46,14 +46,14 @@ export class CartService {
     });
   }
 
-  setQuantity(productId: string, quantity: number): void {
+  setQuantity(productId: number, quantity: number): void {
     if (quantity <= 0) return this.remove(productId);
     this.lines.update((lines) =>
       lines.map((l) => (l.product.id === productId ? { ...l, quantity } : l)),
     );
   }
 
-  remove(productId: string): void {
+  remove(productId: number): void {
     this.lines.update((lines) => lines.filter((l) => l.product.id !== productId));
   }
 

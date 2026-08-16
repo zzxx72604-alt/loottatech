@@ -8,12 +8,10 @@
 } @else {
   <div class="split">
     <form class="details" [formGroup]="form" (ngSubmit)="placeOrder()" novalidate>
-      @if (!users.isLoggedIn()) {
-        <p class="hint">
-          Checking out as a guest. <a routerLink="/login">Sign in</a> if you'd like this order
-          saved to your account.
-        </p>
-      }
+      <p class="hint">
+        No account needed. Your order number is saved in this browser so you can track it from
+        <a routerLink="/my-orders">My orders</a>.
+      </p>
 
       <h2>Your details</h2>
 

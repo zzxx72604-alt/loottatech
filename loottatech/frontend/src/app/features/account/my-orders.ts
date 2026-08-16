@@ -1,11 +1,19 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { CurrencyPipe, DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { forkJoin, of } from 'rxjs';
+import { catchError, map } from 'rxjs/operators';
 import { OrderService } from '../../core/services/order.service';
-import { UserService } from '../../core/services/user.service';
 import { Order } from '../../shared/models/order';
 
+/**
+ * Order history without a login.
+ *
+ * The API has no authentication yet, so there is no server-side "my orders".
+ * Instead the browser remembers the order numbers it created at checkout and
+ * looks each one up. A different browser sees a different history — which is
+ * exactly what a guest checkout can honestly offer.
+ */
 @Component({
   selector: 'app-my-orders',
   imports: [CurrencyPipe, DatePipe, RouterLink],
@@ -15,15 +23,23 @@ import { Order } from '../../shared/models/order';
 })
 export class MyOrders {
   private readonly orderService = inject(OrderService);
-  protected readonly users = inject(UserService);
 
   protected readonly orders = signal<Order[]>([]);
   protected readonly loading = signal(true);
 
   constructor() {
-    this.orderService
-      .mine()
-      .pipe(takeUntilDestroyed())
+    const numbers = this.orderService.myOrderNumbers();
+
+    if (numbers.length === 0) {
+      this.loading.set(false);
+      return;
+    }
+
+    // Look them all up at once; skip any the shop has since removed.
+    forkJoin(
+      numbers.map((n) => this.orderService.byNumber(n).pipe(catchError(() => of(null)))),
+    )
+      .pipe(map((results) => results.filter((o): o is Order => o !== null)))
       .subscribe({
         next: (orders) => {
           this.orders.set(orders);

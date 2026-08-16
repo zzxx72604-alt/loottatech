@@ -1,0 +1,137 @@
+<header class="head">
+  <div>
+    <h1>Orders</h1>
+    <p class="sub">
+      {{ orders().length }} total
+      @if (needsAction() > 0) {
+        · <span class="warn">{{ needsAction() }} waiting to be accepted</span>
+      }
+      · {{ revenue() | currency: 'USD' : 'symbol' : '1.2-2' }} excluding cancelled
+    </p>
+  </div>
+
+  <div class="actions">
+    <select [ngModel]="filter()" (ngModelChange)="filter.set($event)" aria-label="Filter by status">
+      <option value="">All statuses</option>
+      @for (s of statuses; track s) {
+        <option [value]="s">{{ s }}</option>
+      }
+    </select>
+    <button type="button" class="btn" (click)="load()">Refresh</button>
+  </div>
+</header>
+
+@if (error()) { <p class="alert bad">{{ error() }}</p> }
+
+@if (loading()) {
+  <div class="card pad">Loading orders…</div>
+} @else if (visible().length === 0) {
+  <div class="card pad">No orders yet. Place one from the customer site to see it here.</div>
+} @else {
+  <div class="card table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Order</th>
+          <th>Customer</th>
+          <th>Delivery</th>
+          <th class="num">Items</th>
+          <th class="num">Total</th>
+          <th>Status</th>
+          <th class="c-act"><span class="sr-only">Actions</span></th>
+        </tr>
+      </thead>
+
+      <tbody>
+        @for (o of visible(); track o.id) {
+          <tr [class.open]="openId() === o.id" [class.cancelled]="o.status === 'Cancelled'">
+            <td>
+              <button type="button" class="num-btn" (click)="toggle(o)">
+                {{ o.orderNumber }}
+              </button>
+              <span class="date">{{ o.createdAt | date: 'MMM d, HH:mm' }}</span>
+            </td>
+
+            <td>
+              <span class="name">{{ o.customerName }}</span>
+              <span class="phone">{{ o.phone }}</span>
+            </td>
+
+            <td class="delivery">{{ o.deliveryOption }}</td>
+
+            <td class="num">{{ o.itemCount }}</td>
+
+            <td class="num"><b>{{ o.totalPrice | currency: 'USD' : 'symbol' : '1.2-2' }}</b></td>
+
+            <td>
+              <select
+                class="status"
+                [class]="statusClass(o.status)"
+                [ngModel]="o.status"
+                (ngModelChange)="changeStatus(o, $event)"
+                [attr.aria-label]="'Status of ' + o.orderNumber"
+              >
+                @for (s of statuses; track s) {
+                  <option [value]="s">{{ s }}</option>
+                }
+              </select>
+            </td>
+
+            <td class="c-act">
+              @if (next(o.status); as n) {
+                <button type="button" class="btn btn-sm btn-primary" (click)="advance(o)">
+                  → {{ n }}
+                </button>
+              }
+              <button type="button" class="btn btn-sm" (click)="toggle(o)">
+                {{ openId() === o.id ? 'Hide' : 'Details' }}
+              </button>
+            </td>
+          </tr>
+
+          @if (openId() === o.id) {
+            <tr class="detail-row">
+              <td colspan="7">
+                @if (detailLoading()) {
+                  <p class="muted">Loading details…</p>
+                } @else if (detail(); as d) {
+                  <div class="detail">
+                    <div class="ship">
+                      <h3>Deliver to</h3>
+                      <p>{{ d.customerName }}</p>
+                      <p>{{ d.address }}</p>
+                      <p>{{ d.phone }}</p>
+                      <p class="opt">{{ d.deliveryOption }}</p>
+                      @if (d.note) { <p class="note">“{{ d.note }}”</p> }
+                    </div>
+
+                    <div class="lines">
+                      <h3>Items</h3>
+                      @for (item of d.items; track $index) {
+                        <div class="line">
+                          @if (image(item.image)) {
+                            <img [src]="image(item.image)" [alt]="item.title" width="36" height="36" />
+                          }
+                          <span class="t">{{ item.title }}</span>
+                          <span class="c">{{ item.condition }}</span>
+                          <span class="q">{{ item.quantity }} × {{ item.price | currency: 'USD' : 'symbol' : '1.2-2' }}</span>
+                          <span class="lt">{{ item.lineTotal | currency: 'USD' : 'symbol' : '1.2-2' }}</span>
+                        </div>
+                      }
+
+                      <dl class="totals">
+                        <div><dt>Subtotal</dt><dd>{{ d.subtotal | currency: 'USD' : 'symbol' : '1.2-2' }}</dd></div>
+                        <div><dt>Delivery</dt><dd>{{ d.deliveryFee | currency: 'USD' : 'symbol' : '1.2-2' }}</dd></div>
+                        <div class="grand"><dt>Total</dt><dd>{{ d.totalPrice | currency: 'USD' : 'symbol' : '1.2-2' }}</dd></div>
+                      </dl>
+                    </div>
+                  </div>
+                }
+              </td>
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+}

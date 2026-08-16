@@ -8,14 +8,16 @@ export interface Spec {
 }
 
 export interface Product {
-  id: string;
+  /** Integer primary key from SQL Server, not a Mongo ObjectId. */
+  id: number;
   title: string;
   brand: string;
   category: string;
   condition: Condition;
 
   price: number;
-  originalPrice?: number;
+  /** Retail price when new. 0 means "no original price to show". */
+  originalPrice: number;
 
   /**
    * Base paths without a size suffix or extension, e.g. "/products/vxe-mouse-1".
@@ -28,6 +30,8 @@ export interface Product {
   warrantyMonths: number;
   tested: boolean;
   watchCount: number;
+  categoryId: number;
+  isActive: boolean;
 
   description?: string;
   /** Honest photos of scratches and dents — the trust signal for used goods. */

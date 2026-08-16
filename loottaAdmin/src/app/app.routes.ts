@@ -20,5 +20,10 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/products/product-form').then((m) => m.ProductForm),
   },
+  {
+    path: 'orders',
+    title: 'Orders — LoottaTech Admin',
+    loadComponent: () => import('./features/orders/order-list').then((m) => m.OrderList),
+  },
   { path: '**', redirectTo: 'products' },
 ];

@@ -165,7 +165,7 @@ export class Catalog {
     this.searchTerm.set('');
   }
 
-  protected trackById(_index: number, product: Product): string {
+  protected trackById(_index: number, product: Product): number {
     return product.id;
   }
 }

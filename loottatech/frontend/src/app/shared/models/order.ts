@@ -1,17 +1,18 @@
+/** Mirrors the OrderStatus enum in the ASP.NET Core API. */
 export type OrderStatus =
   | 'Pending'
   | 'Confirmed'
   | 'Preparing'
-  | 'Out for Delivery'
-  | 'Delivered'
+  | 'Shipping'
+  | 'Completed'
   | 'Cancelled';
 
 export const ORDER_STATUSES: OrderStatus[] = [
   'Pending',
   'Confirmed',
   'Preparing',
-  'Out for Delivery',
-  'Delivered',
+  'Shipping',
+  'Completed',
   'Cancelled',
 ];
 
@@ -25,7 +26,7 @@ export const DELIVERY_OPTIONS: { value: DeliveryOption; label: string; fee: numb
   ];
 
 export interface OrderItem {
-  productId: string;
+  productId: number | null;
   title: string;
   image: string;
   condition: string;
@@ -34,7 +35,7 @@ export interface OrderItem {
 }
 
 export interface Order {
-  id: string;
+  id: number;
   orderNumber: string;
   items: OrderItem[];
   subtotal: number;
@@ -51,7 +52,7 @@ export interface Order {
 }
 
 export interface CreateOrderRequest {
-  items: { productId: string; quantity: number }[];
+  items: { productId: number; quantity: number }[];
   customerName: string;
   phone: string;
   address: string;

@@ -1,35 +1,46 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, tap } from 'rxjs';
 import { ApiService } from './api.service';
-import { CreateOrderRequest, Order, OrderStatus } from '../../shared/models/order';
+import { CreateOrderRequest, Order } from '../../shared/models/order';
+
+/** Order numbers this browser has placed, so "My orders" works without login. */
+const HISTORY_KEY = 'lootta-order-numbers';
 
 @Injectable({ providedIn: 'root' })
 export class OrderService {
   private readonly api = inject(ApiService);
 
   create(order: CreateOrderRequest): Observable<Order> {
-    return this.api.post<Order>('orders', order);
+    return this.api
+      .post<Order>('orders', order)
+      .pipe(tap((created) => this.remember(created.orderNumber)));
   }
 
-  /** Orders belonging to the signed-in customer. */
-  mine(): Observable<Order[]> {
-    return this.api.get<Order[]>('orders/mine');
-  }
-
-  byId(id: string): Observable<Order> {
-    return this.api.get<Order>(`orders/${id}`);
-  }
-
-  /** Guests track an order using the code printed on their receipt. */
   byNumber(orderNumber: string): Observable<Order> {
     return this.api.get<Order>(`orders/number/${orderNumber}`);
   }
 
-  all(): Observable<Order[]> {
-    return this.api.get<Order[]>('orders/all');
+  byId(id: number | string): Observable<Order> {
+    return this.api.get<Order>(`orders/${id}`);
   }
 
-  setStatus(id: string, status: OrderStatus): Observable<Order> {
-    return this.api.put<Order>(`orders/${id}/status`, { status });
+  /**
+   * The API has no login yet, so there is no server-side "my orders".
+   * Instead we remember the order numbers this browser created and look
+   * each one up. Honest, and it works for a guest checkout.
+   */
+  myOrderNumbers(): string[] {
+    try {
+      return JSON.parse(localStorage.getItem(HISTORY_KEY) ?? '[]') as string[];
+    } catch {
+      return [];
+    }
+  }
+
+  private remember(orderNumber: string): void {
+    const list = this.myOrderNumbers();
+    if (!list.includes(orderNumber)) {
+      localStorage.setItem(HISTORY_KEY, JSON.stringify([orderNumber, ...list].slice(0, 30)));
+    }
   }
 }

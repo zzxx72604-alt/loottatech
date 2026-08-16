@@ -53,8 +53,8 @@
   &.s-pending { background: var(--cond-good); }
   &.s-confirmed,
   &.s-preparing { background: var(--cond-like-new); }
-  &.s-out-for-delivery { background: #7c5cff; }
-  &.s-delivered { background: var(--cond-new); }
+  &.s-shipping { background: #7c5cff; }
+  &.s-completed { background: var(--cond-new); }
   &.s-cancelled { background: var(--sale); }
 }
 
