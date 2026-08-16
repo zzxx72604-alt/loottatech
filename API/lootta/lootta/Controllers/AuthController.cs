@@ -112,12 +112,38 @@ public class AuthController : ControllerBase
         return Ok(ToRow(user, 0));
     }
 
-    /// <summary>Every account, for the admin app's Customers screen.</summary>
+    /// <summary>
+    /// Accounts, with an optional search across name and email.
+    ///
+    /// Filtering happens in SQL, not in Angular — with 10,000 customers you do
+    /// not want to send the whole table to a browser so it can hide most of it.
+    /// </summary>
     [HttpGet("users")]
     [Authorize(Policy = "AdminOnly")]
-    public async Task<ActionResult<IEnumerable<UserRowDto>>> Users()
+    public async Task<ActionResult<IEnumerable<UserRowDto>>> Users([FromQuery] string? search)
     {
-        var rows = await _db.Users
+        var query = _db.Users.AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var term = search.Trim();
+
+            // A bare number is treated as an account id, the way a game
+            // support tool lets you paste a player id straight in.
+            if (int.TryParse(term, out var id))
+            {
+                query = query.Where(u => u.Id == id
+                                      || EF.Functions.Like(u.Name, $"%{term}%")
+                                      || EF.Functions.Like(u.Email, $"%{term}%"));
+            }
+            else
+            {
+                query = query.Where(u => EF.Functions.Like(u.Name, $"%{term}%")
+                                      || EF.Functions.Like(u.Email, $"%{term}%"));
+            }
+        }
+
+        var rows = await query
             .OrderByDescending(u => u.CreatedAt)
             .Select(u => new UserRowDto
             {
@@ -133,6 +159,65 @@ public class AuthController : ControllerBase
             .ToListAsync();
 
         return Ok(rows);
+    }
+
+    /// <summary>One customer in full — profile, spending and arcade standing.</summary>
+    [HttpGet("users/{id:int}")]
+    [Authorize(Policy = "AdminOnly")]
+    public async Task<ActionResult<CustomerDetailDto>> Customer(int id)
+    {
+        var user = await _db.Users.FindAsync(id);
+        if (user is null) return NotFound($"No user with id {id}.");
+
+        var orders = await _db.Orders
+            .Include(o => o.Items)
+            .Where(o => o.UserId == id)
+            .OrderByDescending(o => o.CreatedAt)
+            .AsNoTracking()
+            .ToListAsync();
+
+        var counted = orders.Where(o => o.Status != OrderStatus.Cancelled).ToList();
+        var itemsBought = counted.Sum(o => o.Items.Sum(i => i.Quantity));
+        var tier = PlayTiers.For(itemsBought);
+
+        var vouchers = await _db.Vouchers.Where(v => v.UserId == id).ToListAsync();
+
+        return Ok(new CustomerDetailDto
+        {
+            Id = user.Id,
+            Name = user.Name,
+            Email = user.Email,
+            Role = user.Role.ToString(),
+            Phone = user.Phone,
+            Address = user.Address,
+            IsActive = user.IsActive,
+            CreatedAt = user.CreatedAt,
+
+            OrderCount = orders.Count,
+            ItemsBought = itemsBought,
+            TotalSpent = counted.Sum(o => o.Total),
+            LastOrderAt = orders.FirstOrDefault()?.CreatedAt,
+
+            Coins = user.Coins,
+            Tier = tier.Name,
+            PlaysPerDay = tier.PlaysPerDay,
+            PlaysUsedToday = user.PlaysDate?.Date == DateTime.UtcNow.Date ? user.PlaysUsedToday : 0,
+            BestScore = user.BestScore,
+            PlayStreak = user.PlayStreak,
+            RoundsPlayed = await _db.GameSessions.CountAsync(g => g.UserId == id && g.FinishedAt != null),
+            VouchersOwned = vouchers.Count,
+            VouchersUsed = vouchers.Count(v => v.UsedAt != null),
+
+            Orders = orders.Select(o => new CustomerOrderRowDto
+            {
+                Id = o.Id,
+                OrderNumber = o.OrderNumber,
+                TotalPrice = o.Total,
+                ItemCount = o.Items.Sum(i => i.Quantity),
+                Status = o.Status.ToString(),
+                CreatedAt = o.CreatedAt,
+            }).ToList(),
+        });
     }
 
     /// <summary>Promote or demote an account.</summary>

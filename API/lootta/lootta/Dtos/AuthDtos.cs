@@ -70,6 +70,51 @@ public class UserRowDto
     public int OrderCount { get; set; }
 }
 
+/// <summary>
+/// Everything the admin needs about one customer, on one screen: who they are,
+/// what they've bought, and their arcade standing.
+/// </summary>
+public class CustomerDetailDto
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public string Role { get; set; } = string.Empty;
+    public string Phone { get; set; } = string.Empty;
+    public string Address { get; set; } = string.Empty;
+    public bool IsActive { get; set; }
+    public DateTime CreatedAt { get; set; }
+
+    // ---- shopping ----
+    public int OrderCount { get; set; }
+    public int ItemsBought { get; set; }
+    public decimal TotalSpent { get; set; }
+    public DateTime? LastOrderAt { get; set; }
+
+    // ---- arcade ----
+    public int Coins { get; set; }
+    public string Tier { get; set; } = string.Empty;
+    public int PlaysPerDay { get; set; }
+    public int PlaysUsedToday { get; set; }
+    public int BestScore { get; set; }
+    public int PlayStreak { get; set; }
+    public int RoundsPlayed { get; set; }
+    public int VouchersOwned { get; set; }
+    public int VouchersUsed { get; set; }
+
+    public List<CustomerOrderRowDto> Orders { get; set; } = new();
+}
+
+public class CustomerOrderRowDto
+{
+    public int Id { get; set; }
+    public string OrderNumber { get; set; } = string.Empty;
+    public decimal TotalPrice { get; set; }
+    public int ItemCount { get; set; }
+    public string Status { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; }
+}
+
 /// <summary>What the API returns after login. Note: no password, ever.</summary>
 public class AuthResultDto
 {

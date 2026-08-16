@@ -41,5 +41,12 @@ export const routes: Routes = [
     title: 'Orders — LoottaTech Admin',
     loadComponent: () => import('./features/orders/order-list').then((m) => m.OrderList),
   },
+  {
+    path: 'customers',
+    canActivate: [adminGuard],
+    title: 'Customers — LoottaTech Admin',
+    loadComponent: () =>
+      import('./features/customers/customer-list').then((m) => m.CustomerList),
+  },
   { path: '**', redirectTo: 'dashboard' },
 ];

@@ -1,0 +1,132 @@
+<header class="head">
+  <div>
+    <h1>Customers</h1>
+    <p class="sub">Search by name, email or account id.</p>
+  </div>
+
+  <input
+    type="search"
+    class="search"
+    placeholder="Search name, email or id…"
+    [(ngModel)]="term"
+    (ngModelChange)="search($event)"
+    aria-label="Search customers"
+  />
+</header>
+
+@if (error()) { <p class="alert bad">{{ error() }}</p> }
+
+<div class="split">
+  <!-- ------------------------------------------------------------ list -->
+  <section class="card table-wrap">
+    @if (loading()) {
+      <p class="pad">Searching…</p>
+    } @else if (rows().length === 0) {
+      <p class="pad">No accounts match “{{ term }}”.</p>
+    } @else {
+      <table>
+        <thead>
+          <tr>
+            <th class="id">ID</th>
+            <th>Account</th>
+            <th class="num">Orders</th>
+            <th class="num">Coins</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (r of rows(); track r.id) {
+            <tr [class.on]="selected()?.id === r.id" [class.off]="!r.isActive" (click)="open(r)">
+              <td class="id">{{ r.id }}</td>
+              <td>
+                <span class="name">
+                  {{ r.name }}
+                  @if (r.role === 'Admin') { <span class="badge admin">ADMIN</span> }
+                </span>
+                <span class="email">{{ r.email }}</span>
+              </td>
+              <td class="num">{{ r.orderCount }}</td>
+              <td class="num">◎ {{ r.coins }}</td>
+              <td>
+                <span class="dot" [class.live]="r.isActive"></span>
+                {{ r.isActive ? 'Active' : 'Disabled' }}
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </section>
+
+  <!-- ---------------------------------------------------------- detail -->
+  <aside class="card detail">
+    @if (detailLoading()) {
+      <p class="pad">Loading…</p>
+    } @else if (selected(); as c) {
+      <header class="d-head">
+        <div>
+          <h2>{{ c.name }}</h2>
+          <p class="email">{{ c.email }}</p>
+        </div>
+        <span class="tier">{{ c.tier }}</span>
+      </header>
+
+      <dl class="facts">
+        <div><dt>Account id</dt><dd>{{ c.id }}</dd></div>
+        <div><dt>Joined</dt><dd>{{ c.createdAt | date: 'mediumDate' }}</dd></div>
+        <div><dt>Role</dt><dd>{{ c.role }}</dd></div>
+        <div><dt>Phone</dt><dd>{{ c.phone || '—' }}</dd></div>
+        <div class="wide"><dt>Address</dt><dd>{{ c.address || '—' }}</dd></div>
+      </dl>
+
+      <h3>Shopping</h3>
+      <div class="stats">
+        <div><b>{{ c.orderCount }}</b><span>orders</span></div>
+        <div><b>{{ c.itemsBought }}</b><span>items</span></div>
+        <div><b>{{ c.totalSpent | currency: 'USD' : 'symbol' : '1.0-0' }}</b><span>spent</span></div>
+        <div>
+          <b>{{ c.lastOrderAt ? (c.lastOrderAt | date: 'MMM d') : '—' }}</b>
+          <span>last order</span>
+        </div>
+      </div>
+
+      <h3>Arcade</h3>
+      <div class="stats">
+        <div><b>◎ {{ c.coins }}</b><span>coins</span></div>
+        <div><b>{{ c.bestScore }}</b><span>best score</span></div>
+        <div><b>{{ c.playsUsedToday }}/{{ c.playsPerDay }}</b><span>plays today</span></div>
+        <div><b>{{ c.roundsPlayed }}</b><span>rounds</span></div>
+        <div><b>{{ c.playStreak }}</b><span>day streak</span></div>
+        <div><b>{{ c.vouchersUsed }}/{{ c.vouchersOwned }}</b><span>vouchers used</span></div>
+      </div>
+
+      <h3>Orders</h3>
+      @if (c.orders.length === 0) {
+        <p class="muted">No orders yet.</p>
+      } @else {
+        <ul class="orders">
+          @for (o of c.orders; track o.id) {
+            <li>
+              <span class="num-code">{{ o.orderNumber }}</span>
+              <span class="badge" [class]="statusClass(o.status)">{{ o.status }}</span>
+              <span class="amt">{{ o.totalPrice | currency: 'USD' : 'symbol' : '1.2-2' }}</span>
+              <span class="when">{{ o.createdAt | date: 'MMM d' }}</span>
+            </li>
+          }
+        </ul>
+      }
+
+      <div class="actions">
+        @if (isSelf(c.id)) {
+          <p class="muted">This is your own account.</p>
+        } @else {
+          <button type="button" class="btn" [class.btn-danger]="c.isActive" (click)="toggleActive(c)">
+            {{ c.isActive ? 'Disable account' : 'Enable account' }}
+          </button>
+        }
+      </div>
+    } @else {
+      <p class="pad">Select a customer to see their profile.</p>
+    }
+  </aside>
+</div>
