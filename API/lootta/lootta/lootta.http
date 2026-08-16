@@ -1,0 +1,6 @@
+@lootta_HostAddress = http://localhost:5197
+
+GET {{lootta_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

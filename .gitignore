@@ -1,23 +1,31 @@
-# dependencies (rebuilt with npm install)
+# ---------------------------------------------------------------- .NET / C#
+[Bb]in/
+[Oo]bj/
+.vs/
+*.user
+*.suo
+
+# Local API configuration — may contain a SQL Server password
+API/lootta/lootta/appsettings.Development.json
+API/lootta/lootta/appsettings.Production.json
+
+# Uploaded product photos are runtime data, not source
+API/lootta/lootta/uploads/products/*
+!API/lootta/lootta/uploads/products/.gitkeep
+
+# ------------------------------------------------------------- Node / Angular
 node_modules/
 **/node_modules/
-
-# build output
 **/dist/
-backend/built/
 **/.angular/
+backend/built/
+**/built/
 
-# logs
+# --------------------------------------------------------------------- misc
 *.log
 npm-debug.log*
-
-# OS / editor
 .DS_Store
 Thumbs.db
-
-# NOTE: .env is intentionally NOT ignored here so a fresh clone
-# includes the MongoDB Atlas connection and runs with no setup.
-# (This is a throwaway class database — delete/rotate it after grading.)
 
 # Environment secrets
 .env

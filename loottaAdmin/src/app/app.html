@@ -1,0 +1,18 @@
+<header class="bar">
+  <div class="inner">
+    <a class="logo" routerLink="/products">
+      <span class="mark">L</span>
+      <span>Lootta<b>Tech</b> <em>Admin</em></span>
+    </a>
+
+    <nav>
+      <a routerLink="/products" routerLinkActive="on">Products</a>
+      <a class="disabled" title="Coming next">Orders</a>
+      <a class="disabled" title="Coming next">Customers</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <router-outlet />
+</main>

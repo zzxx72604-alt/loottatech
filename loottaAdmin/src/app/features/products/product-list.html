@@ -1,0 +1,103 @@
+<header class="head">
+  <div>
+    <h1>Products</h1>
+    <p class="sub">
+      {{ products().length }} total · {{ activeCount() }} visible to customers
+      @if (outOfStock() > 0) {
+        · <span class="warn">{{ outOfStock() }} out of stock</span>
+      }
+    </p>
+  </div>
+
+  <div class="actions">
+    <input
+      type="text"
+      class="search"
+      placeholder="Search title, brand, category…"
+      [ngModel]="search()"
+      (ngModelChange)="search.set($event)"
+    />
+    <button type="button" class="btn" (click)="load()">Refresh</button>
+    <a class="btn btn-primary" routerLink="/products/new">+ Add product</a>
+  </div>
+</header>
+
+@if (error()) {
+  <p class="alert bad">{{ error() }}</p>
+}
+
+@if (loading()) {
+  <div class="card pad">Loading products…</div>
+} @else if (visible().length === 0) {
+  <div class="card pad">No products match.</div>
+} @else {
+  <div class="card table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th class="c-img"><span class="sr-only">Photo</span></th>
+          <th>Product</th>
+          <th>Category</th>
+          <th>Condition</th>
+          <th class="num">Price</th>
+          <th class="num">Stock</th>
+          <th>Visible</th>
+          <th class="c-act"><span class="sr-only">Actions</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (p of visible(); track p.id) {
+          <tr [class.dim]="!p.isActive">
+            <td class="c-img">
+              @if (thumb(p)) {
+                <img [src]="thumb(p)" [alt]="p.title" width="44" height="44" loading="lazy" />
+              } @else {
+                <span class="nophoto">—</span>
+              }
+            </td>
+
+            <td>
+              <a class="title" [routerLink]="['/products', p.id]">{{ p.title }}</a>
+              <span class="brand">{{ p.brand }}</span>
+            </td>
+
+            <td>{{ p.category }}</td>
+
+            <td>
+              <span class="badge" [class.b-new]="isNew(p.condition)" [class.b-used]="!isNew(p.condition)">
+                {{ isNew(p.condition) ? 'NEW' : 'USED' }}
+              </span>
+              <span class="cond">{{ label(p.condition) }}</span>
+            </td>
+
+            <td class="num">
+              <b>{{ p.price | currency: 'USD' : 'symbol' : '1.0-0' }}</b>
+              @if (p.originalPrice > p.price) {
+                <s>{{ p.originalPrice | currency: 'USD' : 'symbol' : '1.0-0' }}</s>
+              }
+            </td>
+
+            <td class="num" [class.zero]="p.stock === 0">{{ p.stock }}</td>
+
+            <td>
+              <button
+                type="button"
+                class="toggle"
+                [class.on]="p.isActive"
+                (click)="toggleActive(p)"
+                [attr.aria-label]="p.isActive ? 'Hide from customers' : 'Show to customers'"
+              >
+                <span class="knob"></span>
+              </button>
+            </td>
+
+            <td class="c-act">
+              <a class="btn btn-sm" [routerLink]="['/products', p.id]">Edit</a>
+              <button type="button" class="btn btn-sm btn-danger" (click)="remove(p)">Delete</button>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+}

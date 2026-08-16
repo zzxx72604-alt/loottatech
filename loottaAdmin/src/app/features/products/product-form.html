@@ -1,0 +1,151 @@
+<header class="head">
+  <div>
+    <h1>{{ editingId() ? 'Edit product' : 'New product' }}</h1>
+    <p class="sub">
+      {{ editingId() ? 'Changes appear on the customer site immediately.' : 'Added products go live straight away unless you untick Visible.' }}
+    </p>
+  </div>
+  <a class="btn" routerLink="/products">← Back to list</a>
+</header>
+
+@if (error()) { <p class="alert bad">{{ error() }}</p> }
+
+@if (loading()) {
+  <div class="card pad">Loading…</div>
+} @else {
+  <form [formGroup]="form" (ngSubmit)="save()" novalidate>
+    <div class="cols">
+      <!-- ------------------------------------------------------ main -->
+      <section class="card block">
+        <h2>Basics</h2>
+
+        <div class="field">
+          <label for="title">Product title</label>
+          <input id="title" type="text" formControlName="title"
+                 placeholder="Lenovo ThinkPad E14 Gen 2 — i5 / 16GB / 512GB" />
+          @if (showError('title')) { <p class="err">A title is required (max 160 characters).</p> }
+        </div>
+
+        <div class="row2">
+          <div class="field">
+            <label for="brand">Brand</label>
+            <input id="brand" type="text" formControlName="brand" placeholder="Lenovo" />
+            @if (showError('brand')) { <p class="err">Brand is required.</p> }
+          </div>
+
+          <div class="field">
+            <label for="categoryId">Category</label>
+            <select id="categoryId" formControlName="categoryId">
+              @for (c of categoryList(); track c.id) {
+                <option [value]="c.id">{{ c.name }}</option>
+              }
+            </select>
+            @if (showError('categoryId')) { <p class="err">Choose a category.</p> }
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="description">Description</label>
+          <textarea id="description" formControlName="description"
+                    placeholder="What it is, what's included, how it was tested."></textarea>
+        </div>
+
+        <div class="field">
+          <label for="flawNotes">What's not perfect</label>
+          <textarea id="flawNotes" formControlName="flawNotes"
+                    placeholder="Scratches, dents, battery wear. Being honest here is what makes used listings sell."></textarea>
+          <p class="hint">Shown to the customer in its own panel. Leave blank for new items.</p>
+        </div>
+      </section>
+
+      <!-- ---------------------------------------------------- sidebar -->
+      <aside class="side">
+        <section class="card block">
+          <h2>Condition &amp; stock</h2>
+
+          <div class="field">
+            <label for="condition">Condition</label>
+            <select id="condition" formControlName="condition">
+              @for (c of conditions; track c.value) {
+                <option [value]="c.value">{{ c.label }}</option>
+              }
+            </select>
+            <p class="hint">"Brand new" marks the product NEW on the customer site. Everything else shows as USED.</p>
+          </div>
+
+          <div class="row2">
+            <div class="field">
+              <label for="stock">Stock</label>
+              <input id="stock" type="number" min="0" formControlName="stock" />
+            </div>
+            <div class="field">
+              <label for="warrantyMonths">Warranty (months)</label>
+              <input id="warrantyMonths" type="number" min="0" max="120" formControlName="warrantyMonths" />
+            </div>
+          </div>
+
+          <label class="check">
+            <input type="checkbox" formControlName="tested" />
+            <span>Tested by the shop</span>
+          </label>
+
+          <label class="check">
+            <input type="checkbox" formControlName="isActive" />
+            <span>Visible to customers</span>
+          </label>
+        </section>
+
+        <section class="card block">
+          <h2>Price</h2>
+
+          <div class="field">
+            <label for="price">Selling price (USD)</label>
+            <input id="price" type="number" min="0" step="1" formControlName="price" />
+            @if (showError('price')) { <p class="err">Enter a price.</p> }
+          </div>
+
+          <div class="field">
+            <label for="originalPrice">Original retail price</label>
+            <input id="originalPrice" type="number" min="0" step="1" formControlName="originalPrice" />
+            <p class="hint">Shown struck through so the saving is obvious. Set 0 to hide it.</p>
+          </div>
+        </section>
+      </aside>
+    </div>
+
+    <!-- ------------------------------------------------- specs FormArray -->
+    <section class="card block">
+      <div class="specs-head">
+        <div>
+          <h2>Specifications</h2>
+          <p class="hint">
+            Add whatever matters for this item — RAM and CPU for a laptop, battery health and storage for a phone.
+          </p>
+        </div>
+        <button type="button" class="btn btn-sm" (click)="addSpec()">+ Add row</button>
+      </div>
+
+      <div formArrayName="specs" class="specs">
+        @for (spec of specs.controls; track $index; let i = $index) {
+          <div class="spec-row" [formGroupName]="i">
+            <input type="text" formControlName="key" placeholder="RAM" aria-label="Specification name" />
+            <input type="text" formControlName="value" placeholder="16 GB DDR4" aria-label="Specification value" />
+            <button type="button" class="btn btn-sm btn-danger" (click)="removeSpec(i)"
+                    [attr.aria-label]="'Remove row ' + (i + 1)">✕</button>
+          </div>
+        }
+
+        @if (specs.length === 0) {
+          <p class="hint">No specifications yet.</p>
+        }
+      </div>
+    </section>
+
+    <div class="save-bar">
+      <a class="btn" routerLink="/products">Cancel</a>
+      <button type="submit" class="btn btn-primary" [disabled]="saving()">
+        {{ saving() ? 'Saving…' : (editingId() ? 'Save changes' : 'Create product') }}
+      </button>
+    </div>
+  </form>
+}

@@ -1,0 +1,7 @@
+[Bb]in/
+[Oo]bj/
+.vs/
+*.user
+appsettings.Development.json
+uploads/products/*
+!uploads/products/.gitkeep
