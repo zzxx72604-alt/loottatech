@@ -12,7 +12,23 @@ Angular never touches the database. Only the API does.
 
 ---
 
-## Running it
+## Quickest way to run it
+
+Double-click **`START.bat`**.
+
+It checks that .NET and Node are installed, runs `npm install` on first use,
+opens the API and both websites in their own windows, and then opens the two
+browser tabs for you.
+
+`STOP.bat` frees the ports if a window was closed badly.
+
+> The batch file runs in CMD rather than PowerShell on purpose. A fresh Windows
+> install blocks `npm.ps1` by default, which looks like a broken project when it
+> is only a security setting.
+
+---
+
+## Running it manually
 
 Three terminals, each left open. **Start the API first.**
 
