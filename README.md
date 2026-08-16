@@ -1,252 +1,140 @@
-# LoottaFood — Run, Host & Test Guide
+# LoottaTech
 
-A food‑ordering web app (**Angular** frontend + **Node/Express + TypeScript** + **MongoDB** backend).
-Customers browse a menu, favorite items, rate them, and order; admins manage the
-menu and orders from a dashboard.
+A second-hand electronics store — tested phones, laptops, wearables and accessories
+at the best low price. Xianyu-style dense catalogue, built as a Web III midterm project.
 
----
-
-## 1. Prerequisites
-
-- **Node.js** 18+ and **npm**
-- **MongoDB** running (local `mongodb://localhost:27017`, or a MongoDB Atlas URL)
-- A modern browser (Chrome / Edge / Safari / Firefox)
+**Stack:** Angular 20 (standalone, signals, NgRx) · Express + TypeScript · MongoDB
 
 ---
 
-## 2. One‑time setup (install packages)
-
-From the **project root** (`loottafood`), a single install sets up everything
-(root, frontend, and backend — handled automatically):
+## First run
 
 ```bash
 cd loottafood
-npm install        # installs root + frontend + backend (uses --force for the frontend)
+npm install          # installs root + frontend + backend
 ```
 
-### Backend environment file
-
-Make sure `backend/src/.env` exists with:
+Make sure MongoDB is running, and that `backend/src/.env` exists:
 
 ```env
-MONGO_URI=mongodb://localhost:27017/foodmine
-JWT_SECRET=any-long-random-secret-string
+MONGO_URI=mongodb://localhost:27017/loottatech
+JWT_SECRET=change-me-to-a-long-random-string
 PORT=5000
 ```
 
-> A template is provided at `backend/src/.env.example` — copy it to `.env` and
-> fill in your values. For a cloud database, paste your MongoDB Atlas string
-> instead (add `/foodmine` before the `?`).
-
----
-
-## 3. Run it (development)
-
-### Easiest — one command (runs BOTH servers)
-
-From the **project root** (`loottafood`):
+Then start both servers with one command:
 
 ```bash
-npm install     # one time — installs root + frontend + backend
-npm run dev     # starts the backend AND the frontend together
-```
-
-`npm run dev` launches the backend (API on **:5000**) and the frontend (on **:4200**,
-bound to `0.0.0.0` so phones on your Wi‑Fi can reach it). Running only the frontend
-leaves the page empty — there's no backend to load the menu from.
-
-### Or run them separately (two terminals)
-
-```bash
-# Terminal A — backend API on http://localhost:5000
-cd backend
-npm start
-
-# Terminal B — frontend on http://localhost:4200
-cd frontend
-ng serve
+npm run dev          # API on :5000, frontend on :4200
 ```
 
 Open **http://localhost:4200**.
 
-### Seed the data (first run)
+### Seed the data (first run only)
 
-In your browser, visit these once:
+Visit these once in the browser:
 
-- `http://localhost:5000/api/users/seed`  → creates sample users
-- `http://localhost:5000/api/foods/seed`  → loads the menu items
+- `http://localhost:5000/api/products/seed` — loads the 10-item catalogue
+- `http://localhost:5000/api/users/seed` — creates the sample accounts
 
-To force‑reload the menu after editing items in code:
-`http://localhost:5000/api/foods/seed?force=true`
+Reload the catalogue after editing `backend/src/data/products.ts`:
+`http://localhost:5000/api/products/seed?force=true`
 
----
+### Sample accounts
 
-## 4. Create / use an admin account
-
-**Option A – built‑in admin (easiest):**
-
-1. Run `…/api/users/seed` (above).
-2. Log in with **john@gmail.com** / **12345**.
-3. Click your name (top‑right) → **Dashboard**.
-
-**Option B – make your own account admin:**
-
-1. Register an account in the app (e.g. `you@gmail.com`).
-2. Visit `http://localhost:5000/api/users/makeAdmin/you@gmail.com`.
-3. **Log out and log back in** (admin status is stored in the login token).
-4. Click your name → **Dashboard**.
-
-> The `makeAdmin` route is a development helper — remove it before any real deployment.
+| Role | Email | Password |
+| --- | --- | --- |
+| Admin | `admin@loottatech.com` | `12345` |
+| Customer | `dara@gmail.com` | `12345` |
 
 ---
 
-## 5. What to test
+## Project layout
 
-- **Menu & search** — browse, search, filter by category, **Sort** (price / top‑rated), **On sale only** toggle.
-- **Card hover/hold** — hover (desktop) or press‑hold (mobile) a card to reveal its description overlay.
-- **Food page** — favorite (♥), tap stars to rate, **You may also like** recommendations, Add to Cart.
-- **Dark mode** — 🌙 / ☀️ toggle in the header (remembered per browser).
-- **Order flow** — Cart → Checkout (name, address, map) → Payment (ABA / KHQR / Wing / WeChat / Alipay / ACLEDA) → Track.
-- **Orders page** — re‑order, delete (with undo), all with confirmations.
-- **Profile** — edit name/email and change password.
-- **Admin Dashboard** — add/edit/delete items, set **discount %**, **drag to reorder**, image **preview + upload**.
-
-> Favorites and your personal star ratings are stored in the browser (localStorage),
-> so they're per‑device for now.
-
----
-
-## 6. Test on a phone / tablet (and hiding your IP)
-
-Everything runs through **one port (4200)** — the dev server proxies `/api` to the
-backend — so there are **no code edits or CORS changes** needed.
-
-### Same Wi‑Fi (LAN)
-
-1. `npm run dev` (the frontend is already exposed on `0.0.0.0`).
-2. Find your IP: `ipconfig` → IPv4 (e.g. `192.168.1.20`).
-3. On the phone (same Wi‑Fi), open `http://192.168.1.20:4200`.
-4. QR: point it at `http://192.168.1.20:4200`.
-
-### Hide your IP / share from anywhere — ngrok
-
-1. Install ngrok (https://ngrok.com), then run `npm run dev`.
-2. In a second terminal: `ngrok http 4200`.
-3. Copy the public URL it prints (e.g. `https://abc123.ngrok-free.app`).
-4. Open that URL on any device; for the table QR, encode **that** URL.
-
-Notes:
-
-- The free ngrok URL **changes every restart**, so regenerate the QR each session.
-- First‑time visitors see an ngrok "Visit Site" page (free tier).
-- For a permanent, branded link, deploy instead (section 7).
-
-### The table QR
-
-Make a QR that encodes the URL from above (LAN IP or the ngrok link) with any QR
-generator, print it, and place it on tables — customers scan → menu opens → they order.
-The header **📷 ScanMe** button can also display a QR image saved at
-`frontend/src/assets/scan-qr.jpg`.
+```
+loottafood/
+├── frontend/            Angular 20, standalone — no NgModules anywhere
+│   ├── public/products/ product photos at 480w/800w webp + jpg fallback
+│   └── src/app/
+│       ├── core/        singleton services (api, product, cart, theme)
+│       ├── shared/      models, pipes, reusable dumb components
+│       ├── layout/      header, footer
+│       └── features/    one lazy-loaded folder per page
+├── backend/             Express + TypeScript + Mongoose
+│   └── src/
+│       ├── models/      product, user, order
+│       ├── routers/     product, user, order
+│       ├── data/        seed catalogue + seed users
+│       └── _legacy/     old food-app files, deleted before submission
+└── frontend-legacy/     the previous Angular 16 app, kept for reference
+```
 
 ---
 
-## 7. Build for production
+## API
+
+| Method | Route | Purpose |
+| --- | --- | --- |
+| GET | `/api/products` | Whole catalogue |
+| GET | `/api/products/seed` | Load sample products (`?force=true` to reload) |
+| GET | `/api/products/search/:term` | Search title, brand and category |
+| GET | `/api/products/categories` | Category list with counts |
+| GET | `/api/products/category/:name` | Products in one category |
+| GET | `/api/products/:id` | One product |
+| POST | `/api/products` | Create (admin) |
+| PUT | `/api/products/:id` | Update (admin) |
+| DELETE | `/api/products/:id` | Delete (admin) |
+| POST | `/api/users/login` | Log in |
+| POST | `/api/users/register` | Register |
+| GET | `/api/users/seed` | Create sample users |
+
+---
+
+## Images — adding your own product photos
+
+Drop your photos into the **`image/`** folder, then run:
 
 ```bash
-cd frontend
-ng build --configuration production    # outputs into backend/built/public
+npm run images
 ```
 
-Then the backend serves the built app. For real public access (and "order from home"),
-deploy the backend + MongoDB to a host (e.g. Render / Railway / VPS) so the app has a
-public URL — then your table QR points to that domain.
+That reads every photo in `image/` and writes three files per photo into
+`frontend/public/products/`:
 
----
-
-## 8. Where to put images (future updates)
-
-Drop files in `frontend/src/assets/`:
-
-- `scan-qr.jpg` — the ScanMe order QR
-- `logo.png` — header logo (ask to wire it in)
-- `profile-default.png` — default profile avatar
-
----
-
-## 9. Quick recommendations
-
-- For a class demo on one screen: just `localhost:4200` is fine.
-- For an in‑store demo with phones: use the Wi‑Fi/LAN steps in section 6.
-- For "order from anywhere": deploy it (section 7).
-- Keep uploaded images small; menu images uploaded via the admin form are stored in
-  the database as data — fine for a demo, but not for large catalogs.
-
----
-
-## 10. Notifications (orders)
-
-A 🔔 bell appears in the header when logged in (polls every ~20s, no spinner):
-
-- **Admin** — the badge shows the number of **paid orders waiting** to be handled.
-  Open it → click a notification → goes to **Manage Orders** to mark them delivered.
-- **Customer** — the badge shows when an order has been **delivered/completed**.
-  Opening the bell clears the badge (the "seen" state is remembered per browser).
-
-Flow: customer pays → admin's bell shows a new request → admin marks delivered →
-customer's bell shows "Your order has been delivered".
-
----
-
-## 11. Deleting customer data (users / orders)
-
-There is **no in‑app "delete user" screen** — user accounts and orders live in MongoDB,
-so you remove them from the database directly.
-
-**Option A — MongoDB Compass / Atlas (visual):**
-
-1. Open your database (the one in `MONGO_URI`).
-2. `users` collection → find the user (by `email`) → **delete document**.
-3. `orders` collection → delete that user's orders (filter by their `user` id).
-
-**Option B — mongosh (command line):**
-
-```js
-use foodmine
-
-// delete one user
-db.users.deleteOne({ email: "customer@example.com" })
-
-// delete that user's orders (use the _id you saw above)
-db.orders.deleteMany({ user: ObjectId("PASTE_USER_ID_HERE") })
-
-// or wipe ALL orders / ALL non-admin users (careful!)
-db.orders.deleteMany({})
-db.users.deleteMany({ isAdmin: false })
+```
+thinkpad-e14-1-480.webp    ~10 kB   phones
+thinkpad-e14-1-800.webp    ~20 kB   tablet & desktop
+thinkpad-e14-1.jpg         ~46 kB   fallback
 ```
 
-**Other resets:**
+**The filename becomes the image path.** So rename the photo before running:
 
-- Reload the menu to defaults: visit `/api/foods/seed?force=true`.
-- A customer's **favorites & star ratings** are stored in the browser (localStorage),
-  not the database — clear them via the browser (DevTools → Application → Local Storage)
-  or by signing in on a fresh browser/profile.
+| File you drop in `image/` | Path to use in the product |
+| --- | --- |
+| `iphone-13-1.jpg` | `/products/iphone-13-1` |
+| `iphone-13-2.jpg` | `/products/iphone-13-2` |
 
-> Tip: never expose database credentials publicly, and remove the dev `makeAdmin`
-> route before deploying.
+Use `-1`, `-2`, `-3` suffixes for multiple angles of the same item.
+
+Then reference them in `backend/src/data/products.ts`:
+
+```ts
+images: ['/products/iphone-13-1', '/products/iphone-13-2'],
+```
+
+…and reload the catalogue with `/api/products/seed?force=true`.
+
+MongoDB stores only the base path — the frontend appends the size, and the
+browser picks from the `srcset`. Across the current catalogue that's **87% less
+image data** than the originals (592 kB → 78 kB on a phone).
+
+> Photos are never stored in the database as base64. Only the path is.
 
 ---
 
-## API reference (quick)
+## Testing on a phone
 
-| Method | Route                                        | Purpose                          |
-| ------ | -------------------------------------------- | -------------------------------- |
-| GET    | `/api/users/seed`                            | Create sample users              |
-| POST   | `/api/users/login`                           | Log in                           |
-| POST   | `/api/users/register`                        | Register a new account           |
-| GET    | `/api/users/makeAdmin/:email`                | Grant admin (dev helper)         |
-| GET    | `/api/users/setPassword/:email/:newPassword` | Reset a password                 |
-| GET    | `/api/users/list`                            | List users                       |
-| GET    | `/api/users/delete/:email`                   | Delete a user                    |
-| PUT    | `/api/users/updateProfile`                   | Update profile                   |
-| PUT    | `/api/users/changePassword`                  | Change password                  |
-| GET    | `/api/foods/seed`                            | Load the menu                    |
+`npm run dev` already binds the frontend to `0.0.0.0`. Find your machine's IPv4
+(`ipconfig`) and open `http://YOUR-IP:4200` on a phone on the same Wi-Fi.
+Everything runs through port 4200 — the dev server proxies `/api` to the backend,
+so no CORS changes are needed.

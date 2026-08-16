@@ -1,0 +1,56 @@
+<header class="bar">
+  <div class="inner">
+    <a class="logo" routerLink="/" aria-label="LoottaTech home">
+      <span class="mark">L</span>
+      <span class="word">Lootta<b>Tech</b></span>
+    </a>
+
+    <form class="search" (ngSubmit)="search()" role="search">
+      <label class="sr-only" for="q">Search second-hand electronics</label>
+      <input
+        id="q"
+        name="q"
+        type="search"
+        placeholder="Search iPhone, ThinkPad, camera…"
+        [ngModel]="term()"
+        (ngModelChange)="term.set($event)"
+        autocomplete="off"
+      />
+      <button type="submit">Search</button>
+    </form>
+
+    <nav class="actions">
+      <button
+        type="button"
+        class="icon"
+        (click)="themeService.toggle()"
+        [attr.aria-label]="themeService.theme() === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'"
+      >
+        {{ themeService.theme() === 'dark' ? '☀' : '☾' }}
+      </button>
+
+      @if (users.isLoggedIn()) {
+        <a class="icon" routerLink="/account/orders">Hi, {{ users.user()?.name }}</a>
+        @if (users.isAdmin()) {
+          <a class="icon admin" routerLink="/admin">Admin</a>
+        }
+        <button type="button" class="icon" (click)="signOut()">Sign out</button>
+      } @else {
+        <a class="icon" routerLink="/login">Sign in</a>
+      }
+
+      <a class="icon cart" routerLink="/cart">
+        Cart
+        @if (cart.count() > 0) {
+          <span class="badge">{{ cart.count() }}</span>
+        }
+      </a>
+    </nav>
+  </div>
+
+  <div class="quick">
+    @for (link of quickLinks; track link) {
+      <button type="button" (click)="quickSearch(link)">{{ link }}</button>
+    }
+  </div>
+</header>

@@ -1,17 +1,20 @@
 {
-  "name": "foodmine-course",
+  "name": "lootta-tech",
   "version": "1.0.0",
+  "description": "LoottaTech \u2014 second-hand electronics store. Angular 20 frontend + Express/TypeScript + MongoDB backend.",
   "engines": {
-    "node": ">=18 <19"
+    "node": ">=20"
   },
   "scripts": {
-    "dev": "concurrently -k -n WEB,API -c cyan,green \"cd frontend && npm start -- --host 0.0.0.0 --disable-host-check\" \"cd backend && npm start\"",
+    "dev": "concurrently -k -n WEB,API -c yellow,green \"cd frontend && npm start\" \"cd backend && npm start\"",
     "start": "cd backend/built && node server.js",
     "prebuild": "cd backend && npm run build",
     "build": "cd frontend && npm run build",
-    "postinstall": "cd frontend && npm install --force && cd ../backend && npm install"
+    "postinstall": "cd frontend && npm install && cd ../backend && npm install",
+    "images": "node tools/optimize-images.mjs"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "concurrently": "^8.2.2",
+    "sharp": "^0.33.5"
   }
 }

@@ -1,0 +1,36 @@
+<header class="head">
+  <div>
+    <h1>My orders</h1>
+    <p class="sub">Signed in as {{ users.user()?.email }}</p>
+  </div>
+  <button type="button" class="ghost" (click)="users.logout()">Sign out</button>
+</header>
+
+@if (loading()) {
+  <div class="card"><div class="skeleton line"></div><div class="skeleton line w40"></div></div>
+} @else if (orders().length === 0) {
+  <div class="card empty">
+    <p>You haven't ordered anything yet.</p>
+    <a routerLink="/" class="primary">Browse products</a>
+  </div>
+} @else {
+  <ul class="list">
+    @for (order of orders(); track order.id) {
+      <li>
+        <a class="card row" [routerLink]="['/order', order.orderNumber]">
+          <div class="left">
+            <span class="num">{{ order.orderNumber }}</span>
+            <span class="date">{{ order.createdAt | date: 'mediumDate' }}</span>
+            <span class="items">
+              {{ order.items.length }} {{ order.items.length === 1 ? 'item' : 'items' }}
+            </span>
+          </div>
+          <div class="right">
+            <span class="status" [class]="statusClass(order.status)">{{ order.status }}</span>
+            <span class="total">{{ order.totalPrice | currency: 'USD' : 'symbol' : '1.2-2' }}</span>
+          </div>
+        </a>
+      </li>
+    }
+  </ul>
+}

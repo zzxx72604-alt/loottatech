@@ -1,0 +1,221 @@
+.layout {
+  display: grid;
+  grid-template-columns: 210px 1fr;
+  gap: var(--sp-5);
+  align-items: start;
+}
+
+/* ------------------------------------------------------------ sidebar */
+
+.sidebar {
+  position: sticky;
+  top: calc(var(--header-h) + var(--sp-5));
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+.side-title {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-3);
+  margin: 0 0 var(--sp-2);
+}
+
+.cats {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+
+  button {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--sp-2);
+    padding: 9px var(--sp-3);
+    border: 0;
+    background: transparent;
+    color: var(--text);
+    font-size: 13px;
+    text-align: left;
+    transition: background-color var(--dur) var(--ease);
+
+    &:hover { background: var(--surface-2); }
+
+    &.active {
+      background: var(--brand);
+      color: var(--brand-ink);
+      font-weight: 600;
+    }
+  }
+}
+
+.count {
+  font-size: 11px;
+  color: var(--text-3);
+  .active & { color: rgba(0, 0, 0, 0.55); }
+}
+
+.trust {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--sp-3);
+
+  p {
+    margin: 0 0 var(--sp-3);
+    font-size: 12px;
+    color: var(--text-2);
+    line-height: 1.5;
+    &:last-child { margin-bottom: 0; }
+  }
+  b { color: var(--text); }
+}
+
+/* --------------------------------------------------------- controls */
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2) var(--sp-4);
+  margin-bottom: var(--sp-4);
+}
+
+.chips {
+  display: flex;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+}
+
+.chip {
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text-2);
+  font-size: 12.5px;
+  padding: 5px 13px;
+  border-radius: var(--radius-pill);
+  white-space: nowrap;
+  transition: background-color var(--dur) var(--ease), color var(--dur) var(--ease),
+    border-color var(--dur) var(--ease);
+
+  &:hover { border-color: var(--text-3); }
+
+  &.on {
+    background: var(--brand);
+    border-color: var(--brand);
+    color: var(--brand-ink);
+    font-weight: 600;
+  }
+}
+
+.sort {
+  margin-left: auto;
+
+  select {
+    font: inherit;
+    font-size: 12.5px;
+    padding: 6px var(--sp-3);
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--border-strong);
+    background: var(--surface);
+    color: var(--text);
+  }
+}
+
+/* ------------------------------------------------------------- grid */
+
+.grid {
+  display: grid;
+  /* One line handles every screen: 2 columns on a phone, 5 on a desktop. */
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: var(--sp-3);
+}
+
+.count-line {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  margin: 0 0 var(--sp-3);
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+.notice {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--sp-8) var(--sp-4);
+  text-align: center;
+
+  h3 { margin: 0 0 var(--sp-2); }
+  p { margin: 0; color: var(--text-2); }
+}
+
+.reset {
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 12.5px;
+  padding: 5px 14px;
+  border-radius: var(--radius-pill);
+
+  &.small { padding: 2px 10px; font-size: 12px; }
+}
+
+code {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 1px 5px;
+  font-size: 12.5px;
+}
+
+/* --------------------------------------------------------- responsive */
+
+@media (max-width: 900px) {
+  .layout {
+    grid-template-columns: 1fr;
+    gap: var(--sp-3);
+  }
+
+  .sidebar {
+    position: static;
+  }
+
+  /* On a phone the category list becomes a scrolling chip row, not a
+     squashed sidebar. */
+  .cats {
+    display: flex;
+    overflow-x: auto;
+    border-radius: var(--radius-pill);
+    scrollbar-width: none;
+    &::-webkit-scrollbar { display: none; }
+
+    li { flex: 0 0 auto; }
+
+    button {
+      width: auto;
+      padding: 7px var(--sp-4);
+      white-space: nowrap;
+    }
+  }
+
+  .count { display: none; }
+  .trust { display: none; }
+  .sort { margin-left: 0; }
+}
+
+@media (max-width: 480px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--sp-2);
+  }
+}

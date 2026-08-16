@@ -1,32 +1,52 @@
 {
-  "name": "frontend",
+  "name": "lootta-tech-frontend",
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
-    "build": "npm install --force && ng build --configuration production"
+    "build": "ng build",
+    "watch": "ng build --watch --configuration development",
+    "test": "ng test",
+    "start:lan": "ng serve --host 0.0.0.0"
+  },
+  "prettier": {
+    "printWidth": 100,
+    "singleQuote": true,
+    "overrides": [
+      {
+        "files": "*.html",
+        "options": {
+          "parser": "angular"
+        }
+      }
+    ]
   },
   "private": true,
   "dependencies": {
-    "@angular-devkit/build-angular": "~16.0.2",
-    "@angular/animations": "~16.0.1",
-    "@angular/cdk": "^16.0.1",
-    "@angular/cli": "~16.0.2",
-    "@angular/common": "~16.0.1",
-    "@angular/compiler": "~16.0.1",
-    "@angular/compiler-cli": "~16.0.1",
-    "@angular/core": "~16.0.1",
-    "@angular/forms": "~16.0.1",
-    "@angular/platform-browser": "~16.0.1",
-    "@angular/platform-browser-dynamic": "~16.0.1",
-    "@angular/router": "~16.0.1",
-    "@types/leaflet": "^1.9.3",
-    "@types/node": "^20.1.7",
-    "leaflet": "^1.9.3",
-    "ngx-toastr": "^17.0.2",
-    "rxjs": "~7.8.1",
-    "tslib": "^2.5.0",
-    "typescript": "~5.0.4",
-    "zone.js": "~0.13.0"
+    "@angular/common": "^20.3.0",
+    "@angular/compiler": "^20.3.0",
+    "@angular/core": "^20.3.0",
+    "@angular/forms": "^20.3.0",
+    "@angular/platform-browser": "^20.3.0",
+    "@angular/router": "^20.3.0",
+    "@ngrx/effects": "^20.0.0",
+    "@ngrx/store": "^20.0.0",
+    "@ngrx/store-devtools": "^20.0.0",
+    "rxjs": "~7.8.0",
+    "tslib": "^2.3.0",
+    "zone.js": "~0.15.0"
+  },
+  "devDependencies": {
+    "@angular/build": "^20.3.33",
+    "@angular/cli": "^20.3.33",
+    "@angular/compiler-cli": "^20.3.0",
+    "@types/jasmine": "~5.1.0",
+    "jasmine-core": "~5.9.0",
+    "karma": "~6.4.0",
+    "karma-chrome-launcher": "~3.2.0",
+    "karma-coverage": "~2.2.0",
+    "karma-jasmine": "~5.1.0",
+    "karma-jasmine-html-reporter": "~2.1.0",
+    "typescript": "~5.9.2"
   }
 }

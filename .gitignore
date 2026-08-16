@@ -18,3 +18,8 @@ Thumbs.db
 # NOTE: .env is intentionally NOT ignored here so a fresh clone
 # includes the MongoDB Atlas connection and runs with no setup.
 # (This is a throwaway class database — delete/rotate it after grading.)
+
+# Environment secrets
+.env
+.env.*
+!.env.example

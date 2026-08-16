@@ -1,0 +1,80 @@
+<h1 class="page-title">Your cart</h1>
+
+@if (isEmpty()) {
+  <div class="empty">
+    <p>Your cart is empty.</p>
+    <a routerLink="/" class="primary">Browse products</a>
+  </div>
+} @else {
+  <div class="split">
+    <section class="lines">
+      @for (line of cart.items(); track line.product.id) {
+        <article class="line">
+          <a [routerLink]="['/product', line.product.id]" class="thumb">
+            <img
+              [ngSrc]="line.product.images[0]"
+              width="480"
+              height="480"
+              [alt]="line.product.title"
+            />
+          </a>
+
+          <div class="detail">
+            <a [routerLink]="['/product', line.product.id]" class="name">{{ line.product.title }}</a>
+            <app-condition-badge [condition]="asCondition(line.product.condition)" />
+            <p class="unit">{{ line.product.price | currency: 'USD' : 'symbol' : '1.0-0' }} each</p>
+          </div>
+
+          <div class="qty">
+            <button
+              type="button"
+              (click)="cart.setQuantity(line.product.id, line.quantity - 1)"
+              aria-label="Decrease quantity"
+            >−</button>
+            <span>{{ line.quantity }}</span>
+            <button
+              type="button"
+              (click)="cart.setQuantity(line.product.id, line.quantity + 1)"
+              [disabled]="line.quantity >= line.product.stock"
+              aria-label="Increase quantity"
+            >+</button>
+          </div>
+
+          <p class="line-total">
+            {{ line.product.price * line.quantity | currency: 'USD' : 'symbol' : '1.0-0' }}
+          </p>
+
+          <button
+            type="button"
+            class="remove"
+            (click)="cart.remove(line.product.id)"
+            [attr.aria-label]="'Remove ' + line.product.title"
+          >×</button>
+        </article>
+      }
+    </section>
+
+    <aside class="summary">
+      <h2>Summary</h2>
+      <div class="row">
+        <span>Items</span>
+        <span>{{ cart.count() }}</span>
+      </div>
+      <div class="row">
+        <span>Subtotal</span>
+        <span>{{ cart.total() | currency: 'USD' : 'symbol' : '1.2-2' }}</span>
+      </div>
+      <div class="row muted">
+        <span>Delivery</span>
+        <span>chosen at checkout</span>
+      </div>
+      <div class="row total">
+        <span>Total so far</span>
+        <span>{{ cart.total() | currency: 'USD' : 'symbol' : '1.2-2' }}</span>
+      </div>
+
+      <a routerLink="/checkout" class="primary">Checkout</a>
+      <a routerLink="/" class="ghost">Keep shopping</a>
+    </aside>
+  </div>
+}

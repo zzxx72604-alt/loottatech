@@ -1,5 +1,5 @@
 import {Router} from 'express';
-import { sample_users } from '../data';
+import { sample_users } from '../data/users';
 import jwt from 'jsonwebtoken';
 import asyncHandler from 'express-async-handler';
 import { User, UserModel } from '../models/user.model';

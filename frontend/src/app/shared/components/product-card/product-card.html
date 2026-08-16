@@ -1,0 +1,62 @@
+<article class="card">
+  <a class="link" [routerLink]="['/product', product.id]">
+    <div class="media">
+      <img
+        [ngSrc]="product.images[0]"
+        ngSrcset="480w, 800w"
+        sizes="(max-width: 640px) 45vw, (max-width: 1024px) 30vw, 200px"
+        [alt]="product.title"
+        width="800"
+        height="800"
+        [priority]="priority"
+      />
+
+      @if (discount > 0) {
+        <span class="discount">-{{ discount }}%</span>
+      }
+
+      <button
+        type="button"
+        class="watch"
+        (click)="onToggleWatch($event)"
+        [attr.aria-label]="'Watch ' + product.title"
+      >
+        ♡
+      </button>
+
+      @if (product.stock === 0) {
+        <div class="sold">Sold out</div>
+      }
+    </div>
+
+    <div class="body">
+      <h3 class="title">{{ product.title }}</h3>
+
+      <div class="meta">
+        <app-condition-badge [condition]="product.condition" />
+        @if (product.tested) {
+          <span class="tested">Tested ✓</span>
+        }
+      </div>
+
+      <div class="prices">
+        <span class="now">{{ product.price | currency: 'USD' : 'symbol' : '1.0-0' }}</span>
+        @if (product.originalPrice && product.originalPrice > product.price) {
+          <s class="was">{{ product.originalPrice | currency: 'USD' : 'symbol' : '1.0-0' }}</s>
+        }
+      </div>
+
+      <div class="foot">
+        <span class="watchers">♡ {{ product.watchCount }}</span>
+        <button
+          type="button"
+          class="add"
+          (click)="onAddToCart($event)"
+          [disabled]="product.stock === 0"
+        >
+          Add
+        </button>
+      </div>
+    </div>
+  </a>
+</article>

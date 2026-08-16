@@ -1,0 +1,105 @@
+<h1 class="sr-only">LoottaTech — affordable new and second-hand technology</h1>
+
+<div class="layout">
+  <!-- ------------------------------------------------------ sidebar -->
+  <aside class="sidebar">
+    <h2 class="side-title">Categories</h2>
+    <ul class="cats">
+      @for (c of categories(); track c.name) {
+        <li>
+          <button
+            type="button"
+            [class.active]="category() === c.name"
+            (click)="category.set(c.name)"
+          >
+            <span>{{ c.name }}</span>
+            <span class="count">{{ c.count }}</span>
+          </button>
+        </li>
+      }
+    </ul>
+
+    <div class="trust">
+      <h2 class="side-title">Why LoottaTech</h2>
+      <p><b>Quality checked</b><br />Every used item is tested before listing</p>
+      <p><b>Honest photos</b><br />We photograph the scratches too</p>
+      <p><b>Warranty included</b><br />Up to 12 months, stated per item</p>
+    </div>
+  </aside>
+
+  <!-- --------------------------------------------------------- main -->
+  <section class="main">
+    <div class="controls">
+      <div class="chips" role="group" aria-label="Filter by condition">
+        @for (chip of conditionChips; track chip.value) {
+          <button
+            type="button"
+            class="chip"
+            [class.on]="condition() === chip.value"
+            (click)="condition.set(chip.value)"
+          >
+            {{ chip.label }}
+          </button>
+        }
+      </div>
+
+      <div class="chips" role="group" aria-label="Filter by price">
+        @for (chip of priceChips; track chip.label) {
+          <button
+            type="button"
+            class="chip"
+            [class.on]="maxPrice() === chip.value"
+            (click)="maxPrice.set(chip.value)"
+          >
+            {{ chip.label }}
+          </button>
+        }
+      </div>
+
+      <label class="sort">
+        <span class="sr-only">Sort products</span>
+        <select [ngModel]="sort()" (ngModelChange)="sort.set($event)">
+          @for (opt of sortOptions; track opt.value) {
+            <option [value]="opt.value">{{ opt.label }}</option>
+          }
+        </select>
+      </label>
+    </div>
+
+    @if (loading()) {
+      <div class="grid">
+        <app-product-card-skeleton [count]="10" />
+      </div>
+    } @else if (failed()) {
+      <div class="notice">
+        <h3>Can't reach the server</h3>
+        <p>Start the API with <code>npm run dev</code>, then reload this page.</p>
+      </div>
+    } @else if (visible().length === 0) {
+      <div class="notice">
+        <h3>Nothing matches those filters</h3>
+        @if (hasFilters()) {
+          <button type="button" class="reset" (click)="clearFilters()">Clear filters</button>
+        }
+      </div>
+    } @else {
+      <p class="count-line">
+        {{ visible().length }} {{ visible().length === 1 ? 'item' : 'items' }}
+        @if (hasFilters()) {
+          <button type="button" class="reset small" (click)="clearFilters()">Clear filters</button>
+        }
+      </p>
+
+      <div class="grid">
+        @for (p of visible(); track trackById($index, p); let i = $index) {
+          <app-product-card
+            [product]="p"
+            [priority]="i < 4"
+            (addToCart)="onAddToCart($event)"
+            (toggleWatch)="onToggleWatch($event)"
+          />
+        }
+      </div>
+    }
+  </section>
+</div>

@@ -1,0 +1,64 @@
+<div class="panel">
+  <h1>Sign in</h1>
+  <p class="sub">Sign in to see your order history.</p>
+
+  <form #loginForm="ngForm" (ngSubmit)="onSubmit(loginForm)" novalidate>
+    <div class="field">
+      <label for="email">Email</label>
+      <input
+        id="email"
+        name="email"
+        type="email"
+        autocomplete="email"
+        [(ngModel)]="credentials.email"
+        #emailField="ngModel"
+        required
+        email
+      />
+      @if (emailField.invalid && emailField.touched) {
+        <p class="err">
+          @if (emailField.errors?.['required']) { Email is required. }
+          @else if (emailField.errors?.['email']) { That doesn't look like an email address. }
+        </p>
+      }
+    </div>
+
+    <div class="field">
+      <label for="password">Password</label>
+      <input
+        id="password"
+        name="password"
+        type="password"
+        autocomplete="current-password"
+        [(ngModel)]="credentials.password"
+        #passwordField="ngModel"
+        required
+        minlength="5"
+      />
+      @if (passwordField.invalid && passwordField.touched) {
+        <p class="err">
+          @if (passwordField.errors?.['required']) { Password is required. }
+          @else if (passwordField.errors?.['minlength']) { At least 5 characters. }
+        </p>
+      }
+    </div>
+
+    @if (error()) {
+      <p class="alert">{{ error() }}</p>
+    }
+
+    <button type="submit" class="primary" [disabled]="submitting()">
+      {{ submitting() ? 'Signing in…' : 'Sign in' }}
+    </button>
+  </form>
+
+  <p class="foot">
+    No account? <a routerLink="/register">Create one</a>
+  </p>
+
+  <div class="demo">
+    <b>Demo accounts</b>
+    <p>Admin — admin&#64;loottatech.com / 12345</p>
+    <p>Customer — dara&#64;gmail.com / 12345</p>
+  </div>
+</div>

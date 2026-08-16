@@ -1,0 +1,86 @@
+@if (loading()) {
+  <div class="wrap">
+    <div class="skeleton hero"></div>
+    <div class="info">
+      <div class="skeleton line"></div>
+      <div class="skeleton line w50"></div>
+      <div class="skeleton line w30 tall"></div>
+    </div>
+  </div>
+} @else if (product(); as p) {
+  <div class="wrap">
+    <div class="gallery">
+      <img
+        [ngSrc]="p.images[activeImage()]"
+        ngSrcset="480w, 800w"
+        sizes="(max-width: 800px) 92vw, 460px"
+        [alt]="p.title"
+        width="800"
+        height="800"
+        priority
+      />
+
+      @if (p.images.length > 1) {
+        <div class="thumbs">
+          @for (img of p.images; track img; let i = $index) {
+            <button
+              type="button"
+              [class.on]="activeImage() === i"
+              (click)="activeImage.set(i)"
+              [attr.aria-label]="'View image ' + (i + 1)"
+            >
+              <img [ngSrc]="img" width="480" height="480" [alt]="''" />
+            </button>
+          }
+        </div>
+      }
+    </div>
+
+    <div class="info">
+      <h1>{{ p.title }}</h1>
+
+      <div class="prices">
+        <span class="now">{{ p.price | currency: 'USD' : 'symbol' : '1.0-0' }}</span>
+        @if (p.originalPrice && p.originalPrice > p.price) {
+          <s>{{ p.originalPrice | currency: 'USD' : 'symbol' : '1.0-0' }}</s>
+          <span class="off">-{{ discount(p) }}%</span>
+        }
+      </div>
+
+      <!-- The trust panel — what a used-goods buyer actually needs to know -->
+      <dl class="trust">
+        <div><dt>Condition</dt><dd><app-condition-badge [condition]="p.condition" /></dd></div>
+        <div><dt>Tested</dt><dd>{{ p.tested ? 'Yes' : 'Sold untested' }}</dd></div>
+        <div>
+          <dt>Warranty</dt>
+          <dd>{{ p.warrantyMonths ? p.warrantyMonths + ' months' : 'None' }}</dd>
+        </div>
+        <div><dt>In stock</dt><dd>{{ p.stock }}</dd></div>
+      </dl>
+
+      @if (p.flawNotes) {
+        <p class="flaws"><b>What's not perfect:</b> {{ p.flawNotes }}</p>
+      }
+
+      <p class="desc">{{ p.description }}</p>
+
+      <button type="button" class="buy" (click)="add()" [disabled]="p.stock === 0">
+        {{ p.stock === 0 ? 'Sold out' : 'Add to cart' }}
+      </button>
+
+      <h2 class="spec-title">Specifications</h2>
+      <table class="specs">
+        <tbody>
+          @for (s of p.specs; track s.key) {
+            <tr>
+              <th scope="row">{{ s.key }}</th>
+              <td>{{ s.value }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+} @else {
+  <div class="wrap"><p>Product not found.</p></div>
+}

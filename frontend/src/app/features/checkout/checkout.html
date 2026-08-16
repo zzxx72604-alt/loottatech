@@ -1,0 +1,91 @@
+<h1 class="page-title">Checkout</h1>
+
+@if (items().length === 0) {
+  <div class="empty">
+    <p>There's nothing to check out.</p>
+    <a routerLink="/" class="primary">Browse products</a>
+  </div>
+} @else {
+  <div class="split">
+    <form class="details" [formGroup]="form" (ngSubmit)="placeOrder()" novalidate>
+      @if (!users.isLoggedIn()) {
+        <p class="hint">
+          Checking out as a guest. <a routerLink="/login">Sign in</a> if you'd like this order
+          saved to your account.
+        </p>
+      }
+
+      <h2>Your details</h2>
+
+      <div class="field">
+        <label for="customerName">Full name</label>
+        <input id="customerName" type="text" formControlName="customerName" autocomplete="name" />
+        @if (showError('customerName')) { <p class="err">Please enter your name.</p> }
+      </div>
+
+      <div class="field">
+        <label for="phone">Phone</label>
+        <input id="phone" type="tel" formControlName="phone" autocomplete="tel" placeholder="012 345 678" />
+        @if (showError('phone')) { <p class="err">Enter a valid phone number (8–15 digits).</p> }
+      </div>
+
+      <div class="field">
+        <label for="address">Delivery address</label>
+        <input id="address" type="text" formControlName="address" autocomplete="street-address" />
+        @if (showError('address')) { <p class="err">Please enter a delivery address.</p> }
+      </div>
+
+      <h2>Delivery</h2>
+      <div class="options">
+        @for (option of deliveryOptions; track option.value) {
+          <label class="option" [class.on]="form.controls.deliveryOption.value === option.value">
+            <input type="radio" [value]="option.value" formControlName="deliveryOption" />
+            <span class="o-name">{{ option.label }}</span>
+            <span class="o-note">{{ option.note }}</span>
+            <span class="o-fee">
+              {{ option.fee === 0 ? 'Free' : (option.fee | currency: 'USD' : 'symbol' : '1.2-2') }}
+            </span>
+          </label>
+        }
+      </div>
+
+      <div class="field">
+        <label for="note">Note (optional)</label>
+        <input id="note" type="text" formControlName="note" placeholder="Landmark, delivery time…" />
+      </div>
+
+      @if (error()) { <p class="alert">{{ error() }}</p> }
+    </form>
+
+    <aside class="summary">
+      <h2>Order summary</h2>
+
+      @for (line of items(); track line.product.id) {
+        <div class="row item">
+          <span class="q">{{ line.quantity }}×</span>
+          <span class="t">{{ line.product.title }}</span>
+          <span>{{ line.product.price * line.quantity | currency: 'USD' : 'symbol' : '1.2-2' }}</span>
+        </div>
+      }
+
+      <div class="row">
+        <span>Subtotal</span>
+        <span>{{ subtotal() | currency: 'USD' : 'symbol' : '1.2-2' }}</span>
+      </div>
+      <div class="row">
+        <span>{{ chosenDelivery() }}</span>
+        <span>{{ deliveryFee() === 0 ? 'Free' : (deliveryFee() | currency: 'USD' : 'symbol' : '1.2-2') }}</span>
+      </div>
+      <div class="row total">
+        <span>Total</span>
+        <span>{{ total() | currency: 'USD' : 'symbol' : '1.2-2' }}</span>
+      </div>
+
+      <button type="button" class="primary" (click)="placeOrder()" [disabled]="submitting()">
+        {{ submitting() ? 'Placing order…' : 'Place order' }}
+      </button>
+
+      <p class="pay-note">Payment is collected on delivery or in store.</p>
+    </aside>
+  </div>
+}

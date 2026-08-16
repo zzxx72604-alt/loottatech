@@ -1,0 +1,64 @@
+@if (loading()) {
+  <div class="panel"><div class="skeleton line"></div><div class="skeleton line w60"></div></div>
+} @else if (order(); as o) {
+  <div class="panel">
+    <p class="tick">✓</p>
+    <h1>Thanks, {{ o.customerName }}</h1>
+    <p class="sub">Your order is placed. Keep this number to track it.</p>
+
+    <p class="number">{{ o.orderNumber }}</p>
+
+    @if (o.status !== 'Cancelled') {
+      <ol class="track">
+        @for (step of steps; track step; let i = $index) {
+          <li [class.done]="i <= stepIndex(o)">
+            <span class="dot"></span>
+            <span class="label">{{ step }}</span>
+          </li>
+        }
+      </ol>
+    } @else {
+      <p class="cancelled">This order was cancelled.</p>
+    }
+
+    <div class="grid">
+      <div>
+        <h2>Delivery</h2>
+        <p>{{ o.deliveryOption }}</p>
+        <p>{{ o.address }}</p>
+        <p>{{ o.phone }}</p>
+        @if (o.note) { <p class="note">“{{ o.note }}”</p> }
+      </div>
+
+      <div>
+        <h2>Placed</h2>
+        <p>{{ o.createdAt | date: 'medium' }}</p>
+      </div>
+    </div>
+
+    <h2 class="items-title">Items</h2>
+    <ul class="items">
+      @for (item of o.items; track item.productId) {
+        <li>
+          <span class="q">{{ item.quantity }}×</span>
+          <span class="t">{{ item.title }}</span>
+          <span>{{ item.price * item.quantity | currency: 'USD' : 'symbol' : '1.2-2' }}</span>
+        </li>
+      }
+    </ul>
+
+    <dl class="totals">
+      <div><dt>Subtotal</dt><dd>{{ o.subtotal | currency: 'USD' : 'symbol' : '1.2-2' }}</dd></div>
+      <div><dt>Delivery</dt><dd>{{ o.deliveryFee | currency: 'USD' : 'symbol' : '1.2-2' }}</dd></div>
+      <div class="grand"><dt>Total</dt><dd>{{ o.totalPrice | currency: 'USD' : 'symbol' : '1.2-2' }}</dd></div>
+    </dl>
+
+    <a routerLink="/" class="primary">Keep shopping</a>
+  </div>
+} @else {
+  <div class="panel">
+    <h1>Order not found</h1>
+    <p class="sub">Check the order number and try again.</p>
+    <a routerLink="/" class="primary">Back to the shop</a>
+  </div>
+}
