@@ -28,7 +28,10 @@
 
       <div class="plays" [class.none]="!canPlay()">
         <b>{{ playsLeft() }}</b>
-        <span>play{{ playsLeft() === 1 ? '' : 's' }} left today</span>
+        <span>
+          play{{ playsLeft() === 1 ? '' : 's' }} available
+          @if (s.bonusPlays > 0) { ({{ s.bonusPlays }} from codes) }
+        </span>
       </div>
     </div>
 
@@ -48,6 +51,32 @@
     }
   </section>
 
+  <!-- ------------------------------------------------------ top-up code -->
+  <section class="card codebox">
+    <div class="code-copy">
+      <h2>Have a code?</h2>
+      <p>Codes from LoottaTech add coins or extra plays.</p>
+    </div>
+
+    <form class="code-form" (ngSubmit)="useCode()">
+      <input
+        type="text"
+        [(ngModel)]="codeInput"
+        name="code"
+        placeholder="PLAY-XXXXX"
+        aria-label="Redeem code"
+        autocomplete="off"
+        style="text-transform: uppercase"
+      />
+      <button type="submit" class="redeem" [disabled]="codeBusy() || !codeInput.trim()">
+        {{ codeBusy() ? 'Checking…' : 'Redeem' }}
+      </button>
+    </form>
+
+    @if (codeMessage()) { <p class="note good">{{ codeMessage() }}</p> }
+    @if (codeError()) { <p class="note bad">{{ codeError() }}</p> }
+  </section>
+
   <!-- ------------------------------------------------------------ game -->
   <section class="card game">
     <div class="tabs" role="tablist">
@@ -62,30 +91,34 @@
 
     @if (mode() === 'flyer') {
       <p class="hint">
-        {{ s.coinsPerPoint }} coins per shelf you pass. Best so far: <b>{{ s.bestScore }}</b>
+        Costs <b>{{ s.playCost }}</b> coins to play · earns <b>{{ s.coinsPerPoint }}</b> per shelf ·
+        best so far <b>{{ s.bestScore }}</b>
       </p>
 
       <app-flyer-game (wantsToStart)="startFlyer()" (gameOver)="onGameOver($event)" />
 
       @if (!canPlay()) {
-        <p class="locked">No plays left today — buy something to earn more.</p>
+        <p class="locked">
+          No plays left today — buy something from the shop, or redeem a code above.
+        </p>
+      } @else if (!s.canAfford) {
+        <p class="locked">
+          Not enough coins. Shopping earns {{ s.coinsPerDollar }} coins per dollar.
+        </p>
       }
     } @else {
-      <div class="wheel-wrap">
-        <div class="pointer" aria-hidden="true">▼</div>
-        <div class="wheel" [style.transform]="'rotate(' + wheelAngle() + 'deg)'"
-             [class.spinning]="spinning()">
-          @for (prize of s.wheel; track $index; let i = $index) {
-            <div class="wedge" [style.transform]="'rotate(' + (i * 360 / s.wheel.length) + 'deg)'">
-              <span>{{ prize }}</span>
-            </div>
-          }
-        </div>
-      </div>
+      <p class="hint">
+        A spin costs <b>{{ s.playCost }}</b> coins. Bigger prizes have thinner slices.
+      </p>
+
+      <app-prize-wheel [wheel]="s.wheel" [wheelWeights]="s.wheelWeights" />
 
       <button type="button" class="spin-btn" (click)="spin()"
-              [disabled]="busy() || spinning() || !canPlay()">
-        {{ spinning() ? 'Spinning…' : canPlay() ? 'Spend 1 play to spin' : 'No plays left' }}
+              [disabled]="busy() || spinning() || !canPlay() || !s.canAfford">
+        {{ spinning() ? 'Spinning…'
+           : !canPlay() ? 'No plays left'
+           : !s.canAfford ? 'Not enough coins'
+           : 'Spin for ' + s.playCost + ' coins' }}
       </button>
     }
   </section>

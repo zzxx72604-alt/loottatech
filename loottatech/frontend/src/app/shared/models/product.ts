@@ -100,3 +100,35 @@ export const PLACEHOLDER_IMAGE = '/products/placeholder-800.webp';
 export function primaryImage(p: Product): string {
   return p.images?.length ? imageSrc(p.images[0]) : PLACEHOLDER_IMAGE;
 }
+
+/**
+ * A condition score out of 10, the way second-hand marketplaces grade stock.
+ *
+ * "Like new" tells you less than "9.5/10 · grade A" — a number invites a
+ * comparison, which is exactly what someone choosing between two used laptops
+ * wants to do.
+ */
+export function conditionGrade(condition: Condition): { score: string; letter: string } {
+  switch (condition) {
+    case 'new':
+      return { score: '10', letter: 'S' };
+    case 'like-new':
+      return { score: '9.5', letter: 'A' };
+    case 'good':
+      return { score: '8.5', letter: 'B' };
+    default:
+      return { score: '7', letter: 'C' };
+  }
+}
+
+/** Short selling points shown as chips under the price. */
+export function productTags(p: Product): string[] {
+  const tags: string[] = [];
+
+  if (p.tested) tags.push('Tested');
+  if (p.warrantyMonths > 0) tags.push(`${p.warrantyMonths}mo warranty`);
+  if (p.stock === 1) tags.push('Last one');
+  if (p.watchCount >= 30) tags.push('Popular');
+
+  return tags.slice(0, 3);
+}

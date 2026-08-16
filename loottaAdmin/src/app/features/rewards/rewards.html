@@ -1,0 +1,300 @@
+<header class="head">
+  <div>
+    <h1>Rewards</h1>
+    <p class="sub">Arcade codes, discount vouchers, and the economy settings.</p>
+  </div>
+</header>
+
+<nav class="tabs" role="tablist">
+  <button type="button" [class.on]="tab() === 'codes'" (click)="setTab('codes')">Arcade codes</button>
+  <button type="button" [class.on]="tab() === 'vouchers'" (click)="setTab('vouchers')">Discount vouchers</button>
+  <button type="button" [class.on]="tab() === 'grant'" (click)="setTab('grant')">Top up an account</button>
+  <button type="button" [class.on]="tab() === 'economy'" (click)="setTab('economy')">Economy</button>
+</nav>
+
+@if (message()) { <p class="alert good">{{ message() }}</p> }
+@if (error()) { <p class="alert bad">{{ error() }}</p> }
+
+<!-- ============================================================= codes == -->
+@if (tab() === 'codes') {
+  <div class="split">
+    <section class="card block">
+      <h2>Create an arcade code</h2>
+      <p class="hint">
+        Customers type this on the arcade page to get coins or extra plays.
+        Each account can use a code once.
+      </p>
+
+      <form [formGroup]="codeForm" (ngSubmit)="createCode()">
+        <div class="row2">
+          <div class="field">
+            <label for="c-coins">Coins</label>
+            <input id="c-coins" type="number" min="0" formControlName="coins" />
+          </div>
+          <div class="field">
+            <label for="c-plays">Plays</label>
+            <input id="c-plays" type="number" min="0" formControlName="plays" />
+          </div>
+        </div>
+
+        <div class="row2">
+          <div class="field">
+            <label for="c-uses">Max uses</label>
+            <input id="c-uses" type="number" min="0" formControlName="maxUses" />
+            <p class="hint">0 = unlimited</p>
+          </div>
+          <div class="field">
+            <label for="c-days">Expires in (days)</label>
+            <input id="c-days" type="number" min="1" formControlName="expiryDays" />
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="c-label">Label</label>
+          <input id="c-label" type="text" formControlName="label" placeholder="Launch week bonus" />
+        </div>
+
+        <div class="field">
+          <label for="c-code">Custom code (optional)</label>
+          <input id="c-code" type="text" formControlName="code" placeholder="Leave blank to generate" />
+        </div>
+
+        <button type="submit" class="btn btn-primary wide" [disabled]="busy()">
+          {{ busy() ? 'Creating…' : 'Create code' }}
+        </button>
+      </form>
+    </section>
+
+    <section class="card block">
+      <div class="block-head">
+        <h2>Existing codes</h2>
+        <button type="button" class="btn btn-sm" (click)="loadCodes()">Refresh</button>
+      </div>
+
+      @if (codes().length === 0) {
+        <p class="muted">No codes yet.</p>
+      } @else {
+        <ul class="list">
+          @for (c of codes(); track c.id) {
+            <li [class.off]="!c.usable">
+              <button type="button" class="code" (click)="copy(c.code)" title="Copy">{{ c.code }}</button>
+              <span class="gives">
+                @if (c.coins > 0) { ◎{{ c.coins }} }
+                @if (c.coins > 0 && c.plays > 0) { · }
+                @if (c.plays > 0) { {{ c.plays }} plays }
+              </span>
+              <span class="uses">{{ c.usedCount }}/{{ c.maxUses === 0 ? '∞' : c.maxUses }}</span>
+              <span class="when">{{ c.expiresAt | date: 'MMM d' }}</span>
+              <button type="button" class="btn btn-sm" (click)="toggleCode(c)">
+                {{ c.isActive ? 'Disable' : 'Enable' }}
+              </button>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+  </div>
+}
+
+<!-- ========================================================== vouchers == -->
+@if (tab() === 'vouchers') {
+  <div class="split">
+    <section class="card block">
+      <h2>Generate discount vouchers</h2>
+      <p class="hint">Money off an order, entered at checkout. Each voucher works once.</p>
+
+      <form [formGroup]="voucherForm" (ngSubmit)="createVouchers()">
+        <div class="row2">
+          <div class="field">
+            <label for="v-value">Value ($)</label>
+            <input id="v-value" type="number" min="0.5" step="0.5" formControlName="value" />
+          </div>
+          <div class="field">
+            <label for="v-min">Minimum spend ($)</label>
+            <input id="v-min" type="number" min="0" formControlName="minSpend" />
+          </div>
+        </div>
+
+        <div class="row2">
+          <div class="field">
+            <label for="v-days">Expires in (days)</label>
+            <input id="v-days" type="number" min="1" formControlName="expiryDays" />
+          </div>
+          <div class="field">
+            <label for="v-count">How many</label>
+            <input id="v-count" type="number" min="1" max="50" formControlName="count" />
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="v-user">Give to account id (optional)</label>
+          <input id="v-user" type="text" formControlName="userId" placeholder="Blank = anyone can use it" />
+        </div>
+
+        <button type="submit" class="btn btn-primary wide" [disabled]="busy()">
+          {{ busy() ? 'Creating…' : 'Generate' }}
+        </button>
+      </form>
+    </section>
+
+    <section class="card block">
+      <div class="block-head">
+        <h2>Recent vouchers</h2>
+        <button type="button" class="btn btn-sm" (click)="loadVouchers()">Refresh</button>
+      </div>
+
+      @if (vouchers().length === 0) {
+        <p class="muted">No vouchers yet.</p>
+      } @else {
+        <ul class="list">
+          @for (v of vouchers(); track v.id) {
+            <li [class.off]="!v.usable">
+              <button type="button" class="code" (click)="copy(v.code)" title="Copy">{{ v.code }}</button>
+              <span class="gives">{{ v.label }}</span>
+              <span class="uses">min {{ v.minSpend }}</span>
+              <span class="when">
+                @if (v.usedAt) { used } @else { {{ v.expiresAt | date: 'MMM d' }} }
+              </span>
+              <span class="owner">{{ v.userId ? '#' + v.userId : 'public' }}</span>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+  </div>
+}
+
+<!-- ============================================================= grant == -->
+@if (tab() === 'grant') {
+  <section class="card block narrow">
+    <h2>Top up an account</h2>
+    <p class="hint">
+      Adds coins and plays straight to one account — no code needed. Useful for
+      testing, or to compensate a customer.
+    </p>
+
+    <form [formGroup]="grantForm" (ngSubmit)="grant()">
+      <div class="field">
+        <label for="g-user">Account id</label>
+        <input id="g-user" type="number" min="1" formControlName="userId" />
+        <p class="hint">Find it on the Customers page.</p>
+      </div>
+
+      <div class="row2">
+        <div class="field">
+          <label for="g-coins">Coins</label>
+          <input id="g-coins" type="number" min="0" formControlName="coins" />
+        </div>
+        <div class="field">
+          <label for="g-plays">Plays</label>
+          <input id="g-plays" type="number" min="0" formControlName="plays" />
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="g-reason">Reason</label>
+        <input id="g-reason" type="text" formControlName="reason" />
+      </div>
+
+      <button type="submit" class="btn btn-primary wide" [disabled]="busy()">
+        {{ busy() ? 'Granting…' : 'Grant' }}
+      </button>
+    </form>
+  </section>
+}
+
+<!-- =========================================================== economy == -->
+@if (tab() === 'economy') {
+  <section class="card block">
+    <h2>Economy settings</h2>
+    <p class="hint">
+      Saved changes take effect immediately for every customer — no restart.
+      @if (config()) { Last updated {{ config()!.updatedAt | date: 'medium' }}. }
+    </p>
+
+    <form [formGroup]="configForm" (ngSubmit)="saveConfig()">
+      <h3>Earning</h3>
+      <div class="grid">
+        <div class="field">
+          <label for="e-cpd">Coins per $1 spent</label>
+          <input id="e-cpd" type="number" min="0" formControlName="coinsPerDollar" />
+        </div>
+        <div class="field">
+          <label for="e-welcome">Welcome coins</label>
+          <input id="e-welcome" type="number" min="0" formControlName="welcomeCoins" />
+        </div>
+      </div>
+
+      <h3>Playing</h3>
+      <div class="grid">
+        <div class="field">
+          <label for="e-cost">Coins per play</label>
+          <input id="e-cost" type="number" min="0" formControlName="playCost" />
+        </div>
+        <div class="field">
+          <label for="e-point">Flyer coins per shelf</label>
+          <input id="e-point" type="number" min="0" formControlName="flyerCoinsPerPoint" />
+        </div>
+        <div class="field">
+          <label for="e-max">Flyer max per round</label>
+          <input id="e-max" type="number" min="0" formControlName="flyerMaxPerRound" />
+        </div>
+      </div>
+
+      <h3>Daily plays by tier</h3>
+      <div class="grid">
+        <div class="field">
+          <label for="e-browser">Browser (0 items)</label>
+          <input id="e-browser" type="number" min="0" formControlName="browserPlays" />
+        </div>
+        <div class="field">
+          <label for="e-bi">Bronze from (items)</label>
+          <input id="e-bi" type="number" min="0" formControlName="bronzeItems" />
+        </div>
+        <div class="field">
+          <label for="e-bp">Bronze plays</label>
+          <input id="e-bp" type="number" min="0" formControlName="bronzePlays" />
+        </div>
+        <div class="field">
+          <label for="e-si">Silver from (items)</label>
+          <input id="e-si" type="number" min="0" formControlName="silverItems" />
+        </div>
+        <div class="field">
+          <label for="e-sp">Silver plays</label>
+          <input id="e-sp" type="number" min="0" formControlName="silverPlays" />
+        </div>
+        <div class="field">
+          <label for="e-gi">Gold from (items)</label>
+          <input id="e-gi" type="number" min="0" formControlName="goldItems" />
+        </div>
+        <div class="field">
+          <label for="e-gp">Gold plays</label>
+          <input id="e-gp" type="number" min="0" formControlName="goldPlays" />
+        </div>
+      </div>
+
+      <h3>Vouchers</h3>
+      <div class="grid">
+        <div class="field">
+          <label for="e-cpv">Coins per $1 of voucher</label>
+          <input id="e-cpv" type="number" min="1" formControlName="coinsPerVoucherDollar" />
+        </div>
+        <div class="field">
+          <label for="e-mult">Min spend multiplier</label>
+          <input id="e-mult" type="number" min="1" formControlName="voucherMinSpendMultiplier" />
+        </div>
+        <div class="field">
+          <label for="e-vexp">Voucher expiry (days)</label>
+          <input id="e-vexp" type="number" min="1" formControlName="voucherExpiryDays" />
+        </div>
+      </div>
+
+      <div class="save-row">
+        <button type="button" class="btn" (click)="loadConfig()">Reset</button>
+        <button type="submit" class="btn btn-primary" [disabled]="busy()">
+          {{ busy() ? 'Saving…' : 'Save economy' }}
+        </button>
+      </div>
+    </form>
+  </section>
+}

@@ -52,6 +52,15 @@ public class ArcadeStateDto
 
     /// <summary>Coin value of each wheel wedge, in drawing order.</summary>
     public List<int> Wheel { get; set; } = new();
+
+    /// <summary>
+    /// Relative chance of each wedge, same order as Wheel.
+    ///
+    /// Sent so the UI can size each slice by its real probability — a rare
+    /// jackpot gets a thin sliver, a common small prize gets a wide one. A
+    /// wheel with equal slices and unequal odds is quietly dishonest.
+    /// </summary>
+    public List<int> WheelWeights { get; set; } = new();
 }
 
 public class GameFinishDto
@@ -154,6 +163,62 @@ public class GrantResultDto
     public int Coins { get; set; }
     public int BonusPlays { get; set; }
     public string Message { get; set; } = string.Empty;
+}
+
+/// <summary>Admin creating an arcade top-up code.</summary>
+public class CreateRedeemCodeDto
+{
+    [Range(0, 1_000_000)]
+    public int Coins { get; set; }
+
+    [Range(0, 10_000)]
+    public int Plays { get; set; }
+
+    /// <summary>How many accounts may use it. 0 = unlimited.</summary>
+    [Range(0, 100_000)]
+    public int MaxUses { get; set; } = 1;
+
+    [MaxLength(120)]
+    public string Label { get; set; } = string.Empty;
+
+    [Range(1, 365)]
+    public int ExpiryDays { get; set; } = 30;
+
+    /// <summary>Optional custom code. Left blank, one is generated.</summary>
+    [MaxLength(24)]
+    public string? Code { get; set; }
+}
+
+public class RedeemCodeDto
+{
+    public int Id { get; set; }
+    public string Code { get; set; } = string.Empty;
+    public int Coins { get; set; }
+    public int Plays { get; set; }
+    public int MaxUses { get; set; }
+    public int UsedCount { get; set; }
+    public string Label { get; set; } = string.Empty;
+    public bool IsActive { get; set; }
+    public bool Usable { get; set; }
+    public DateTime ExpiresAt { get; set; }
+    public DateTime CreatedAt { get; set; }
+}
+
+/// <summary>A customer typing a code into the arcade.</summary>
+public class UseCodeDto
+{
+    [Required, MaxLength(24)]
+    public string Code { get; set; } = string.Empty;
+}
+
+public class UseCodeResultDto
+{
+    public bool Success { get; set; }
+    public string Message { get; set; } = string.Empty;
+    public int CoinsAdded { get; set; }
+    public int PlaysAdded { get; set; }
+    public int Balance { get; set; }
+    public int BonusPlays { get; set; }
 }
 
 public class RedeemDto

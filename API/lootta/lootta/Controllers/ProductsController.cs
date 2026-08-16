@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using lootta.Data;
 using lootta.Dtos;
 using lootta.Models;
+using lootta.Services;
 
 namespace lootta.Controllers;
 
@@ -12,8 +13,13 @@ namespace lootta.Controllers;
 public class ProductsController : ControllerBase
 {
     private readonly LoottaDbContext _db;
+    private readonly ImageService _images;
 
-    public ProductsController(LoottaDbContext db) => _db = db;
+    public ProductsController(LoottaDbContext db, ImageService images)
+    {
+        _db = db;
+        _images = images;
+    }
 
     /// <summary>List products, with optional search and category filters.</summary>
     [HttpGet]
@@ -149,6 +155,132 @@ public class ProductsController : ControllerBase
 
         product.IsActive = value;
         product.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+        return NoContent();
+    }
+
+    /* ============================================================ images */
+
+    /// <summary>
+    /// Upload a photo for a product. Multipart form data, one file per call.
+    ///
+    /// The server crops it square and writes three sizes — the browser sends a
+    /// 4000px phone photo, the shop serves a 480px webp. That conversion has to
+    /// happen here; a client could always skip it.
+    /// </summary>
+    [HttpPost("{id:int}/images")]
+    [Authorize(Policy = "CanManageProducts")]
+    [RequestSizeLimit(10 * 1024 * 1024)]
+    public async Task<ActionResult<ProductImageDto>> UploadImage(int id, IFormFile file)
+    {
+        var product = await _db.Products.Include(p => p.Images)
+                                        .FirstOrDefaultAsync(p => p.Id == id);
+        if (product is null) return NotFound($"No product with id {id}.");
+        if (file is null) return BadRequest("No file was sent.");
+
+        var result = await _images.SaveAsync(file, product.Title);
+        if (!result.Ok) return BadRequest(result.Error);
+
+        var image = new ProductImage
+        {
+            FileName = result.FileName,
+            Url = result.BasePath,
+            // First photo uploaded becomes the card image automatically.
+            IsPrimary = product.Images.Count == 0,
+            SortOrder = product.Images.Count,
+        };
+
+        product.Images.Add(image);
+        product.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+
+        return Ok(new ProductImageDto
+        {
+            Id = image.Id,
+            Url = image.Url,
+            IsPrimary = image.IsPrimary,
+            SortOrder = image.SortOrder,
+        });
+    }
+
+    /// <summary>Replace one photo, keeping its position and primary flag.</summary>
+    [HttpPut("{id:int}/images/{imageId:int}")]
+    [Authorize(Policy = "CanManageProducts")]
+    [RequestSizeLimit(10 * 1024 * 1024)]
+    public async Task<ActionResult<ProductImageDto>> ReplaceImage(int id, int imageId, IFormFile file)
+    {
+        var product = await _db.Products.Include(p => p.Images)
+                                        .FirstOrDefaultAsync(p => p.Id == id);
+        if (product is null) return NotFound($"No product with id {id}.");
+
+        var image = product.Images.FirstOrDefault(i => i.Id == imageId);
+        if (image is null) return NotFound($"No image with id {imageId} on that product.");
+        if (file is null) return BadRequest("No file was sent.");
+
+        var result = await _images.SaveAsync(file, product.Title);
+        if (!result.Ok) return BadRequest(result.Error);
+
+        // Only remove the old files once the new ones exist, so a failed
+        // upload can never leave the product with no photo at all.
+        var oldPath = image.Url;
+
+        image.Url = result.BasePath;
+        image.FileName = result.FileName;
+        image.UploadedAt = DateTime.UtcNow;
+        product.UpdatedAt = DateTime.UtcNow;
+
+        await _db.SaveChangesAsync();
+        _images.Delete(oldPath);
+
+        return Ok(new ProductImageDto
+        {
+            Id = image.Id,
+            Url = image.Url,
+            IsPrimary = image.IsPrimary,
+            SortOrder = image.SortOrder,
+        });
+    }
+
+    [HttpDelete("{id:int}/images/{imageId:int}")]
+    [Authorize(Policy = "CanManageProducts")]
+    public async Task<IActionResult> DeleteImage(int id, int imageId)
+    {
+        var product = await _db.Products.Include(p => p.Images)
+                                        .FirstOrDefaultAsync(p => p.Id == id);
+        if (product is null) return NotFound($"No product with id {id}.");
+
+        var image = product.Images.FirstOrDefault(i => i.Id == imageId);
+        if (image is null) return NotFound($"No image with id {imageId} on that product.");
+
+        var wasPrimary = image.IsPrimary;
+        var path = image.Url;
+
+        product.Images.Remove(image);
+        _db.Remove(image);
+
+        // Never leave a product without a card image.
+        if (wasPrimary && product.Images.Count > 0)
+            product.Images.OrderBy(i => i.SortOrder).First().IsPrimary = true;
+
+        await _db.SaveChangesAsync();
+        _images.Delete(path);
+
+        return NoContent();
+    }
+
+    /// <summary>Choose which photo appears on the product card.</summary>
+    [HttpPut("{id:int}/images/{imageId:int}/primary")]
+    [Authorize(Policy = "CanManageProducts")]
+    public async Task<IActionResult> SetPrimary(int id, int imageId)
+    {
+        var product = await _db.Products.Include(p => p.Images)
+                                        .FirstOrDefaultAsync(p => p.Id == id);
+        if (product is null) return NotFound($"No product with id {id}.");
+        if (product.Images.All(i => i.Id != imageId))
+            return NotFound($"No image with id {imageId} on that product.");
+
+        foreach (var image in product.Images) image.IsPrimary = image.Id == imageId;
+
         await _db.SaveChangesAsync();
         return NoContent();
     }

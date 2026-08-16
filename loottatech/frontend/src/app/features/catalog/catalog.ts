@@ -6,6 +6,7 @@ import { ProductService } from '../../core/services/product.service';
 import { CartService } from '../../core/services/cart.service';
 import { ProductCard } from '../../shared/components/product-card/product-card';
 import { ProductCardSkeleton } from '../../shared/components/product-card-skeleton/product-card-skeleton';
+import { AdTile, Promo } from '../../shared/components/ad-tile/ad-tile';
 import { Condition, Product, discountPercent } from '../../shared/models/product';
 
 type SortMode = 'recommended' | 'price-asc' | 'price-desc' | 'discount';
@@ -17,7 +18,7 @@ interface CategoryCount {
 
 @Component({
   selector: 'app-catalog',
-  imports: [FormsModule, NgOptimizedImage, ProductCard, ProductCardSkeleton],
+  imports: [FormsModule, NgOptimizedImage, ProductCard, ProductCardSkeleton, AdTile],
   templateUrl: './catalog.html',
   styleUrl: './catalog.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -151,6 +152,58 @@ export class Catalog {
   protected icon(name: string): string {
     return this.categoryIcons[name] ?? '📦';
   }
+
+  /**
+   * Promo tiles mixed into the grid, the way marketplace apps place adverts
+   * between listings. Pure CSS, so they cost no download and never shift the
+   * layout while loading.
+   */
+  protected readonly promos: Promo[] = [
+    {
+      title: 'Play. Win. Save.',
+      line: 'Every order earns coins. Spend them in the arcade for real discounts.',
+      cta: 'Open the arcade',
+      link: '/arcade',
+      theme: 'brand',
+    },
+    {
+      title: 'Every flaw, photographed',
+      line: "We show the scratches. If it isn't in the photos, it isn't on the item.",
+      cta: 'How we grade',
+      link: '/',
+      theme: 'dark',
+    },
+    {
+      title: 'Under $100',
+      line: 'Working tech that costs less than a night out.',
+      cta: 'See the cheap shelf',
+      link: '/search/under',
+      theme: 'sale',
+    },
+  ];
+
+  /**
+   * The grid, with a promo tile injected every 7 products.
+   *
+   * Built as one list so CSS Grid handles the layout — the alternative,
+   * separate rows of products and ads, breaks the moment the column count
+   * changes at a breakpoint.
+   */
+  protected readonly feed = computed(() => {
+    const products = this.visible();
+    const items: ({ kind: 'product'; product: Product } | { kind: 'ad'; promo: Promo })[] = [];
+
+    products.forEach((product, index) => {
+      items.push({ kind: 'product', product });
+
+      const slot = Math.floor(index / 7);
+      if ((index + 1) % 7 === 0 && slot < this.promos.length) {
+        items.push({ kind: 'ad', promo: this.promos[slot] });
+      }
+    });
+
+    return items;
+  });
 
   protected readonly trustPoints = [
     { icon: '🔍', title: 'Quality checked', note: 'Every used item is tested' },

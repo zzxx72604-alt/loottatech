@@ -189,13 +189,40 @@
       </p>
 
       <div class="grid">
-        @for (p of visible(); track trackById($index, p); let i = $index) {
-          <app-product-card
-            [product]="p"
-            [priority]="i < 4"
-            (addToCart)="onAddToCart($event)"
-            (toggleWatch)="onToggleWatch($event)"
-          />
+        @for (entry of feed(); track $index; let i = $index) {
+          @if (entry.kind === 'ad') {
+            <app-ad-tile [promo]="entry.promo" />
+          } @else if (i < 8) {
+            <!-- Above the fold: build immediately, and preload the first four
+                 images so the page paints without waiting. -->
+            <app-product-card
+              [product]="entry.product"
+              [priority]="i < 4"
+              (addToCart)="onAddToCart($event)"
+              (toggleWatch)="onToggleWatch($event)"
+            />
+          } @else {
+            <!--
+              Everything below the fold is DEFERRED.
+
+              @defer (on viewport) means Angular does not create the component,
+              run its bindings, or fetch its image until it is about to be
+              scrolled into view. On a large catalogue that is hundreds of
+              components never built - less work at load, less memory held.
+
+              The placeholder occupies the same space, so nothing jumps when
+              the real card arrives.
+            -->
+            @defer (on viewport) {
+              <app-product-card
+                [product]="entry.product"
+                (addToCart)="onAddToCart($event)"
+                (toggleWatch)="onToggleWatch($event)"
+              />
+            } @placeholder {
+              <app-product-card-skeleton />
+            }
+          }
         }
       </div>
     }

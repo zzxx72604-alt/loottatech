@@ -8,6 +8,7 @@ import {
   GameStart,
   RewardState,
   SpinResult,
+  UseCodeResult,
   Voucher,
 } from '../../shared/models/arcade';
 
@@ -37,6 +38,13 @@ export class ArcadeService {
 
   rewards(): Observable<RewardState> {
     return this.api.get<RewardState>('rewards').pipe(tap((r) => this.users.setCoins(r.balance)));
+  }
+
+  /** Redeem an admin-issued arcade code for coins and/or plays. */
+  useCode(code: string): Observable<UseCodeResult> {
+    return this.api
+      .post<UseCodeResult>('rewards/code', { code })
+      .pipe(tap((r) => this.users.setCoins(r.balance)));
   }
 
   redeem(key: string): Observable<Voucher> {

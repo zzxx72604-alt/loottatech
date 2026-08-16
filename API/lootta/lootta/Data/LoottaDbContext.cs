@@ -21,6 +21,8 @@ public class LoottaDbContext : DbContext
     public DbSet<Voucher> Vouchers => Set<Voucher>();
     public DbSet<GameSession> GameSessions => Set<GameSession>();
     public DbSet<EconomyConfig> EconomyConfigs => Set<EconomyConfig>();
+    public DbSet<RedeemCode> RedeemCodes => Set<RedeemCode>();
+    public DbSet<RedeemCodeUse> RedeemCodeUses => Set<RedeemCodeUse>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -152,6 +154,32 @@ public class LoottaDbContext : DbContext
             //
             // Ship the defaults so the shop works the moment it starts.
             entity.HasData(new EconomyConfig { Id = 1, UpdatedAt = new DateTime(2026, 1, 1) });
+        });
+
+        // --------------------------------------------------------- RedeemCode
+        modelBuilder.Entity<RedeemCode>(entity =>
+        {
+            entity.HasIndex(c => c.Code).IsUnique();
+            entity.Ignore(c => c.IsExpired);
+            entity.Ignore(c => c.IsExhausted);
+            entity.Ignore(c => c.IsUsable);
+
+            entity.HasMany(c => c.Uses)
+                  .WithOne(u => u.RedeemCode)
+                  .HasForeignKey(u => u.RedeemCodeId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<RedeemCodeUse>(entity =>
+        {
+            // One redemption per account per code, enforced by the database
+            // rather than by hoping the check in C# always runs first.
+            entity.HasIndex(u => new { u.RedeemCodeId, u.UserId }).IsUnique();
+
+            entity.HasOne(u => u.User)
+                  .WithMany()
+                  .HasForeignKey(u => u.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
         });
 
         // ------------------------------------------------- seed: categories

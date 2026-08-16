@@ -1,62 +1,62 @@
-<article class="card">
-  <a class="link" [routerLink]="['/product', product.id]">
-    <div class="media">
+@if (item(); as p) {
+  <a class="card" [routerLink]="['/product', p.id]" [attr.aria-label]="p.title">
+    <div class="shot">
       <img
-        [ngSrc]="product.images[0]"
+        [ngSrc]="p.images[0]"
         ngSrcset="480w, 800w"
-        sizes="(max-width: 640px) 45vw, (max-width: 1024px) 30vw, 200px"
-        [alt]="product.title"
+        sizes="(max-width: 600px) 45vw, 220px"
         width="800"
         height="800"
+        [alt]="p.title"
         [priority]="priority"
       />
 
-      @if (discount > 0) {
-        <span class="discount">-{{ discount }}%</span>
+      @if (discount() > 0) {
+        <span class="off">−{{ discount() }}%</span>
+      }
+
+      @if (p.stock === 0) {
+        <span class="sold">Sold out</span>
       }
 
       <button
         type="button"
         class="watch"
-        (click)="onToggleWatch($event)"
-        [attr.aria-label]="'Watch ' + product.title"
-      >
-        ♡
-      </button>
-
-      @if (product.stock === 0) {
-        <div class="sold">Sold out</div>
-      }
+        (click)="onWatch($event)"
+        [attr.aria-label]="'Watch ' + p.title"
+      >♡</button>
     </div>
 
     <div class="body">
-      <h3 class="title">{{ product.title }}</h3>
+      <p class="title">
+        <span class="grade" [class.new]="isNew()">
+          {{ isNew() ? 'NEW' : grade().score }}
+          @if (!isNew()) { <b>{{ grade().letter }}</b> }
+        </span>
+        {{ p.title }}
+      </p>
 
-      <div class="meta">
-        <app-condition-badge [condition]="product.condition" />
-        @if (product.tested) {
-          <span class="tested">Tested ✓</span>
+      <p class="price">
+        <span class="now">{{ p.price | currency: 'USD' : 'symbol' : '1.0-0' }}</span>
+        @if (saving() > 0) {
+          <span class="promo">save {{ saving() | currency: 'USD' : 'symbol' : '1.0-0' }}</span>
         }
-      </div>
+      </p>
 
-      <div class="prices">
-        <span class="now">{{ product.price | currency: 'USD' : 'symbol' : '1.0-0' }}</span>
-        @if (product.originalPrice && product.originalPrice > product.price) {
-          <s class="was">{{ product.originalPrice | currency: 'USD' : 'symbol' : '1.0-0' }}</s>
-        }
-      </div>
+      @if (tags().length > 0) {
+        <p class="tags">
+          @for (tag of tags(); track tag) {
+            <span class="tag">{{ tag }}</span>
+          }
+        </p>
+      }
 
-      <div class="foot">
-        <span class="watchers">♡ {{ product.watchCount }}</span>
-        <button
-          type="button"
-          class="add"
-          (click)="onAddToCart($event)"
-          [disabled]="product.stock === 0"
-        >
-          Add
-        </button>
-      </div>
+      <button
+        type="button"
+        class="add"
+        (click)="onAdd($event)"
+        [disabled]="p.stock === 0"
+      >{{ p.stock === 0 ? 'Sold out' : 'Add to cart' }}</button>
     </div>
   </a>
-</article>
+}

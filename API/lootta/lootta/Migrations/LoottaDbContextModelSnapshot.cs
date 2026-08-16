@@ -130,6 +130,9 @@ namespace lootta.Migrations
                     b.Property<int>("BronzePlays")
                         .HasColumnType("int");
 
+                    b.Property<int>("BrowserPlays")
+                        .HasColumnType("int");
+
                     b.Property<int>("CoinsPerDollar")
                         .HasColumnType("int");
 
@@ -179,6 +182,7 @@ namespace lootta.Migrations
                             Id = 1,
                             BronzeItems = 1,
                             BronzePlays = 1,
+                            BrowserPlays = 5,
                             CoinsPerDollar = 40,
                             CoinsPerVoucherDollar = 300,
                             FlyerCoinsPerPoint = 8,
@@ -513,6 +517,80 @@ namespace lootta.Migrations
                     b.ToTable("ProductSpecs");
                 });
 
+            modelBuilder.Entity("lootta.Models.RedeemCode", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(24)
+                        .HasColumnType("nvarchar(24)");
+
+                    b.Property<int>("Coins")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Label")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<int>("MaxUses")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Plays")
+                        .HasColumnType("int");
+
+                    b.Property<int>("UsedCount")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.ToTable("RedeemCodes");
+                });
+
+            modelBuilder.Entity("lootta.Models.RedeemCodeUse", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("RedeemCodeId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UsedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("RedeemCodeId", "UserId")
+                        .IsUnique();
+
+                    b.ToTable("RedeemCodeUses");
+                });
+
             modelBuilder.Entity("lootta.Models.User", b =>
                 {
                     b.Property<int>("Id")
@@ -527,6 +605,9 @@ namespace lootta.Migrations
                         .HasColumnType("nvarchar(300)");
 
                     b.Property<int>("BestScore")
+                        .HasColumnType("int");
+
+                    b.Property<int>("BonusPlays")
                         .HasColumnType("int");
 
                     b.Property<int>("Coins")
@@ -718,6 +799,25 @@ namespace lootta.Migrations
                     b.Navigation("Product");
                 });
 
+            modelBuilder.Entity("lootta.Models.RedeemCodeUse", b =>
+                {
+                    b.HasOne("lootta.Models.RedeemCode", "RedeemCode")
+                        .WithMany("Uses")
+                        .HasForeignKey("RedeemCodeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("lootta.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("RedeemCode");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("lootta.Models.Voucher", b =>
                 {
                     b.HasOne("lootta.Models.User", "User")
@@ -743,6 +843,11 @@ namespace lootta.Migrations
                     b.Navigation("Images");
 
                     b.Navigation("Specs");
+                });
+
+            modelBuilder.Entity("lootta.Models.RedeemCode", b =>
+                {
+                    b.Navigation("Uses");
                 });
 
             modelBuilder.Entity("lootta.Models.User", b =>

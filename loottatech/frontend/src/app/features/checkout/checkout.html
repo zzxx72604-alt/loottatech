@@ -52,9 +52,14 @@
           <label for="voucherCode">Voucher code (optional)</label>
           <input id="voucherCode" type="text" formControlName="voucherCode"
                  placeholder="LC-XXXXXX" style="text-transform: uppercase" />
+          @if (preview(); as p) {
+            @if (p.voucherMessage) {
+              <p class="voucher-msg" [class.ok]="p.voucherApplied">{{ p.voucherMessage }}</p>
+            }
+          }
           <p class="hint-inline">
-            Earn vouchers in the <a routerLink="/arcade">arcade</a>. The discount is applied by
-            the server when the order is placed.
+            Earn vouchers in the <a routerLink="/arcade">arcade</a>. The discount is worked out
+            by the server, not by this page.
           </p>
         </div>
       }
@@ -86,10 +91,22 @@
         <span>{{ chosenDelivery() }}</span>
         <span>{{ deliveryFee() === 0 ? 'Free' : (deliveryFee() | currency: 'USD' : 'symbol' : '1.2-2') }}</span>
       </div>
-      <div class="row total">
+
+      @if (discount() > 0) {
+        <div class="row saving">
+          <span>Voucher discount</span>
+          <span>− {{ discount() | currency: 'USD' : 'symbol' : '1.2-2' }}</span>
+        </div>
+      }
+
+      <div class="row total" [class.updating]="pricing()">
         <span>Total</span>
         <span>{{ total() | currency: 'USD' : 'symbol' : '1.2-2' }}</span>
       </div>
+
+      @if (coinsEarned() > 0) {
+        <p class="earn">Earns ◎ {{ coinsEarned() }} coins</p>
+      }
 
       <button type="button" class="primary" (click)="placeOrder()" [disabled]="submitting()">
         {{ submitting() ? 'Placing order…' : 'Place order' }}

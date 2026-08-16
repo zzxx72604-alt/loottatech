@@ -2,10 +2,13 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { CurrencyPipe } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
+import { debounceTime, distinctUntilChanged, startWith, switchMap } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { catchError, of } from 'rxjs';
 import { CartService } from '../../core/services/cart.service';
 import { OrderService } from '../../core/services/order.service';
 import { UserService } from '../../core/services/user.service';
-import { DELIVERY_OPTIONS, DeliveryOption } from '../../shared/models/order';
+import { DELIVERY_OPTIONS, DeliveryOption, OrderPreview } from '../../shared/models/order';
 
 /**
  * REACTIVE form — the delivery option changes the total live, so the form
@@ -40,11 +43,29 @@ export class Checkout {
   /** Mirrors the delivery control so the summary can react to it. */
   protected readonly chosenDelivery = signal<DeliveryOption>('Standard Delivery');
 
+  /**
+   * The priced order, straight from the API.
+   *
+   * The page deliberately does NOT add up the discount itself. It sends the
+   * cart and the voucher code, and shows what the server says — the same code
+   * path that will run when the order is placed, so the number can never
+   * disagree with the receipt.
+   */
+  protected readonly preview = signal<OrderPreview | null>(null);
+  protected readonly pricing = signal(false);
+
   protected readonly deliveryFee = computed(
-    () => DELIVERY_OPTIONS.find((o) => o.value === this.chosenDelivery())?.fee ?? 0,
+    () => this.preview()?.deliveryFee
+      ?? DELIVERY_OPTIONS.find((o) => o.value === this.chosenDelivery())?.fee
+      ?? 0,
   );
 
-  protected readonly total = computed(() => this.subtotal() + this.deliveryFee());
+  protected readonly discount = computed(() => this.preview()?.discount ?? 0);
+  protected readonly coinsEarned = computed(() => this.preview()?.coinsEarned ?? 0);
+
+  protected readonly total = computed(
+    () => this.preview()?.total ?? this.subtotal() + this.deliveryFee(),
+  );
 
   protected readonly form = this.fb.nonNullable.group({
     customerName: [this.usersName(), [Validators.required, Validators.minLength(2)]],
@@ -59,6 +80,45 @@ export class Checkout {
     this.form.controls.deliveryOption.valueChanges.subscribe((value) =>
       this.chosenDelivery.set(value),
     );
+
+    /*
+     * Re-price whenever the voucher code or delivery option changes.
+     *
+     *   debounceTime  — don't call the API on every keystroke
+     *   switchMap     — cancel the previous request, so a slow reply for a
+     *                   half-typed code can't overwrite a newer one
+     */
+    this.form.valueChanges
+      .pipe(
+        debounceTime(400),
+        distinctUntilChanged(
+          (a, b) => a.voucherCode === b.voucherCode && a.deliveryOption === b.deliveryOption,
+        ),
+        startWith(null),
+        switchMap(() => {
+          if (this.items().length === 0) return of(null);
+
+          this.pricing.set(true);
+          return this.orders
+            .preview({
+              items: this.items().map((line) => ({
+                productId: line.product.id,
+                quantity: line.quantity,
+              })),
+              customerName: 'preview',
+              phone: '000000000',
+              address: 'preview',
+              deliveryOption: this.form.controls.deliveryOption.value,
+              voucherCode: this.form.controls.voucherCode.value?.trim().toUpperCase(),
+            })
+            .pipe(catchError(() => of(null)));
+        }),
+        takeUntilDestroyed(),
+      )
+      .subscribe((priced) => {
+        this.preview.set(priced);
+        this.pricing.set(false);
+      });
   }
 
   private usersName(): string {
@@ -92,6 +152,7 @@ export class Checkout {
           quantity: line.quantity,
         })),
         ...details,
+        voucherCode: details.voucherCode?.trim().toUpperCase(),
       })
       .subscribe({
         next: (order) => {

@@ -1,0 +1,84 @@
+:host {
+  --wheel-a: #ffe411;
+  --wheel-b: #fff6a8;
+  --wheel-edge: #2a2a2e;
+  --wheel-hub: #1d1d20;
+
+  display: block;
+}
+
+.wheel-wrap {
+  position: relative;
+  width: 260px;
+  max-width: 100%;
+  margin: 0 auto var(--sp-3);
+}
+
+.pointer {
+  position: absolute;
+  top: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 11px solid transparent;
+  border-right: 11px solid transparent;
+  border-top: 18px solid var(--price);
+  z-index: 2;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .35));
+}
+
+.wheel {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 50%;
+  border: 5px solid var(--wheel-hub);
+  background: var(--wheel-hub);
+  /* Only transform animates, so the GPU handles it and nothing reflows. */
+  transition: transform 3.4s cubic-bezier(0.16, 0.84, 0.22, 1);
+}
+
+.prize {
+  font-family: system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 800;
+  fill: #1d1d20;
+}
+
+.odds {
+  list-style: none;
+  margin: 0 auto;
+  padding: 0;
+  max-width: 300px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px var(--sp-2);
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+  }
+
+  b { font-weight: 700; }
+  .pct { color: var(--text-3); }
+}
+
+.swatch {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  border: 1px solid var(--wheel-edge);
+  flex: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wheel { transition-duration: .01ms; }
+}
+
+@media (max-width: 480px) {
+  .wheel-wrap { width: 220px; }
+  .odds { grid-template-columns: repeat(3, 1fr); }
+}

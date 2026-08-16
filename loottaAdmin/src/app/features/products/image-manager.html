@@ -1,0 +1,65 @@
+<div class="head">
+  <div>
+    <h2>Photos</h2>
+    <p class="hint">
+      Cropped to a square on the server and saved at three sizes. The first
+      photo, or the one you star, appears on the product card.
+    </p>
+  </div>
+
+  @if (productId) {
+    <button type="button" class="btn btn-sm" (click)="add()" [disabled]="busy()">
+      + Add photo
+    </button>
+  }
+</div>
+
+@if (!productId) {
+  <p class="locked">Save the product first, then you can add photos.</p>
+} @else {
+  @if (error()) { <p class="alert bad">{{ error() }}</p> }
+
+  <div class="strip">
+    @for (image of sorted(); track image.id) {
+      <figure class="shot" [class.primary]="image.isPrimary">
+        <img [src]="thumb(image)" [alt]="'Product photo'" width="110" height="110" loading="lazy" />
+
+        @if (image.isPrimary) {
+          <span class="star" title="Shown on the product card">★</span>
+        }
+
+        <figcaption>
+          @if (!image.isPrimary) {
+            <button type="button" (click)="setPrimary(image)" title="Use on the card">★</button>
+          }
+          <button type="button" (click)="replace(image)" title="Replace">⟳</button>
+          <button type="button" class="danger" (click)="remove(image)" title="Delete">✕</button>
+        </figcaption>
+      </figure>
+    }
+
+    @if (pendingPreview(); as preview) {
+      <figure class="shot uploading">
+        <img [src]="preview" alt="" width="110" height="110" />
+        <div class="bar"><div class="fill" [style.width.%]="progress()"></div></div>
+        <figcaption class="pct">{{ progress() }}%</figcaption>
+      </figure>
+    }
+
+    @if (sorted().length === 0 && !pendingPreview()) {
+      <button type="button" class="empty" (click)="add()">
+        <span>+</span>
+        Add the first photo
+      </button>
+    }
+  </div>
+}
+
+<!-- Hidden picker, driven by the buttons above so we control the styling. -->
+<input
+  #picker
+  type="file"
+  accept="image/jpeg,image/png,image/webp,image/avif"
+  hidden
+  (change)="onFile($event)"
+/>

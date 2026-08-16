@@ -48,6 +48,7 @@ builder.Services.AddDbContext<LoottaDbContext>(options =>
 
 builder.Services.AddScoped<TokenService>();
 builder.Services.AddScoped<EconomyService>();
+builder.Services.AddSingleton<ImageService>();
 
 // ---- authentication: JWT bearer -----------------------------------------
 var jwt = builder.Configuration.GetSection("Jwt");

@@ -2,7 +2,14 @@ import { ChangeDetectionStrategy, Component, Input, inject, signal } from '@angu
 import { FormArray, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { CategoryApi, ProductApi } from '../../core/services/product-api.service';
-import { CONDITIONS, Category, Condition, ProductWrite } from '../../shared/models/product';
+import {
+  CONDITIONS,
+  Category,
+  Condition,
+  ProductImage,
+  ProductWrite,
+} from '../../shared/models/product';
+import { ImageManager } from './image-manager';
 
 /**
  * Reactive form for creating and editing a product.
@@ -14,7 +21,7 @@ import { CONDITIONS, Category, Condition, ProductWrite } from '../../shared/mode
  */
 @Component({
   selector: 'app-product-form',
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, RouterLink, ImageManager],
   templateUrl: './product-form.html',
   styleUrl: './product-form.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -29,6 +36,7 @@ export class ProductForm {
   protected readonly categoryList = signal<Category[]>([]);
 
   protected readonly editingId = signal<number | null>(null);
+  protected readonly images = signal<ProductImage[]>([]);
   protected readonly loading = signal(false);
   protected readonly saving = signal(false);
   protected readonly error = signal('');
@@ -73,6 +81,8 @@ export class ProductForm {
           description: p.description,
           flawNotes: p.flawNotes,
         });
+
+        this.images.set(p.imageDetails ?? []);
 
         this.specs.clear();
         for (const spec of p.specs) this.specs.push(this.newSpec(spec.key, spec.value));
@@ -145,7 +155,19 @@ export class ProductForm {
     const request = id ? this.products.update(id, body) : this.products.create(body);
 
     request.subscribe({
-      next: () => this.router.navigateByUrl('/products'),
+      next: (saved) => {
+        // On create, switch into edit mode instead of leaving — otherwise the
+        // admin has to find the product again just to add its photos.
+        if (!id) {
+          this.editingId.set(saved.id);
+          this.images.set(saved.imageDetails ?? []);
+          this.saving.set(false);
+          this.router.navigate(['/products', saved.id], { replaceUrl: true });
+          return;
+        }
+
+        this.router.navigateByUrl('/products');
+      },
       error: (err) => {
         this.error.set(this.explain(err));
         this.saving.set(false);

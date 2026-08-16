@@ -113,6 +113,11 @@
       </aside>
     </div>
 
+    <!-- ------------------------------------------------------- photos -->
+    <section class="card block">
+      <app-image-manager [productId]="editingId()" [images]="images()" />
+    </section>
+
     <!-- ------------------------------------------------- specs FormArray -->
     <section class="card block">
       <div class="specs-head">

@@ -28,6 +28,8 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
 
+    <PackageReference Include="SixLabors.ImageSharp" Version="4.1.0" />
+
     <!-- Swagger / OpenAPI documentation UI -->
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
   </ItemGroup>

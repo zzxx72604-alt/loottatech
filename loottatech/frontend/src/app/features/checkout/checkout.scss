@@ -183,3 +183,26 @@ input[type='tel'] {
 
   a { color: var(--price); font-weight: 600; }
 }
+
+.voucher-msg {
+  margin: 5px 0 0;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--sale);
+
+  &.ok { color: var(--cond-new); }
+}
+
+.row.saving span:last-child { color: var(--cond-new); font-weight: 600; }
+
+/* The total dims briefly while the server re-prices, so a changing number
+   never looks like a glitch. */
+.row.total.updating { opacity: .45; }
+.row.total { transition: opacity var(--dur) var(--ease); }
+
+.earn {
+  margin: var(--sp-2) 0 0;
+  text-align: right;
+  font-size: 11.5px;
+  color: var(--text-3);
+}

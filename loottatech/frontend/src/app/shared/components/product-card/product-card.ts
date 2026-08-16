@@ -1,50 +1,79 @@
-import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
-import { NgOptimizedImage } from '@angular/common';
+import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output, computed, signal } from '@angular/core';
+import { CurrencyPipe, NgOptimizedImage } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { CurrencyPipe } from '@angular/common';
-import { ConditionBadge } from '../condition-badge/condition-badge';
-import { Product, discountPercent } from '../../models/product';
+import {
+  Product,
+  conditionGrade,
+  discountPercent,
+  productTags,
+} from '../../models/product';
 
 /**
- * A DUMB component.
+ * A product tile.
  *
- * It receives one product through @Input and reports what the user did through
- * @Output. It never injects CartService, never calls the API, and holds no
- * state of its own — so it can be dropped on any page and behaves identically.
- *
- * The parent decides what "add to cart" actually means. This is the same
- * child -> parent pattern as the classroom EventEmitter example, on real data.
+ * Deliberately has NO service dependencies. It takes a product in and emits
+ * events out, so the same card works in the catalogue, the "best deals" strip
+ * and search results without knowing which one it is in. The parent decides
+ * what "add to cart" means.
  */
 @Component({
   selector: 'app-product-card',
-  imports: [NgOptimizedImage, RouterLink, CurrencyPipe, ConditionBadge],
+  imports: [NgOptimizedImage, CurrencyPipe, RouterLink],
   templateUrl: './product-card.html',
   styleUrl: './product-card.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ProductCard {
-  @Input({ required: true }) product!: Product;
+  private readonly current = signal<Product | null>(null);
 
-  /** First few cards are above the fold — load them eagerly for a fast LCP. */
+  @Input({ required: true }) set product(value: Product) {
+    this.current.set(value);
+  }
+
+  /** Only the first few cards should preload their image. */
   @Input() priority = false;
 
   @Output() addToCart = new EventEmitter<Product>();
   @Output() toggleWatch = new EventEmitter<Product>();
 
-  protected get discount(): number {
-    return discountPercent(this.product);
-  }
+  protected readonly item = this.current.asReadonly();
 
-  protected onAddToCart(event: Event): void {
-    // The whole card is a link — stop the click from navigating.
+  protected readonly grade = computed(() => {
+    const p = this.current();
+    return p ? conditionGrade(p.condition) : { score: '', letter: '' };
+  });
+
+  protected readonly discount = computed(() => {
+    const p = this.current();
+    return p ? discountPercent(p) : 0;
+  });
+
+  protected readonly saving = computed(() => {
+    const p = this.current();
+    return p && p.originalPrice > p.price ? p.originalPrice - p.price : 0;
+  });
+
+  protected readonly tags = computed(() => {
+    const p = this.current();
+    return p ? productTags(p) : [];
+  });
+
+  protected readonly isNew = computed(() => this.current()?.condition === 'new');
+
+  protected onAdd(event: Event): void {
+    // The card is a link; adding to the cart must not navigate.
     event.preventDefault();
     event.stopPropagation();
-    this.addToCart.emit(this.product);
+
+    const p = this.current();
+    if (p) this.addToCart.emit(p);
   }
 
-  protected onToggleWatch(event: Event): void {
+  protected onWatch(event: Event): void {
     event.preventDefault();
     event.stopPropagation();
-    this.toggleWatch.emit(this.product);
+
+    const p = this.current();
+    if (p) this.toggleWatch.emit(p);
   }
 }

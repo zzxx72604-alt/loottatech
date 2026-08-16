@@ -49,6 +49,15 @@ public class EconomyConfig
 
     // ---- daily play allowance, by lifetime items bought ----
 
+    /// <summary>
+    /// Plays for someone who hasn't bought anything yet.
+    ///
+    /// Deliberately NOT zero. Coins are already the real gate — you can't get
+    /// them without buying or redeeming a code — so a hard lock on top just
+    /// makes the arcade look broken to a first-time visitor.
+    /// </summary>
+    [Range(0, 100)] public int BrowserPlays { get; set; } = 5;
+
     [Range(0, 100)] public int BronzeItems { get; set; } = 1;
     [Range(0, 100)] public int BronzePlays { get; set; } = 1;
 
@@ -67,7 +76,7 @@ public class EconomyConfig
     /// <summary>The tier ladder, built from the configured numbers.</summary>
     public (string Name, int MinItems, int PlaysPerDay)[] Tiers() => new[]
     {
-        ("Browser", 0, 0),
+        ("Browser", 0, BrowserPlays),
         ("Bronze", BronzeItems, BronzePlays),
         ("Silver", SilverItems, SilverPlays),
         ("Gold", GoldItems, GoldPlays),

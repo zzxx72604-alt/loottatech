@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable, tap } from 'rxjs';
 import { ApiService } from './api.service';
-import { CreateOrderRequest, Order } from '../../shared/models/order';
+import { CreateOrderRequest, Order, OrderPreview } from '../../shared/models/order';
 
 /** Order numbers this browser has placed, so "My orders" works without login. */
 const HISTORY_KEY = 'lootta-order-numbers';
@@ -14,6 +14,16 @@ export class OrderService {
     return this.api
       .post<Order>('orders', order)
       .pipe(tap((created) => this.remember(created.orderNumber)));
+  }
+
+  /**
+   * Ask the server what this order would cost, without placing it.
+   *
+   * The discount is worked out by the API from the voucher row, exactly as it
+   * will be at checkout — the browser only displays the answer.
+   */
+  preview(order: CreateOrderRequest): Observable<OrderPreview> {
+    return this.api.post<OrderPreview>('orders/preview', order);
   }
 
   byNumber(orderNumber: string): Observable<Order> {

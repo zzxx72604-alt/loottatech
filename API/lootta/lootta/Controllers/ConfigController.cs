@@ -44,6 +44,7 @@ public class ConfigController : ControllerBase
         config.VoucherMinSpendMultiplier = dto.VoucherMinSpendMultiplier;
         config.VoucherExpiryDays = dto.VoucherExpiryDays;
 
+        config.BrowserPlays = dto.BrowserPlays;
         config.BronzeItems = dto.BronzeItems;
         config.BronzePlays = dto.BronzePlays;
         config.SilverItems = dto.SilverItems;

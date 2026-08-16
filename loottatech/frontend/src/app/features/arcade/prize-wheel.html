@@ -1,0 +1,41 @@
+<div class="wheel-wrap">
+  <div class="pointer" aria-hidden="true"></div>
+
+  <svg
+    viewBox="0 0 200 200"
+    class="wheel"
+    [class.spinning]="spinning()"
+    [style.transform]="'rotate(' + angle() + 'deg)'"
+    role="img"
+    aria-label="Prize wheel"
+  >
+    @for (w of wedges(); track $index) {
+      <path [attr.d]="w.path" [attr.fill]="w.fill" stroke="var(--wheel-edge)" stroke-width="0.8" />
+    }
+
+    @for (w of wedges(); track $index) {
+      <!-- Labels stay upright so every number reads the same way round. -->
+      <text
+        [attr.x]="w.labelX"
+        [attr.y]="w.labelY"
+        text-anchor="middle"
+        dominant-baseline="central"
+        class="prize"
+      >{{ w.prize }}</text>
+    }
+
+    <circle [attr.cx]="100" [attr.cy]="100" r="15" fill="var(--wheel-hub)" />
+  </svg>
+</div>
+
+<!-- The odds, stated plainly. The slice widths already show this, but a
+     number removes any doubt. -->
+<ul class="odds">
+  @for (w of wedges(); track $index) {
+    <li>
+      <span class="swatch" [style.background]="w.fill"></span>
+      <b>{{ w.prize }}</b>
+      <span class="pct">{{ w.chance }}%</span>
+    </li>
+  }
+</ul>

@@ -1,16 +1,18 @@
 import { ChangeDetectionStrategy, Component, ViewChild, computed, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ArcadeService } from '../../core/services/arcade.service';
 import { UserService } from '../../core/services/user.service';
 import { ArcadeState, RewardState, Voucher } from '../../shared/models/arcade';
 import { FlyerGame } from './flyer-game';
+import { PrizeWheel } from './prize-wheel';
 
 type Mode = 'flyer' | 'wheel';
 
 @Component({
   selector: 'app-arcade',
-  imports: [DatePipe, RouterLink, FlyerGame],
+  imports: [DatePipe, FormsModule, RouterLink, FlyerGame, PrizeWheel],
   templateUrl: './arcade.html',
   styleUrl: './arcade.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -20,6 +22,7 @@ export class Arcade {
   protected readonly users = inject(UserService);
 
   @ViewChild(FlyerGame) private flyer?: FlyerGame;
+  @ViewChild(PrizeWheel) private wheel?: PrizeWheel;
 
   protected readonly mode = signal<Mode>('flyer');
   protected readonly state = signal<ArcadeState | null>(null);
@@ -30,9 +33,13 @@ export class Arcade {
   protected readonly message = signal('');
   protected readonly error = signal('');
 
-  // ---- wheel animation ------------------------------------------------
-  protected readonly wheelAngle = signal(0);
   protected readonly spinning = signal(false);
+
+  // ---- admin-issued top-up codes --------------------------------------
+  protected codeInput = '';
+  protected readonly codeBusy = signal(false);
+  protected readonly codeMessage = signal('');
+  protected readonly codeError = signal('');
 
   protected readonly playsLeft = computed(() => this.state()?.playsLeftToday ?? 0);
   protected readonly canPlay = computed(() => this.playsLeft() > 0);
@@ -83,26 +90,17 @@ export class Arcade {
 
     this.arcade.spin().subscribe({
       next: (result) => {
-        const wedges = this.state()?.wheel.length ?? 8;
-        const perWedge = 360 / wedges;
-
-        /*
-         * The server already decided the prize. The animation simply lands on
-         * that wedge — five full turns for the drama, then the exact angle.
-         */
-        const target =
-          this.wheelAngle() + 360 * 5 + (360 - result.prizeIndex * perWedge - perWedge / 2);
-
+        // The server already picked the wedge. The wheel only animates
+        // towards a result that has already been decided and saved.
         this.spinning.set(true);
-        this.wheelAngle.set(target);
 
-        setTimeout(() => {
+        this.wheel?.spinTo(result.prizeIndex, () => {
           this.spinning.set(false);
           this.message.set(result.message);
           this.busy.set(false);
           this.patchPlays(result.playsLeftToday, result.balance, result.streak);
           this.reloadRewards();
-        }, 3200);
+        });
       },
       error: (err) => {
         this.error.set(this.explain(err));
@@ -173,6 +171,30 @@ export class Arcade {
       error: (err) => {
         this.error.set(this.explain(err));
         this.busy.set(false);
+      },
+    });
+  }
+
+  /* ------------------------------------------------------ top-up codes */
+
+  protected useCode(): void {
+    const code = this.codeInput.trim();
+    if (!code || this.codeBusy()) return;
+
+    this.codeBusy.set(true);
+    this.codeMessage.set('');
+    this.codeError.set('');
+
+    this.arcade.useCode(code).subscribe({
+      next: (result) => {
+        this.codeMessage.set(result.message);
+        this.codeInput = '';
+        this.codeBusy.set(false);
+        this.refresh();
+      },
+      error: (err) => {
+        this.codeError.set(this.explain(err));
+        this.codeBusy.set(false);
       },
     });
   }

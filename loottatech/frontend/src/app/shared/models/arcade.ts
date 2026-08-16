@@ -16,13 +16,29 @@ export interface ArcadeState {
 
   /** Coin value of each wheel wedge, in drawing order. */
   wheel: number[];
+  /** Relative chance of each wedge, so slices can be sized by real odds. */
+  wheelWeights: number[];
+
+  playCost: number;
+  canAfford: boolean;
   coinsPerPoint: number;
+  coinsPerDollar: number;
+  bonusPlays: number;
+}
+
+export interface UseCodeResult {
+  success: boolean;
+  message: string;
+  coinsAdded: number;
+  playsAdded: number;
+  balance: number;
+  bonusPlays: number;
 }
 
 export interface SpinResult {
   prizeIndex: number;
   coinsWon: number;
-  dailyBonus: number;
+  playCost: number;
   balance: number;
   streak: number;
   playsLeftToday: number;
@@ -32,6 +48,8 @@ export interface SpinResult {
 export interface GameStart {
   token: string;
   coinsPerPoint: number;
+  playCost: number;
+  balance: number;
   playsLeftToday: number;
   bestScore: number;
 }
@@ -39,7 +57,7 @@ export interface GameStart {
 export interface GameResult {
   score: number;
   coinsEarned: number;
-  dailyBonus: number;
+  playCost: number;
   balance: number;
   bestScore: number;
   streak: number;
@@ -52,6 +70,7 @@ export interface VoucherOption {
   key: string;
   label: string;
   description: string;
+  value: number;
   coinCost: number;
   affordable: boolean;
 }

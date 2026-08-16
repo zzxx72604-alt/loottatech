@@ -62,3 +62,14 @@ export interface CreateOrderRequest {
   deliveryOption: DeliveryOption;
   note?: string;
 }
+
+/** What POST /api/orders/preview returns — the server's pricing, not ours. */
+export interface OrderPreview {
+  subtotal: number;
+  deliveryFee: number;
+  discount: number;
+  total: number;
+  coinsEarned: number;
+  voucherApplied: boolean;
+  voucherMessage: string;
+}

@@ -83,6 +83,7 @@ public class GameController : ControllerBase
             CoinsPerPoint = config.FlyerCoinsPerPoint,
             CoinsPerDollar = config.CoinsPerDollar,
             Wheel = WheelMultipliers.Select(m => (int)Math.Round(config.PlayCost * m)).ToList(),
+            WheelWeights = Weights.ToList(),
         });
     }
 
@@ -241,8 +242,12 @@ public class GameController : ControllerBase
         var items = await _economy.LifetimeItemsAsync(user.Id);
         var tier = config.TierFor(items);
 
-        if (tier.PlaysPerDay == 0 && user.BonusPlays <= 0)
-            return "Buy something from the shop to unlock the arcade.";
+        // Coins are the real constraint, so check them first — "you're broke"
+        // is a more useful message than "come back tomorrow".
+        if (user.Coins < config.PlayCost)
+            return $"A play costs {config.PlayCost} coins and you have {user.Coins}. "
+                 + $"Shopping earns {config.CoinsPerDollar} coins per dollar, "
+                 + "or redeem a code.";
 
         if (PlaysLeft(user, tier.PlaysPerDay) <= 0)
         {
@@ -253,10 +258,6 @@ public class GameController : ControllerBase
                   + $"{next.Value.MinItems - items} more item(s) to reach {next.Value.Name} "
                   + $"and get {next.Value.PlaysPerDay} a day.";
         }
-
-        if (user.Coins < config.PlayCost)
-            return $"A play costs {config.PlayCost} coins and you have {user.Coins}. "
-                 + $"Shopping earns {config.CoinsPerDollar} coins per dollar.";
 
         user.Coins -= config.PlayCost;
 
