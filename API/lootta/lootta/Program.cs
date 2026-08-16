@@ -47,6 +47,7 @@ builder.Services.AddDbContext<LoottaDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddScoped<TokenService>();
+builder.Services.AddScoped<EconomyService>();
 
 // ---- authentication: JWT bearer -----------------------------------------
 var jwt = builder.Configuration.GetSection("Jwt");

@@ -63,6 +63,14 @@ public class User
     /// </summary>
     public bool WelcomePlayUsed { get; set; }
 
+    /// <summary>
+    /// A finite pool of extra plays granted by an admin — for testing, or as
+    /// compensation. Spent only once the daily allowance is gone, and it does
+    /// NOT refill each day, so granting 999 gives 999 plays in total rather
+    /// than 999 every morning.
+    /// </summary>
+    public int BonusPlays { get; set; }
+
     public bool IsActive { get; set; } = true;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

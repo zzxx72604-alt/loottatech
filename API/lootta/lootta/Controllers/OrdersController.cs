@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using lootta.Data;
 using lootta.Dtos;
 using lootta.Models;
+using lootta.Services;
 
 namespace lootta.Controllers;
 
@@ -13,8 +14,13 @@ namespace lootta.Controllers;
 public class OrdersController : ControllerBase
 {
     private readonly LoottaDbContext _db;
+    private readonly EconomyService _economy;
 
-    public OrdersController(LoottaDbContext db) => _db = db;
+    public OrdersController(LoottaDbContext db, EconomyService economy)
+    {
+        _db = db;
+        _economy = economy;
+    }
 
     /// <summary>Place an order. Open to guests — no account needed.</summary>
     [HttpPost]
@@ -95,7 +101,8 @@ public class OrdersController : ControllerBase
 
             if (voucher is null)
                 return BadRequest($"Voucher {code} does not exist.");
-            if (voucher.UserId != userId)
+            // A null owner means a public promo code — anyone may use it.
+            if (voucher.UserId is not null && voucher.UserId != userId)
                 return BadRequest("That voucher belongs to another account.");
             if (voucher.IsSpent)
                 return BadRequest("That voucher has already been used.");
@@ -118,6 +125,22 @@ public class OrdersController : ControllerBase
         if (voucher is not null)
         {
             voucher.UsedAt = DateTime.UtcNow;
+        }
+
+        /*
+         * Shopping is how coins enter the economy. Coins are awarded on the
+         * amount actually paid, so a discount doesn't earn coins on money that
+         * was never spent. Guests earn nothing — there's no account to hold it.
+         */
+        if (userId is not null)
+        {
+            var config = await _economy.GetAsync();
+            var buyer = await _db.Users.FindAsync(userId.Value);
+            if (buyer is not null)
+            {
+                order.CoinsEarned = EconomyService.CoinsForSpend(order.Total, config);
+                buyer.Coins += order.CoinsEarned;
+            }
         }
 
         await _db.SaveChangesAsync();
@@ -153,6 +176,72 @@ public class OrdersController : ControllerBase
                                     .FirstOrDefaultAsync(o => o.Id == id);
 
         return order is null ? NotFound($"No order with id {id}.") : Ok(order.ToDto());
+    }
+
+    /// <summary>
+    /// Price an order without placing it, so the checkout page can show the
+    /// voucher discount the moment a code is typed.
+    ///
+    /// Same rules as creating an order, nothing saved. The browser still never
+    /// calculates the discount itself — it only displays what the server says.
+    /// </summary>
+    [HttpPost("preview")]
+    [ProducesResponseType(typeof(OrderPreviewDto), StatusCodes.Status200OK)]
+    public async Task<ActionResult<OrderPreviewDto>> Preview(CreateOrderDto dto)
+    {
+        var config = await _economy.GetAsync();
+        var userId = CurrentUserIdOrNull();
+
+        decimal subtotal = 0;
+
+        foreach (var line in dto.Items)
+        {
+            var product = await _db.Products.AsNoTracking()
+                                            .FirstOrDefaultAsync(p => p.Id == line.ProductId);
+            if (product is null) continue;
+
+            var quantity = Math.Clamp(line.Quantity, 1, Math.Max(1, product.Stock));
+            subtotal += product.Price * quantity;
+        }
+
+        var option = DeliveryPricing.Parse(dto.DeliveryOption);
+
+        var preview = new OrderPreviewDto
+        {
+            Subtotal = subtotal,
+            DeliveryFee = DeliveryPricing.FeeFor(option),
+        };
+
+        if (!string.IsNullOrWhiteSpace(dto.VoucherCode))
+        {
+            var code = dto.VoucherCode.Trim().ToUpperInvariant();
+            var voucher = await _db.Vouchers.AsNoTracking()
+                                            .FirstOrDefaultAsync(v => v.Code == code);
+
+            if (voucher is null)
+                preview.VoucherMessage = "That code doesn't exist.";
+            else if (voucher.UserId is not null && voucher.UserId != userId)
+                preview.VoucherMessage = "That voucher belongs to another account.";
+            else if (voucher.UsedAt is not null)
+                preview.VoucherMessage = "That voucher has already been used.";
+            else if (DateTime.UtcNow > voucher.ExpiresAt)
+                preview.VoucherMessage = "That voucher has expired.";
+            else if (subtotal < voucher.MinSpend)
+                preview.VoucherMessage = $"Spend at least {voucher.MinSpend:C} to use this voucher.";
+            else
+            {
+                preview.Discount = voucher.DiscountFor(subtotal);
+                preview.VoucherApplied = true;
+                preview.VoucherMessage = $"{voucher.Value:C} off applied.";
+            }
+        }
+
+        preview.Total = preview.Subtotal + preview.DeliveryFee - preview.Discount;
+        preview.CoinsEarned = userId is null
+            ? 0
+            : EconomyService.CoinsForSpend(preview.Total, config);
+
+        return Ok(preview);
     }
 
     /// <summary>Orders belonging to the signed-in customer.</summary>
@@ -199,6 +288,13 @@ public class OrdersController : ControllerBase
         // Cancelling returns the units to stock, so they can be sold again.
         if (status == OrderStatus.Cancelled && !wasCancelled)
         {
+            // Take back the coins it paid out, or cancelling would be free money.
+            if (order.UserId is not null && order.CoinsEarned > 0)
+            {
+                var buyer = await _db.Users.FindAsync(order.UserId.Value);
+                if (buyer is not null) buyer.Coins = Math.Max(0, buyer.Coins - order.CoinsEarned);
+            }
+
             foreach (var item in order.Items.Where(i => i.ProductId.HasValue))
             {
                 var product = await _db.Products.FindAsync(item.ProductId!.Value);

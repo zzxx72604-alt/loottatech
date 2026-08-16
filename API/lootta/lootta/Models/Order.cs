@@ -41,6 +41,9 @@ public class Order
     [MaxLength(20)]
     public string VoucherCode { get; set; } = string.Empty;
 
+    /// <summary>Coins this order paid the customer. Reversed if cancelled.</summary>
+    public int CoinsEarned { get; set; }
+
     public OrderStatus Status { get; set; } = OrderStatus.Pending;
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using lootta.Data;
 
@@ -11,9 +12,11 @@ using lootta.Data;
 namespace lootta.Migrations
 {
     [DbContext(typeof(LoottaDbContext))]
-    partial class LoottaDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260816160744_AddEconomyConfig")]
+    partial class AddEconomyConfig
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

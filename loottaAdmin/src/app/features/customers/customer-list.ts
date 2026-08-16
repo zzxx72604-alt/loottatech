@@ -109,9 +109,17 @@ export class CustomerList {
   }
 
   private explain(err: unknown): string {
-    const e = err as { status?: number; error?: unknown };
+    const e = err as { status?: number; error?: unknown; message?: string };
+
     if (e.status === 0) return 'Cannot reach the API. Is it running on http://localhost:5197 ?';
-    if (typeof e.error === 'string') return e.error;
-    return 'Something went wrong.';
+    if (e.status === 401) return 'Not signed in, or the token expired. Sign in again.';
+    if (e.status === 403) return 'This account is not allowed to do that.';
+    if (typeof e.error === 'string' && e.error) return e.error;
+
+    const problem = e.error as { title?: string; detail?: string } | undefined;
+    if (problem?.detail) return `${e.status}: ${problem.detail}`;
+    if (problem?.title) return `${e.status}: ${problem.title}`;
+
+    return `Request failed with status ${e.status ?? 'unknown'}. Check the API terminal.`;
   }
 }

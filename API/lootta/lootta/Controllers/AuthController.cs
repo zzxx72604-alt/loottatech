@@ -82,6 +82,37 @@ public class AuthController : ControllerBase
         return Ok(ToResult(user));
     }
 
+    /// <summary>
+    /// Change your own password.
+    ///
+    /// The current password must be supplied even though you are already
+    /// signed in — otherwise anyone who walked up to an unlocked laptop could
+    /// take the account permanently.
+    /// </summary>
+    [HttpPut("password")]
+    [Authorize]
+    public async Task<IActionResult> ChangePassword(ChangePasswordDto dto)
+    {
+        if (dto.NewPassword != dto.ConfirmNewPassword)
+            return BadRequest("The two new passwords don't match.");
+
+        var user = await _db.Users.FindAsync(CurrentUserId);
+        if (user is null) return Unauthorized();
+
+        if (!BCrypt.Net.BCrypt.Verify(dto.CurrentPassword, user.PasswordHash))
+            return BadRequest("Your current password is incorrect.");
+
+        if (BCrypt.Net.BCrypt.Verify(dto.NewPassword, user.PasswordHash))
+            return BadRequest("The new password must be different from the old one.");
+
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
+        await _db.SaveChangesAsync();
+
+        // The existing token stays valid until it expires. Rotating tokens on
+        // password change would be the stricter choice; noted as a limitation.
+        return NoContent();
+    }
+
     /* ==================================================== admin only ==== */
 
     /// <summary>
@@ -237,6 +268,23 @@ public class AuthController : ControllerBase
 
         user.Role = role;
         await _db.SaveChangesAsync();
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Reset someone's password. For a customer who is locked out, or a staff
+    /// member who forgot theirs — there is no email recovery in this project.
+    /// </summary>
+    [HttpPut("users/{id:int}/password")]
+    [Authorize(Policy = "AdminOnly")]
+    public async Task<IActionResult> ResetPassword(int id, ResetPasswordDto dto)
+    {
+        var user = await _db.Users.FindAsync(id);
+        if (user is null) return NotFound($"No user with id {id}.");
+
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
+        await _db.SaveChangesAsync();
+
         return NoContent();
     }
 

@@ -24,8 +24,15 @@ public class Voucher
     [Required, MaxLength(20)]
     public string Code { get; set; } = string.Empty;
 
-    public int UserId { get; set; }
+    /// <summary>
+    /// The owner. NULL means a public promo code the admin generated, which
+    /// anyone may use — handy for testing and for shop-wide campaigns.
+    /// </summary>
+    public int? UserId { get; set; }
     public User? User { get; set; }
+
+    /// <summary>Set when an admin created it rather than a customer buying it.</summary>
+    public bool IsAdminIssued { get; set; }
 
     public VoucherType Type { get; set; }
 

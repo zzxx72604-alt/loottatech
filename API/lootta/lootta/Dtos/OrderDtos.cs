@@ -43,6 +43,26 @@ public class CreateOrderItemDto
     public int Quantity { get; set; } = 1;
 }
 
+/// <summary>
+/// What an order WOULD cost. Same rules as creating one, but nothing is saved.
+///
+/// This exists so the checkout page can show the discount the moment a voucher
+/// code is typed, instead of the customer finding out only after ordering.
+/// The browser still never calculates the discount itself.
+/// </summary>
+public class OrderPreviewDto
+{
+    public decimal Subtotal { get; set; }
+    public decimal DeliveryFee { get; set; }
+    public decimal Discount { get; set; }
+    public decimal Total { get; set; }
+
+    public int CoinsEarned { get; set; }
+
+    public bool VoucherApplied { get; set; }
+    public string VoucherMessage { get; set; } = string.Empty;
+}
+
 public class OrderItemDto
 {
     public int? ProductId { get; set; }

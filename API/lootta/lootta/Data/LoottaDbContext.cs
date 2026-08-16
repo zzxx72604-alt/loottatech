@@ -20,6 +20,7 @@ public class LoottaDbContext : DbContext
     public DbSet<User> Users => Set<User>();
     public DbSet<Voucher> Vouchers => Set<Voucher>();
     public DbSet<GameSession> GameSessions => Set<GameSession>();
+    public DbSet<EconomyConfig> EconomyConfigs => Set<EconomyConfig>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -141,6 +142,16 @@ public class LoottaDbContext : DbContext
                   .WithMany()
                   .HasForeignKey(g => g.UserId)
                   .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ------------------------------------------------------ EconomyConfig
+        modelBuilder.Entity<EconomyConfig>(entity =>
+        {
+            // Tiers() and friends are methods, so EF ignores them automatically —
+            // only the stored numbers become columns.
+            //
+            // Ship the defaults so the shop works the moment it starts.
+            entity.HasData(new EconomyConfig { Id = 1, UpdatedAt = new DateTime(2026, 1, 1) });
         });
 
         // ------------------------------------------------- seed: categories

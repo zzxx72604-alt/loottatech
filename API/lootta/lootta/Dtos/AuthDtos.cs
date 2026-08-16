@@ -50,6 +50,26 @@ public class CreateAdminDto
     public string Password { get; set; } = string.Empty;
 }
 
+/// <summary>Changing your OWN password. The current one must be proved.</summary>
+public class ChangePasswordDto
+{
+    [Required]
+    public string CurrentPassword { get; set; } = string.Empty;
+
+    [Required, MinLength(6), MaxLength(100)]
+    public string NewPassword { get; set; } = string.Empty;
+
+    [Required]
+    public string ConfirmNewPassword { get; set; } = string.Empty;
+}
+
+/// <summary>An admin resetting someone else's password — no current one needed.</summary>
+public class ResetPasswordDto
+{
+    [Required, MinLength(6), MaxLength(100)]
+    public string NewPassword { get; set; } = string.Empty;
+}
+
 public class ChangeRoleDto
 {
     /// <summary>"Customer" or "Admin".</summary>

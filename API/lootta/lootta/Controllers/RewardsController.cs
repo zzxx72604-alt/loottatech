@@ -5,15 +5,15 @@ using Microsoft.EntityFrameworkCore;
 using lootta.Data;
 using lootta.Dtos;
 using lootta.Models;
+using lootta.Services;
 
 namespace lootta.Controllers;
 
 /// <summary>
-/// Lootta Coins: earned by playing Lootta Flyer, spent on discount vouchers.
+/// Coin balance and vouchers.
 ///
-/// This controller owns the BALANCE and the VOUCHERS. Earning happens in
-/// GameController. Either way the browser never decides a number — it sends a
-/// score or a voucher key, and the server works out what that is worth.
+/// Prices come from EconomyConfig, so the admin can retune the whole shop
+/// without a code change. Earning happens in GameController and at checkout.
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
@@ -21,8 +21,13 @@ namespace lootta.Controllers;
 public class RewardsController : ControllerBase
 {
     private readonly LoottaDbContext _db;
+    private readonly EconomyService _economy;
 
-    public RewardsController(LoottaDbContext db) => _db = db;
+    public RewardsController(LoottaDbContext db, EconomyService economy)
+    {
+        _db = db;
+        _economy = economy;
+    }
 
     private int CurrentUserId => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
@@ -31,6 +36,8 @@ public class RewardsController : ControllerBase
     {
         var user = await _db.Users.FindAsync(CurrentUserId);
         if (user is null) return Unauthorized();
+
+        var config = await _economy.GetAsync();
 
         var vouchers = await _db.Vouchers
             .Where(v => v.UserId == user.Id)
@@ -42,15 +49,16 @@ public class RewardsController : ControllerBase
             Balance = user.Coins,
             Streak = user.PlayStreak,
             BestScore = user.BestScore,
-            Catalog = VoucherCatalog.All.Select(o => new VoucherOptionDto
+            Catalog = EconomyService.VoucherTiers(config).Select(t => new VoucherOptionDto
             {
-                Key = o.Key,
-                Label = o.Label,
-                Description = o.Description,
-                CoinCost = o.CoinCost,
-                Affordable = user.Coins >= o.CoinCost
+                Key = t.Key,
+                Label = $"${t.Value:0.##} off",
+                Description = $"On orders over ${t.MinSpend:0.##}",
+                Value = t.Value,
+                CoinCost = t.CoinCost,
+                Affordable = user.Coins >= t.CoinCost,
             }).ToList(),
-            Vouchers = vouchers.Select(ToDto).ToList()
+            Vouchers = vouchers.Select(ToDto).ToList(),
         });
     }
 
@@ -58,37 +66,124 @@ public class RewardsController : ControllerBase
     [HttpPost("redeem")]
     public async Task<ActionResult<VoucherDto>> Redeem(RedeemDto dto)
     {
-        var option = VoucherCatalog.Find(dto.Key);
-        if (option is null) return BadRequest("Unknown reward.");
+        var config = await _economy.GetAsync();
+        var tier = EconomyService.FindTier(dto.Key, config);
+        if (tier is null) return BadRequest("Unknown reward.");
 
         var user = await _db.Users.FindAsync(CurrentUserId);
         if (user is null) return Unauthorized();
 
-        if (user.Coins < option.CoinCost)
-            return BadRequest($"You need {option.CoinCost - user.Coins} more coins.");
+        if (user.Coins < tier.CoinCost)
+            return BadRequest($"You need {tier.CoinCost - user.Coins} more coins.");
 
         var voucher = new Voucher
         {
             Code = await GenerateCodeAsync(),
             UserId = user.Id,
-            Type = option.Type,
-            Value = option.Value,
-            MinSpend = option.MinSpend,
-            MaxDiscount = option.MaxDiscount,
-            CoinCost = option.CoinCost,
-            ExpiresAt = DateTime.UtcNow.AddDays(30)
+            Type = VoucherType.Fixed,
+            Value = tier.Value,
+            MinSpend = tier.MinSpend,
+            MaxDiscount = 0,
+            CoinCost = tier.CoinCost,
+            ExpiresAt = DateTime.UtcNow.AddDays(config.VoucherExpiryDays),
         };
 
-        // One SaveChanges for both — the coins can never be taken without the
-        // voucher being created, or the other way round.
-        user.Coins -= option.CoinCost;
+        // One save for both, so coins can never leave without a voucher arriving.
+        user.Coins -= tier.CoinCost;
         _db.Vouchers.Add(voucher);
         await _db.SaveChangesAsync();
 
         return Ok(ToDto(voucher));
     }
 
-    /* ------------------------------------------------------------ helpers */
+    /* ------------------------------------------------------- admin tools */
+
+    /// <summary>
+    /// Mint vouchers by hand. Useful for promotions, and for testing the
+    /// checkout discount without grinding coins first.
+    /// </summary>
+    [HttpPost("admin/generate")]
+    [Authorize(Policy = "AdminOnly")]
+    public async Task<ActionResult<IEnumerable<VoucherDto>>> Generate(AdminVoucherDto dto)
+    {
+        if (dto.UserId is not null && !await _db.Users.AnyAsync(u => u.Id == dto.UserId))
+            return BadRequest($"No user with id {dto.UserId}.");
+
+        var created = new List<Voucher>();
+
+        for (var i = 0; i < dto.Count; i++)
+        {
+            var voucher = new Voucher
+            {
+                Code = await GenerateCodeAsync(),
+                UserId = dto.UserId,          // null = a public code anyone can use
+                IsAdminIssued = true,
+                Type = VoucherType.Fixed,
+                Value = dto.Value,
+                MinSpend = dto.MinSpend,
+                MaxDiscount = 0,
+                CoinCost = 0,
+                ExpiresAt = DateTime.UtcNow.AddDays(dto.ExpiryDays),
+            };
+
+            _db.Vouchers.Add(voucher);
+            created.Add(voucher);
+        }
+
+        await _db.SaveChangesAsync();
+        return Ok(created.Select(ToDto));
+    }
+
+    /// <summary>
+    /// Top up an account with coins and/or extra plays.
+    ///
+    /// Built for testing — granting 999 plays lets you exercise the arcade
+    /// without placing 250 orders first. Also doubles as a compensation tool
+    /// if a customer loses a round to a bug.
+    /// </summary>
+    [HttpPost("admin/grant")]
+    [Authorize(Policy = "AdminOnly")]
+    public async Task<ActionResult<GrantResultDto>> Grant(AdminGrantDto dto)
+    {
+        var user = await _db.Users.FindAsync(dto.UserId);
+        if (user is null) return NotFound($"No user with id {dto.UserId}.");
+
+        user.Coins += dto.Coins;
+        user.BonusPlays += dto.Plays;
+
+        await _db.SaveChangesAsync();
+
+        var parts = new List<string>();
+        if (dto.Coins > 0) parts.Add($"{dto.Coins} coins");
+        if (dto.Plays > 0) parts.Add($"{dto.Plays} plays");
+
+        return Ok(new GrantResultDto
+        {
+            UserId = user.Id,
+            Name = user.Name,
+            Coins = user.Coins,
+            BonusPlays = user.BonusPlays,
+            Message = parts.Count == 0
+                ? "Nothing granted."
+                : $"Granted {string.Join(" and ", parts)} to {user.Name}.",
+        });
+    }
+
+    /// <summary>Every voucher in the shop, for the admin screen.</summary>
+    [HttpGet("admin/all")]
+    [Authorize(Policy = "AdminOnly")]
+    public async Task<ActionResult<IEnumerable<VoucherDto>>> All()
+    {
+        var vouchers = await _db.Vouchers
+            .OrderByDescending(v => v.CreatedAt)
+            .Take(200)
+            .AsNoTracking()
+            .ToListAsync();
+
+        return Ok(vouchers.Select(ToDto));
+    }
+
+    /* ----------------------------------------------------------- helpers */
 
     private async Task<string> GenerateCodeAsync()
     {
@@ -108,12 +203,14 @@ public class RewardsController : ControllerBase
     {
         Id = v.Id,
         Code = v.Code,
-        Label = v.Type == VoucherType.Fixed ? $"${v.Value:0.##} off" : $"{v.Value:0.##}% off",
+        Label = $"${v.Value:0.##} off",
         Type = v.Type.ToString(),
         Value = v.Value,
         MinSpend = v.MinSpend,
         ExpiresAt = v.ExpiresAt,
         Usable = v.IsUsable,
-        UsedAt = v.UsedAt
+        UsedAt = v.UsedAt,
+        UserId = v.UserId,
+        IsAdminIssued = v.IsAdminIssued,
     };
 }

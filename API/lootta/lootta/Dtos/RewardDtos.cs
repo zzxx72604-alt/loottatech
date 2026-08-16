@@ -8,6 +8,8 @@ public class GameStartDto
     /// <summary>Send this back with the score. Ties the round to a start time.</summary>
     public string Token { get; set; } = string.Empty;
     public int CoinsPerPoint { get; set; }
+    public int PlayCost { get; set; }
+    public int Balance { get; set; }
     public int PlaysLeftToday { get; set; }
     public int BestScore { get; set; }
 }
@@ -17,7 +19,7 @@ public class SpinResultDto
     /// <summary>Which wedge the wheel lands on. The server chose it.</summary>
     public int PrizeIndex { get; set; }
     public int CoinsWon { get; set; }
-    public int DailyBonus { get; set; }
+    public int PlayCost { get; set; }
     public int Balance { get; set; }
     public int Streak { get; set; }
     public int PlaysLeftToday { get; set; }
@@ -35,14 +37,21 @@ public class ArcadeStateDto
     public string Tier { get; set; } = string.Empty;
     public int PlaysPerDay { get; set; }
     public int PlaysLeftToday { get; set; }
+    public int BonusPlays { get; set; }
     public bool HasWelcomePlay { get; set; }
 
     /// <summary>Next tier's name and how many more items are needed.</summary>
     public string? NextTier { get; set; }
     public int ItemsToNextTier { get; set; }
 
-    public List<int> Wheel { get; set; } = new();
+    // ---- the economy, so the UI never hardcodes a number ----
+    public int PlayCost { get; set; }
+    public bool CanAfford { get; set; }
     public int CoinsPerPoint { get; set; }
+    public int CoinsPerDollar { get; set; }
+
+    /// <summary>Coin value of each wheel wedge, in drawing order.</summary>
+    public List<int> Wheel { get; set; } = new();
 }
 
 public class GameFinishDto
@@ -58,7 +67,7 @@ public class GameResultDto
 {
     public int Score { get; set; }
     public int CoinsEarned { get; set; }
-    public int DailyBonus { get; set; }
+    public int PlayCost { get; set; }
     public int Balance { get; set; }
     public int BestScore { get; set; }
     public int Streak { get; set; }
@@ -81,8 +90,28 @@ public class VoucherOptionDto
     public string Key { get; set; } = string.Empty;
     public string Label { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
+    public decimal Value { get; set; }
     public int CoinCost { get; set; }
     public bool Affordable { get; set; }
+}
+
+/// <summary>An admin minting a voucher by hand, for testing or a promotion.</summary>
+public class AdminVoucherDto
+{
+    [Range(0.5, 500)]
+    public decimal Value { get; set; } = 1;
+
+    [Range(0, 10_000)]
+    public decimal MinSpend { get; set; }
+
+    [Range(1, 365)]
+    public int ExpiryDays { get; set; } = 30;
+
+    /// <summary>Leave null for a public code anyone can use.</summary>
+    public int? UserId { get; set; }
+
+    [Range(1, 50)]
+    public int Count { get; set; } = 1;
 }
 
 public class VoucherDto
@@ -96,6 +125,35 @@ public class VoucherDto
     public DateTime ExpiresAt { get; set; }
     public bool Usable { get; set; }
     public DateTime? UsedAt { get; set; }
+
+    /// <summary>Null means a public promo code usable by anyone.</summary>
+    public int? UserId { get; set; }
+    public bool IsAdminIssued { get; set; }
+}
+
+/// <summary>An admin topping up an account, for testing or compensation.</summary>
+public class AdminGrantDto
+{
+    [Range(1, int.MaxValue)]
+    public int UserId { get; set; }
+
+    [Range(0, 1_000_000)]
+    public int Coins { get; set; }
+
+    [Range(0, 10_000)]
+    public int Plays { get; set; }
+
+    [MaxLength(200)]
+    public string Reason { get; set; } = string.Empty;
+}
+
+public class GrantResultDto
+{
+    public int UserId { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public int Coins { get; set; }
+    public int BonusPlays { get; set; }
+    public string Message { get; set; } = string.Empty;
 }
 
 public class RedeemDto
@@ -104,26 +162,3 @@ public class RedeemDto
     public string Key { get; set; } = string.Empty;
 }
 
-/// <summary>
-/// The shop's reward catalogue.
-///
-/// Deliberately modest — a few dollars off, with a minimum spend. Vouchers are
-/// here to make buying feel rewarding, not to be a way of getting things free.
-/// Percentage discounts were removed for the same reason.
-/// </summary>
-public static class VoucherCatalog
-{
-    public record Option(string Key, string Label, string Description, int CoinCost,
-                         VoucherType Type, decimal Value, decimal MinSpend, decimal MaxDiscount);
-
-    public static readonly Option[] All =
-    {
-        new("save1", "$1 off", "On orders over $15",  60, VoucherType.Fixed, 1m, 15m, 0m),
-        new("save2", "$2 off", "On orders over $25", 150, VoucherType.Fixed, 2m, 25m, 0m),
-        new("save3", "$3 off", "On orders over $40", 320, VoucherType.Fixed, 3m, 40m, 0m),
-        new("save5", "$5 off", "On orders over $70", 600, VoucherType.Fixed, 5m, 70m, 0m),
-    };
-
-    public static Option? Find(string key) =>
-        All.FirstOrDefault(o => o.Key.Equals(key, StringComparison.OrdinalIgnoreCase));
-}
