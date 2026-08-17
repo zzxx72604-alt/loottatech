@@ -5,8 +5,9 @@
 *.user
 *.suo
 
-# Local API configuration — may contain a SQL Server password
-API/lootta/lootta/appsettings.Development.json
+# Production config may hold a real database password. Development config is
+# committed on purpose: it uses Windows authentication, so there is no
+# credential in it, and without it a fresh clone cannot start.
 API/lootta/lootta/appsettings.Production.json
 
 # Uploaded product photos are runtime data, not source

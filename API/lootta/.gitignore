@@ -2,6 +2,6 @@
 [Oo]bj/
 .vs/
 *.user
-appsettings.Development.json
+appsettings.Production.json
 uploads/products/*
 !uploads/products/.gitkeep

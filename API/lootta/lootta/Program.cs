@@ -43,8 +43,19 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
+/*
+ * The connection string comes from appsettings.Development.json, but a fresh
+ * clone on someone else's machine may not have one — and EF's own error for
+ * that ("The ConnectionString property has not been initialized") gives no
+ * hint about what to do. Falling back to a sensible local default means the
+ * project runs out of the box on any machine with SQL Server installed.
+ */
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? "Server=localhost;Database=LoottaTech;Trusted_Connection=True;"
+     + "TrustServerCertificate=True;MultipleActiveResultSets=True";
+
 builder.Services.AddDbContext<LoottaDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlServer(connectionString));
 
 builder.Services.AddScoped<TokenService>();
 builder.Services.AddScoped<EconomyService>();
@@ -131,8 +142,34 @@ if (app.Environment.IsDevelopment())
 {
     using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<LoottaDbContext>();
-    await db.Database.MigrateAsync();
-    await DbSeeder.SeedAsync(db);
+
+    try
+    {
+        await db.Database.MigrateAsync();
+        await DbSeeder.SeedAsync(db);
+    }
+    catch (Exception ex)
+    {
+        // A wall of stack trace tells a first-time user nothing. Say plainly
+        // what is wrong and how to fix it, then stop.
+        Console.ForegroundColor = ConsoleColor.Red;
+        Console.WriteLine();
+        Console.WriteLine("  Could not reach SQL Server.");
+        Console.ResetColor();
+        Console.WriteLine();
+        Console.WriteLine($"  Tried: {connectionString}");
+        Console.WriteLine();
+        Console.WriteLine("  Check that SQL Server is installed and running, then set the");
+        Console.WriteLine("  right server name in appsettings.Development.json:");
+        Console.WriteLine();
+        Console.WriteLine("     default instance ....  Server=localhost;");
+        Console.WriteLine("     SQL Express .........  Server=localhost\\SQLEXPRESS;");
+        Console.WriteLine("     LocalDB .............  Server=(localdb)\\MSSQLLocalDB;");
+        Console.WriteLine();
+        Console.WriteLine($"  Original error: {ex.GetBaseException().Message}");
+        Console.WriteLine();
+        return;
+    }
 }
 
 // ---------------------------------------------------------------- pipeline
