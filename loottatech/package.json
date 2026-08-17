@@ -1,21 +1,17 @@
 {
   "name": "lootta-tech",
   "version": "1.0.0",
-  "description": "LoottaTech \u2014 second-hand electronics store. Angular 20 frontend + Express/TypeScript + MongoDB backend.",
+  "description": "LoottaTech customer website. Angular 20, talks to the ASP.NET Core API.",
   "engines": {
     "node": ">=20"
   },
   "scripts": {
     "dev": "cd frontend && npm start",
-    "start": "cd backend/built && node server.js",
-    "prebuild": "cd backend && npm run build",
     "build": "cd frontend && npm run build",
-    "postinstall": "cd frontend && npm install && cd ../backend && npm install",
-    "images": "node tools/optimize-images.mjs",
-    "dev:legacy-node": "concurrently -k -n WEB,API -c yellow,green \"cd frontend && npm start\" \"cd backend && npm start\""
+    "postinstall": "cd frontend && npm install",
+    "images": "node tools/optimize-images.mjs"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2",
     "sharp": "^0.33.5"
   }
 }

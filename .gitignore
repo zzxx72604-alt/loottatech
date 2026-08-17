@@ -31,3 +31,8 @@ Thumbs.db
 .env
 .env.*
 !.env.example
+
+# Working copies of this repo. Committing one creates a broken submodule
+# pointer that nobody else can fetch.
+loottatech-clean/
+*-clean/
