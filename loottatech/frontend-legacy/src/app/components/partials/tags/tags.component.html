@@ -1,9 +1,0 @@
-<div *ngIf="tags">
-  <a
-    *ngFor="let tag of tags"
-    routerLinkActive="active"
-    routerLink="/tag/{{ tag.name }}"
-  >
-    {{ tag.name }}
-  </a>
-</div>
