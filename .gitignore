@@ -37,3 +37,8 @@ Thumbs.db
 # pointer that nobody else can fetch.
 loottatech-clean/
 *-clean/
+
+# SQLite fallback database, created at runtime when SQL Server is absent
+*.db
+*.db-shm
+*.db-wal

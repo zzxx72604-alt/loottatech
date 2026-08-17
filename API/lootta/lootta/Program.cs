@@ -44,18 +44,36 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 /*
- * The connection string comes from appsettings.Development.json, but a fresh
- * clone on someone else's machine may not have one — and EF's own error for
- * that ("The ConnectionString property has not been initialized") gives no
- * hint about what to do. Falling back to a sensible local default means the
- * project runs out of the box on any machine with SQL Server installed.
+ * WHICH DATABASE?
+ *
+ * SQL Server is the intended database, but a fresh clone often lands on a
+ * machine that has never had it installed — and "The system cannot find the
+ * file specified" is a miserable first impression.
+ *
+ * So the API probes for SQL Server at startup. If it answers, we use it. If it
+ * does not, we fall back to a SQLite file created next to the executable. The
+ * models, the migrations, the controllers and the API are all identical either
+ * way, because EF Core sits in between.
+ *
+ * Force one or the other with "Database:Provider" = "SqlServer" | "Sqlite".
  */
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+var sqlServerConnection = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? "Server=localhost;Database=LoottaTech;Trusted_Connection=True;"
      + "TrustServerCertificate=True;MultipleActiveResultSets=True";
 
+var requested = builder.Configuration["Database:Provider"] ?? "Auto";
+
+var useSqlServer = requested.Equals("SqlServer", StringComparison.OrdinalIgnoreCase)
+    || (requested.Equals("Auto", StringComparison.OrdinalIgnoreCase)
+        && CanReachSqlServer(sqlServerConnection));
+
+var sqlitePath = Path.Combine(builder.Environment.ContentRootPath, "loottatech.db");
+
 builder.Services.AddDbContext<LoottaDbContext>(options =>
-    options.UseSqlServer(connectionString));
+{
+    if (useSqlServer) options.UseSqlServer(sqlServerConnection);
+    else options.UseSqlite($"Data Source={sqlitePath}");
+});
 
 builder.Services.AddScoped<TokenService>();
 builder.Services.AddScoped<EconomyService>();
@@ -145,8 +163,31 @@ if (app.Environment.IsDevelopment())
 
     try
     {
-        await db.Database.MigrateAsync();
+        if (useSqlServer)
+        {
+            // Real migration history, so the schema can evolve over time.
+            await db.Database.MigrateAsync();
+        }
+        else
+        {
+            /*
+             * SQLite builds the schema straight from the model instead.
+             * EnsureCreated cannot apply incremental migrations, which is fine
+             * here: the fallback database is created fresh and seeded, never
+             * upgraded in place.
+             */
+            await db.Database.EnsureCreatedAsync();
+        }
+
         await DbSeeder.SeedAsync(db);
+
+        Console.ForegroundColor = ConsoleColor.Green;
+        Console.WriteLine();
+        Console.WriteLine(useSqlServer
+            ? "  Database: SQL Server"
+            : $"  Database: SQLite (SQL Server not found) -> {sqlitePath}");
+        Console.ResetColor();
+        Console.WriteLine();
     }
     catch (Exception ex)
     {
@@ -154,17 +195,30 @@ if (app.Environment.IsDevelopment())
         // what is wrong and how to fix it, then stop.
         Console.ForegroundColor = ConsoleColor.Red;
         Console.WriteLine();
-        Console.WriteLine("  Could not reach SQL Server.");
+        Console.WriteLine("  Could not prepare the database.");
         Console.ResetColor();
         Console.WriteLine();
-        Console.WriteLine($"  Tried: {connectionString}");
+        Console.WriteLine(useSqlServer
+            ? $"  Tried SQL Server: {sqlServerConnection}"
+            : $"  Tried SQLite file: {sqlitePath}");
         Console.WriteLine();
-        Console.WriteLine("  Check that SQL Server is installed and running, then set the");
-        Console.WriteLine("  right server name in appsettings.Development.json:");
-        Console.WriteLine();
-        Console.WriteLine("     default instance ....  Server=localhost;");
-        Console.WriteLine("     SQL Express .........  Server=localhost\\SQLEXPRESS;");
-        Console.WriteLine("     LocalDB .............  Server=(localdb)\\MSSQLLocalDB;");
+
+        if (useSqlServer)
+        {
+            Console.WriteLine("  Check SQL Server is running, then set the server name in");
+            Console.WriteLine("  appsettings.Development.json:");
+            Console.WriteLine();
+            Console.WriteLine("     default instance ....  Server=localhost;");
+            Console.WriteLine("     SQL Express .........  Server=localhost\\SQLEXPRESS;");
+            Console.WriteLine("     LocalDB .............  Server=(localdb)\\MSSQLLocalDB;");
+            Console.WriteLine();
+            Console.WriteLine("  Or force the no-install fallback by setting");
+            Console.WriteLine("     \"Database\": { \"Provider\": \"Sqlite\" }");
+        }
+        else
+        {
+            Console.WriteLine("  Delete loottatech.db and start again to rebuild it.");
+        }
         Console.WriteLine();
         Console.WriteLine($"  Original error: {ex.GetBaseException().Message}");
         Console.WriteLine();
@@ -211,3 +265,29 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+/// <summary>
+/// Opens a connection with a short timeout just to see whether SQL Server is
+/// there. Two seconds is long enough for a local instance and short enough
+/// that nobody notices when it is missing.
+/// </summary>
+static bool CanReachSqlServer(string connectionString)
+{
+    try
+    {
+        var builder = new Microsoft.Data.SqlClient.SqlConnectionStringBuilder(connectionString)
+        {
+            ConnectTimeout = 2,
+            // Probe the server itself; the database may not exist yet.
+            InitialCatalog = "master",
+        };
+
+        using var connection = new Microsoft.Data.SqlClient.SqlConnection(builder.ConnectionString);
+        connection.Open();
+        return true;
+    }
+    catch
+    {
+        return false;
+    }
+}
