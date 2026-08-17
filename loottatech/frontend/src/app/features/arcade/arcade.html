@@ -27,11 +27,13 @@
       </div>
 
       <div class="plays" [class.none]="!canPlay()">
-        <b>{{ playsLeft() }}</b>
-        <span>
-          play{{ playsLeft() === 1 ? '' : 's' }} available
-          @if (s.bonusPlays > 0) { ({{ s.bonusPlays }} from codes) }
-        </span>
+        @if (freePlays() > 0) {
+          <b>{{ freePlays() }}</b>
+          <span>free play{{ freePlays() === 1 ? '' : 's' }} from codes</span>
+        } @else {
+          <b>◎ {{ s.balance }}</b>
+          <span>{{ s.canAfford ? 'enough for a play' : 'need ' + s.playCost + ' to play' }}</span>
+        }
       </div>
     </div>
 
@@ -91,19 +93,20 @@
 
     @if (mode() === 'flyer') {
       <p class="hint">
-        Costs <b>{{ s.playCost }}</b> coins to play · earns <b>{{ s.coinsPerPoint }}</b> per shelf ·
-        best so far <b>{{ s.bestScore }}</b>
+        @if (freePlays() > 0) {
+          <b>{{ freePlays() }}</b> free play{{ freePlays() === 1 ? '' : 's' }} in hand ·
+        } @else {
+          Costs <b>{{ s.playCost }}</b> coins ·
+        }
+        earns <b>{{ s.coinsPerPoint }}</b> per shelf · best so far <b>{{ s.bestScore }}</b>
       </p>
 
       <app-flyer-game (wantsToStart)="startFlyer()" (gameOver)="onGameOver($event)" />
 
       @if (!canPlay()) {
         <p class="locked">
-          No plays left today — buy something from the shop, or redeem a code above.
-        </p>
-      } @else if (!s.canAfford) {
-        <p class="locked">
-          Not enough coins. Shopping earns {{ s.coinsPerDollar }} coins per dollar.
+          You need {{ s.playCost }} coins to play. Shopping earns
+          {{ s.coinsPerDollar }} coins per dollar — or redeem a code above.
         </p>
       }
     } @else {
@@ -114,10 +117,10 @@
       <app-prize-wheel [wheel]="s.wheel" [wheelWeights]="s.wheelWeights" />
 
       <button type="button" class="spin-btn" (click)="spin()"
-              [disabled]="busy() || spinning() || !canPlay() || !s.canAfford">
+              [disabled]="busy() || spinning() || !canPlay()">
         {{ spinning() ? 'Spinning…'
-           : !canPlay() ? 'No plays left'
-           : !s.canAfford ? 'Not enough coins'
+           : !canPlay() ? 'Need ' + s.playCost + ' coins'
+           : freePlays() > 0 ? 'Spin (free play)'
            : 'Spin for ' + s.playCost + ' coins' }}
       </button>
     }

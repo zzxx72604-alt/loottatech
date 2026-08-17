@@ -29,7 +29,14 @@
               (click)="activeImage.set(i)"
               [attr.aria-label]="'View image ' + (i + 1)"
             >
-              <img [ngSrc]="img" width="480" height="480" [alt]="''" />
+              <img
+                [ngSrc]="img"
+                ngSrcset="480w, 800w"
+                sizes="72px"
+                width="480"
+                height="480"
+                [alt]="''"
+              />
             </button>
           }
         </div>

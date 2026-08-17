@@ -41,8 +41,18 @@ export class Arcade {
   protected readonly codeMessage = signal('');
   protected readonly codeError = signal('');
 
-  protected readonly playsLeft = computed(() => this.state()?.playsLeftToday ?? 0);
-  protected readonly canPlay = computed(() => this.playsLeft() > 0);
+  /** Free plays in hand, granted by an admin code. */
+  protected readonly freePlays = computed(() => this.state()?.playsLeftToday ?? 0);
+
+  /**
+   * Playable if there's a free play, or enough coins to pay for one.
+   * There is no daily cap — coins already limit how much anyone can play.
+   */
+  protected readonly canPlay = computed(() => {
+    const s = this.state();
+    if (!s) return false;
+    return s.playsLeftToday > 0 || s.canAfford;
+  });
 
   /** Progress towards the next tier, as a percentage. */
   protected readonly tierProgress = computed(() => {

@@ -71,7 +71,7 @@ public class GameController : ControllerBase
             LifetimeItems = items,
             Tier = tier.Name,
             PlaysPerDay = tier.PlaysPerDay,
-            PlaysLeftToday = PlaysLeft(user, tier.PlaysPerDay),
+            PlaysLeftToday = user.BonusPlays,
             BonusPlays = user.BonusPlays,
             HasWelcomePlay = false,
 
@@ -227,53 +227,53 @@ public class GameController : ControllerBase
 
     /* ----------------------------------------------------------- helpers */
 
-    /// <summary>Daily allowance still unused, plus any admin-granted bonus pool.</summary>
-    private static int PlaysLeft(User user, int playsPerDay) =>
-        Math.Max(0, playsPerDay - user.PlaysUsedToday) + user.BonusPlays;
+    /// <summary>Free plays in hand. Paid plays are unlimited while coins last.</summary>
+    private static int PlaysLeft(User user, int playsPerDay) => user.BonusPlays;
 
     /// <summary>
-    /// Takes a daily play AND the coin stake, or explains why it can't.
-    /// Both are checked before either is deducted.
+    /// Charges for a round, or explains why it can't.
+    ///
+    /// COINS ARE THE ONLY GATE. There is no daily cap, because coins already
+    /// limit play naturally — you cannot get them without buying something or
+    /// redeeming a code. A second limit on top just made the arcade look
+    /// broken to anyone holding a balance.
+    ///
+    /// Admin-granted plays are FREE plays: they skip the coin cost entirely
+    /// and are spent before coins, which is what makes them useful for testing.
     /// </summary>
     private async Task<string?> TrySpendPlayAsync(User user, EconomyConfig config)
     {
         RollDayIfNeeded(user);
 
-        var items = await _economy.LifetimeItemsAsync(user.Id);
-        var tier = config.TierFor(items);
+        // Free plays first.
+        if (user.BonusPlays > 0)
+        {
+            user.BonusPlays--;
+            user.PlaysUsedToday++;
+            TouchStreak(user);
+            return null;
+        }
 
-        // Coins are the real constraint, so check them first — "you're broke"
-        // is a more useful message than "come back tomorrow".
         if (user.Coins < config.PlayCost)
             return $"A play costs {config.PlayCost} coins and you have {user.Coins}. "
                  + $"Shopping earns {config.CoinsPerDollar} coins per dollar, "
                  + "or redeem a code.";
 
-        if (PlaysLeft(user, tier.PlaysPerDay) <= 0)
-        {
-            var next = config.NextTier(items);
-            return next is null
-                ? "You've used all of today's plays. Come back tomorrow."
-                : $"You've used all {tier.PlaysPerDay} of today's plays. Buy "
-                  + $"{next.Value.MinItems - items} more item(s) to reach {next.Value.Name} "
-                  + $"and get {next.Value.PlaysPerDay} a day.";
-        }
-
         user.Coins -= config.PlayCost;
-
-        // Use the daily allowance first; only then dip into granted bonus plays.
-        if (user.PlaysUsedToday < tier.PlaysPerDay) user.PlaysUsedToday++;
-        else user.BonusPlays--;
-
-        // Streak is a record of playing, not a payout — the coins come from the game.
-        var today = DateTime.UtcNow.Date;
-        if (user.LastPlayUtc?.Date != today)
-        {
-            user.PlayStreak = user.LastPlayUtc?.Date == today.AddDays(-1) ? user.PlayStreak + 1 : 1;
-            user.LastPlayUtc = DateTime.UtcNow;
-        }
+        user.PlaysUsedToday++;
+        TouchStreak(user);
 
         return null;
+    }
+
+    /// <summary>Records that the customer played today, for the streak display.</summary>
+    private static void TouchStreak(User user)
+    {
+        var today = DateTime.UtcNow.Date;
+        if (user.LastPlayUtc?.Date == today) return;
+
+        user.PlayStreak = user.LastPlayUtc?.Date == today.AddDays(-1) ? user.PlayStreak + 1 : 1;
+        user.LastPlayUtc = DateTime.UtcNow;
     }
 
     private static void RollDayIfNeeded(User user)
