@@ -3,5 +3,3 @@
 .vs/
 *.user
 appsettings.Production.json
-uploads/products/*
-!uploads/products/.gitkeep

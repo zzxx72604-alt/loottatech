@@ -10,9 +10,9 @@
 # credential in it, and without it a fresh clone cannot start.
 API/lootta/lootta/appsettings.Production.json
 
-# Uploaded product photos are runtime data, not source
-API/lootta/lootta/uploads/products/*
-!API/lootta/lootta/uploads/products/.gitkeep
+# Product photos ARE shipped. The seeded catalogue references them by path, so
+# a fresh clone without them shows ten broken images. They total under a
+# megabyte, which is a fair price for the project working out of the box.
 
 # ------------------------------------------------------------- Node / Angular
 node_modules/

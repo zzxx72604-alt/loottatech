@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using lootta.Models;
 
 namespace lootta.Data;
@@ -27,6 +28,40 @@ public class LoottaDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        /*
+         * SQLite has no decimal type.
+         *
+         * EF Core stores decimals as text there, which means SUM() on a money
+         * column fails outright — which is exactly what the admin dashboard
+         * does. Mapping decimal to double lets the aggregates work.
+         *
+         * The trade-off is real and worth stating: double is floating point,
+         * so it can drift by fractions of a cent. That is acceptable for the
+         * zero-install demo database and NOT for the real one, which is why
+         * SQL Server keeps proper decimal(18,2).
+         */
+        if (Database.IsSqlite())
+        {
+            var toDouble = new ValueConverter<decimal, double>(
+                value => (double)value,
+                value => (decimal)value);
+
+            var toNullableDouble = new ValueConverter<decimal?, double?>(
+                value => value == null ? null : (double)value.Value,
+                value => value == null ? null : (decimal)value.Value);
+
+            foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+            {
+                foreach (var property in entityType.GetProperties())
+                {
+                    if (property.ClrType == typeof(decimal))
+                        property.SetValueConverter(toDouble);
+                    else if (property.ClrType == typeof(decimal?))
+                        property.SetValueConverter(toNullableDouble);
+                }
+            }
+        }
 
         // ---------------------------------------------------------- Category
         modelBuilder.Entity<Category>(entity =>
