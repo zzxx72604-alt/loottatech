@@ -1,6 +1,8 @@
 import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output, computed, signal } from '@angular/core';
 import { CurrencyPipe, NgOptimizedImage } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { InteractionButtons } from '../interaction-buttons/interaction-buttons';
+import { StarRating } from '../star-rating/star-rating';
 import {
   Product,
   conditionGrade,
@@ -18,7 +20,7 @@ import {
  */
 @Component({
   selector: 'app-product-card',
-  imports: [NgOptimizedImage, CurrencyPipe, RouterLink],
+  imports: [NgOptimizedImage, CurrencyPipe, RouterLink, InteractionButtons, StarRating],
   templateUrl: './product-card.html',
   styleUrl: './product-card.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -35,6 +37,19 @@ export class ProductCard {
 
   @Output() addToCart = new EventEmitter<Product>();
   @Output() toggleWatch = new EventEmitter<Product>();
+
+  /** Asks the parent to buy this one item on its own. */
+  @Output() buyNow = new EventEmitter<Product>();
+
+
+  protected onBuy(event: Event): void {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const p = this.current();
+    if (p) this.buyNow.emit(p);
+  }
+
 
   protected readonly item = this.current.asReadonly();
 

@@ -6,6 +6,17 @@ public class Product
 {
     public int Id { get; set; }
 
+    /// <summary>
+    /// Short public code used in share links and admin lookup, e.g. "pkhj83421".
+    ///
+    /// The integer Id is fine internally but guessable in a URL — /product/5
+    /// invites walking the catalogue. A random code is safe to paste anywhere
+    /// and is what an admin will actually be given when a customer asks about
+    /// an item.
+    /// </summary>
+    [Required, MaxLength(16)]
+    public string PublicId { get; set; } = string.Empty;
+
     [Required, MaxLength(160)]
     public string Title { get; set; } = string.Empty;
 
@@ -53,4 +64,5 @@ public class Product
     // ---- child collections ----
     public ICollection<ProductImage> Images { get; set; } = new List<ProductImage>();
     public ICollection<ProductSpec> Specs { get; set; } = new List<ProductSpec>();
+    public ICollection<Review> Reviews { get; set; } = new List<Review>();
 }

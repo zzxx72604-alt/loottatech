@@ -19,12 +19,7 @@
         <span class="sold">Sold out</span>
       }
 
-      <button
-        type="button"
-        class="watch"
-        (click)="onWatch($event)"
-        [attr.aria-label]="'Watch ' + p.title"
-      >♡</button>
+      <app-interaction-buttons class="acts" [productId]="p.id" />
     </div>
 
     <div class="body">
@@ -43,6 +38,13 @@
         }
       </p>
 
+      @if (p.reviewCount > 0) {
+        <p class="rating">
+          <app-star-rating [value]="p.rating" />
+          <span class="n">{{ p.rating }} ({{ p.reviewCount }})</span>
+        </p>
+      }
+
       @if (tags().length > 0) {
         <p class="tags">
           @for (tag of tags(); track tag) {
@@ -51,12 +53,22 @@
         </p>
       }
 
-      <button
-        type="button"
-        class="add"
-        (click)="onAdd($event)"
-        [disabled]="p.stock === 0"
-      >{{ p.stock === 0 ? 'Sold out' : 'Add to cart' }}</button>
+      <div class="row-actions">
+        <button
+          type="button"
+          class="add"
+          (click)="onAdd($event)"
+          [disabled]="p.stock === 0"
+        >{{ p.stock === 0 ? 'Sold out' : 'Add to cart' }}</button>
+
+        <button
+          type="button"
+          class="buy"
+          (click)="onBuy($event)"
+          [disabled]="p.stock === 0"
+        >Buy</button>
+
+      </div>
     </div>
   </a>
 }

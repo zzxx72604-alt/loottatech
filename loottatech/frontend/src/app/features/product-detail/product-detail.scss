@@ -133,3 +133,160 @@ h1 {
   h1 { font-size: 18px; }
   .prices .now { font-size: 24px; }
 }
+
+/* Reserves the space reviews will occupy, so scrolling never jumps. */
+.reviews-placeholder {
+  height: 220px;
+  margin-top: var(--sp-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.rating-line {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin: 6px 0 0;
+  font-size: 12.5px;
+
+  b { font-weight: 700; }
+  span { color: var(--text-3); }
+  &.none { color: var(--text-3); }
+}
+
+/* ------------------------------------------------------ gallery arrows */
+
+.arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .88);
+  color: #222;
+  font-size: 20px;
+  line-height: 1;
+  z-index: 2;
+  opacity: 0;
+  transition: opacity var(--dur) var(--ease), background-color var(--dur) var(--ease);
+
+  &.left { left: 8px; }
+  &.right { right: 8px; }
+  &:hover { background: #fff; }
+}
+
+/* Arrows appear on hover, and are always visible on touch where there is no
+   hover state to reveal them. */
+.gallery:hover .arrow,
+.arrow:focus-visible { opacity: 1; }
+
+@media (hover: none) {
+  .arrow { opacity: 1; }
+}
+
+/* --------------------------------------------------------- buy actions */
+
+.actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-2);
+}
+
+.buy-now {
+  border: 0;
+  background: var(--price);
+  color: #fff;
+  font-weight: 700;
+  font-size: 14px;
+  padding: 11px;
+  border-radius: var(--radius-pill);
+
+  &:disabled { opacity: .45; cursor: not-allowed; }
+}
+
+.share-btn {
+  width: 100%;
+  margin-top: var(--sp-2);
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text-2);
+  font-size: 12.5px;
+  padding: 8px;
+  border-radius: var(--radius-pill);
+
+  &:hover { background: var(--surface-2); color: var(--text); }
+}
+
+/* ------------------------------------------------------ buy confirmation */
+
+.confirm-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, .45);
+  z-index: 300;
+}
+
+.confirm {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(400px, calc(100vw - 2 * var(--sp-4)));
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--sp-4);
+  z-index: 301;
+
+  h3 { margin: 0 0 var(--sp-2); font-size: 16px; }
+  p { margin: 0 0 var(--sp-4); font-size: 13px; line-height: 1.55; color: var(--text-2); }
+}
+
+.confirm-actions {
+  display: flex;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+  justify-content: flex-end;
+
+  button {
+    border-radius: var(--radius-pill);
+    font-size: 12.5px;
+    font-weight: 600;
+    padding: 8px var(--sp-4);
+  }
+
+  .ghost { border: 1px solid var(--border-strong); background: var(--surface); color: var(--text-2); }
+  .primary { border: 0; background: var(--price); color: #fff; font-weight: 700; }
+}
+
+@media (max-width: 480px) {
+  .actions { grid-template-columns: 1fr; }
+}
+
+/* -------------------------------------------------- recently viewed */
+
+.also-viewed {
+  margin-top: var(--sp-5);
+
+  h2 { font-size: 15px; margin: 0 0 var(--sp-3); }
+}
+
+.also-viewed .strip {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(170px, 1fr);
+  gap: var(--sp-3);
+  overflow-x: auto;
+  padding-bottom: var(--sp-2);
+  /* Snap so a swipe lands on a card rather than halfway between two. */
+  scroll-snap-type: x mandatory;
+
+  > * { scroll-snap-align: start; }
+}
+
+@media (max-width: 600px) {
+  .also-viewed .strip { grid-auto-columns: minmax(150px, 1fr); }
+}

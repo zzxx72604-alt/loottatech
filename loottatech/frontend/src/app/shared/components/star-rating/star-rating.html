@@ -1,0 +1,23 @@
+<div
+  class="stars"
+  [class]="size"
+  [class.pick]="interactive"
+  (mouseleave)="leave()"
+  [attr.role]="interactive ? 'radiogroup' : 'img'"
+  [attr.aria-label]="interactive ? 'Choose a rating' : shown() + ' out of 5'"
+>
+  @for (star of stars; track star) {
+    @if (interactive) {
+      <button
+        type="button"
+        class="star"
+        [class]="fill(star)"
+        (mouseenter)="enter(star)"
+        (click)="pick(star)"
+        [attr.aria-label]="star + ' star' + (star === 1 ? '' : 's')"
+      >★</button>
+    } @else {
+      <span class="star" [class]="fill(star)" aria-hidden="true">★</span>
+    }
+  }
+</div>

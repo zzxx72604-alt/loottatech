@@ -18,6 +18,17 @@ const STORAGE_KEY = 'lootta-cart';
  */
 @Injectable({ providedIn: 'root' })
 export class CartService {
+  /**
+   * A single product being bought on its own, bypassing the cart.
+   *
+   * Kept separate from the cart rather than clearing it: someone who hits
+   * "Buy now" on a charger should not lose the laptop they were still
+   * deciding about. Checkout reads this when it is set, the cart when it
+   * is not, and nothing else has to know the difference.
+   */
+  private readonly direct = signal<CartLine | null>(null);
+  readonly directBuy = this.direct.asReadonly();
+
   private readonly lines = signal<CartLine[]>(this.restore());
 
   readonly items = this.lines.asReadonly();
@@ -67,5 +78,20 @@ export class CartService {
     } catch {
       return [];
     }
+  }
+
+  /** Start a one-item purchase. Does not touch the cart. */
+  buyNow(product: Product, quantity = 1): void {
+    this.direct.set({ product, quantity });
+  }
+
+  clearDirectBuy(): void {
+    this.direct.set(null);
+  }
+
+  /** What checkout should actually charge for. */
+  linesForCheckout(): CartLine[] {
+    const single = this.direct();
+    return single ? [single] : this.items();
   }
 }

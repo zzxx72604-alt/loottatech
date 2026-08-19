@@ -19,6 +19,12 @@ export const routes: Routes = [
     loadComponent: () => import('./features/catalog/catalog').then((m) => m.Catalog),
   },
   {
+    // Public share links: /p/pkhj83421
+    path: 'p/:code',
+    loadComponent: () =>
+      import('./features/product-detail/product-detail').then((m) => m.ProductDetail),
+  },
+  {
     path: 'product/:id',
     loadComponent: () =>
       import('./features/product-detail/product-detail').then((m) => m.ProductDetail),
@@ -48,6 +54,18 @@ export const routes: Routes = [
     path: 'register',
     title: 'Create account — LoottaTech',
     loadComponent: () => import('./features/auth/register/register').then((m) => m.Register),
+  },
+  {
+    path: 'profile',
+    title: 'My profile — LoottaTech',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/profile/profile').then((m) => m.ProfilePage),
+  },
+  {
+    path: 'settings',
+    title: 'Settings — LoottaTech',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/settings/settings').then((m) => m.Settings),
   },
   {
     path: 'arcade',

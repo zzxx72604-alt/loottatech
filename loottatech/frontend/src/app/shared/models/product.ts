@@ -10,6 +10,9 @@ export interface Spec {
 export interface Product {
   /** Integer primary key from SQL Server, not a Mongo ObjectId. */
   id: number;
+
+  /** Short share code, e.g. "pkhj83421". Safe to put in a public URL. */
+  publicId: string;
   title: string;
   brand: string;
   category: string;
@@ -32,6 +35,10 @@ export interface Product {
   watchCount: number;
   categoryId: number;
   isActive: boolean;
+
+  /** Mean review score, computed by the API from real reviews. */
+  rating: number;
+  reviewCount: number;
 
   description?: string;
   /** Honest photos of scratches and dents — the trust signal for used goods. */

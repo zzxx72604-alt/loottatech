@@ -69,6 +69,7 @@
           <app-product-card
             [product]="p"
             (addToCart)="onAddToCart($event)"
+            (buyNow)="onBuyNow($event)"
             (toggleWatch)="onToggleWatch($event)"
           />
         }
@@ -87,6 +88,7 @@
         <app-product-card
           [product]="p"
           (addToCart)="onAddToCart($event)"
+            (buyNow)="onBuyNow($event)"
           (toggleWatch)="onToggleWatch($event)"
         />
       }
@@ -199,6 +201,7 @@
               [product]="entry.product"
               [priority]="i < 4"
               (addToCart)="onAddToCart($event)"
+            (buyNow)="onBuyNow($event)"
               (toggleWatch)="onToggleWatch($event)"
             />
           } @else {
@@ -217,6 +220,7 @@
               <app-product-card
                 [product]="entry.product"
                 (addToCart)="onAddToCart($event)"
+            (buyNow)="onBuyNow($event)"
                 (toggleWatch)="onToggleWatch($event)"
               />
             } @placeholder {

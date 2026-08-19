@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { CartService } from '../../core/services/cart.service';
+import { computed } from '@angular/core';
 import { ThemeService } from '../../core/services/theme.service';
 import { UserService } from '../../core/services/user.service';
 
@@ -18,6 +19,17 @@ export class Header {
   protected readonly cart = inject(CartService);
   protected readonly themeService = inject(ThemeService);
   protected readonly users = inject(UserService);
+
+  /** Initials stand in for a profile picture until uploads exist. */
+  protected readonly initials = computed(() => {
+    const name = this.users.user()?.name ?? '';
+    return name
+      .split(' ')
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase() ?? '')
+      .join('');
+  });
 
   protected readonly term = signal('');
 

@@ -52,20 +52,10 @@
   font-size: 13px;
 }
 
-.watch {
+.acts {
   position: absolute;
   top: 6px;
   right: 6px;
-  width: 26px;
-  height: 26px;
-  border: 0;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, .9);
-  color: #333;
-  font-size: 14px;
-  line-height: 1;
-
-  &:hover { background: #fff; color: var(--sale); }
 }
 
 /* ----------------------------------------------------------------- body */
@@ -177,4 +167,35 @@
   .body { padding: var(--sp-2); }
   .now { font-size: 15px; }
   .add { font-size: 11.5px; }
+}
+
+.rating {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+
+  .n { font-size: 11px; color: var(--text-3); }
+}
+
+
+.row-actions {
+  margin-top: auto;
+  display: grid;
+  /* Two equal buttons now that Share lives on the detail page only —
+     a card is for choosing, not for sharing something unseen. */
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+}
+
+.buy {
+  border: 0;
+  background: var(--price);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px;
+  border-radius: var(--radius-pill);
+
+  &:disabled { opacity: .45; cursor: not-allowed; }
 }

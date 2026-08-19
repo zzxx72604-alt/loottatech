@@ -16,6 +16,9 @@ namespace lootta.Dtos;
 public class ProductListDto
 {
     public int Id { get; set; }
+
+    /// <summary>Share code, e.g. "pkhj83421". Safe to put in a public URL.</summary>
+    public string PublicId { get; set; } = string.Empty;
     public string Title { get; set; } = string.Empty;
     public string Brand { get; set; } = string.Empty;
     public string Category { get; set; } = string.Empty;
@@ -34,6 +37,10 @@ public class ProductListDto
 
     /// <summary>Base image paths, no size suffix. The client appends -480.webp etc.</summary>
     public List<string> Images { get; set; } = new();
+
+    /// <summary>Mean review score, computed — never stored on the product.</summary>
+    public double Rating { get; set; }
+    public int ReviewCount { get; set; }
 }
 
 /// <summary>Everything the product page needs.</summary>

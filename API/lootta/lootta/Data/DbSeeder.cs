@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using lootta.Models;
+using lootta.Services;
 
 namespace lootta.Data;
 
@@ -15,6 +16,7 @@ public static class DbSeeder
     public static async Task SeedAsync(LoottaDbContext db)
     {
         await SeedUsersAsync(db);
+        await BackfillPublicIdsAsync(db);
 
         if (await db.Products.AnyAsync()) return;   // already stocked
 
@@ -145,6 +147,36 @@ public static class DbSeeder
         await db.SaveChangesAsync();
     }
 
+    /// <summary>
+    /// Gives a share code to any product created before the column existed.
+    ///
+    /// Cheaper than a data migration and it self-heals: products added by an
+    /// older build still get a code the next time the API starts.
+    /// </summary>
+    private static async Task BackfillPublicIdsAsync(LoottaDbContext db)
+    {
+        var missing = await db.Products
+            .Where(p => p.PublicId == null || p.PublicId == "")
+            .ToListAsync();
+
+        if (missing.Count == 0) return;
+
+        var taken = (await db.Products
+                .Where(p => p.PublicId != null && p.PublicId != "")
+                .Select(p => p.PublicId)
+                .ToListAsync())
+            .ToHashSet();
+
+        foreach (var product in missing)
+        {
+            string code;
+            do { code = PublicIdGenerator.Next(); } while (!taken.Add(code));
+            product.PublicId = code;
+        }
+
+        await db.SaveChangesAsync();
+    }
+
     private static Product Build(
         string title, string brand, int categoryId, ProductCondition condition,
         decimal price, decimal originalPrice, int stock, int warrantyMonths,
@@ -153,6 +185,7 @@ public static class DbSeeder
     {
         var product = new Product
         {
+            PublicId = PublicIdGenerator.Next(),
             Title = title,
             Brand = brand,
             CategoryId = categoryId,

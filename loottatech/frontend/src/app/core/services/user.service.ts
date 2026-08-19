@@ -35,6 +35,16 @@ export class UserService {
     this.current.set(null);
   }
 
+  /** Keeps the header in step after the customer renames themselves. */
+  setName(name: string): void {
+    const user = this.current();
+    if (!user) return;
+
+    const updated = { ...user, name };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    this.current.set(updated);
+  }
+
   /** Keeps the header balance in step after playing or redeeming. */
   setCoins(coins: number): void {
     const user = this.current();

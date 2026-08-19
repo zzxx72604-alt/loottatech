@@ -1,0 +1,21 @@
+@if (toasts.toasts().length > 0) {
+  <div class="stack" role="status" aria-live="polite">
+    @for (toast of toasts.toasts(); track toast.id) {
+      <div class="toast" [class]="toast.kind">
+        <span class="mark" aria-hidden="true">
+          {{ toast.kind === 'success' ? '✓' : toast.kind === 'error' ? '!' : 'i' }}
+        </span>
+
+        <span class="text">{{ toast.message }}</span>
+
+        @if (toast.actionLink) {
+          <a class="action" [routerLink]="toast.actionLink" (click)="toasts.dismiss(toast.id)">
+            {{ toast.actionLabel }}
+          </a>
+        }
+
+        <button type="button" class="close" (click)="toasts.dismiss(toast.id)" aria-label="Dismiss">✕</button>
+      </div>
+    }
+  </div>
+}

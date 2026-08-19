@@ -418,6 +418,11 @@ namespace lootta.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<string>("PublicId")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
+
                     b.Property<int>("Stock")
                         .HasColumnType("int");
 
@@ -443,6 +448,9 @@ namespace lootta.Migrations
                     b.HasIndex("CategoryId");
 
                     b.HasIndex("IsActive");
+
+                    b.HasIndex("PublicId")
+                        .IsUnique();
 
                     b.HasIndex("Title");
 
@@ -484,6 +492,47 @@ namespace lootta.Migrations
                     b.HasIndex("ProductId");
 
                     b.ToTable("ProductImages");
+                });
+
+            modelBuilder.Entity("lootta.Models.ProductInteraction", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("Liked")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("LikedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("ProductId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("Saved")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("SavedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductId", "Liked");
+
+                    b.HasIndex("UserId", "ProductId")
+                        .IsUnique();
+
+                    b.HasIndex("UserId", "Saved");
+
+                    b.ToTable("ProductInteractions");
                 });
 
             modelBuilder.Entity("lootta.Models.ProductSpec", b =>
@@ -591,6 +640,54 @@ namespace lootta.Migrations
                     b.ToTable("RedeemCodeUses");
                 });
 
+            modelBuilder.Entity("lootta.Models.Review", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Body")
+                        .IsRequired()
+                        .HasMaxLength(1500)
+                        .HasColumnType("nvarchar(1500)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ImageUrl")
+                        .IsRequired()
+                        .HasMaxLength(400)
+                        .HasColumnType("nvarchar(400)");
+
+                    b.Property<bool>("IsHidden")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("ProductId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Rating")
+                        .HasColumnType("int");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("VerifiedPurchase")
+                        .HasColumnType("bit");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("ProductId", "IsHidden");
+
+                    b.HasIndex("ProductId", "UserId")
+                        .IsUnique();
+
+                    b.ToTable("Reviews");
+                });
+
             modelBuilder.Entity("lootta.Models.User", b =>
                 {
                     b.Property<int>("Id")
@@ -603,6 +700,11 @@ namespace lootta.Migrations
                         .IsRequired()
                         .HasMaxLength(300)
                         .HasColumnType("nvarchar(300)");
+
+                    b.Property<string>("AvatarUrl")
+                        .IsRequired()
+                        .HasMaxLength(400)
+                        .HasColumnType("nvarchar(400)");
 
                     b.Property<int>("BestScore")
                         .HasColumnType("int");
@@ -620,6 +722,11 @@ namespace lootta.Migrations
                         .IsRequired()
                         .HasMaxLength(160)
                         .HasColumnType("nvarchar(160)");
+
+                    b.Property<string>("Gender")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
@@ -788,6 +895,25 @@ namespace lootta.Migrations
                     b.Navigation("Product");
                 });
 
+            modelBuilder.Entity("lootta.Models.ProductInteraction", b =>
+                {
+                    b.HasOne("lootta.Models.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("lootta.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Product");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("lootta.Models.ProductSpec", b =>
                 {
                     b.HasOne("lootta.Models.Product", "Product")
@@ -818,6 +944,25 @@ namespace lootta.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("lootta.Models.Review", b =>
+                {
+                    b.HasOne("lootta.Models.Product", "Product")
+                        .WithMany("Reviews")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("lootta.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Product");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("lootta.Models.Voucher", b =>
                 {
                     b.HasOne("lootta.Models.User", "User")
@@ -841,6 +986,8 @@ namespace lootta.Migrations
             modelBuilder.Entity("lootta.Models.Product", b =>
                 {
                     b.Navigation("Images");
+
+                    b.Navigation("Reviews");
 
                     b.Navigation("Specs");
                 });

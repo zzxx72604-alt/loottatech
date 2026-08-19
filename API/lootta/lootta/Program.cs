@@ -244,8 +244,11 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseStaticFiles();
-
+/*
+ * Only /uploads is served as static files. The default UseStaticFiles() for
+ * wwwroot is deliberately not called — this project has no wwwroot, and asking
+ * for one only produces a warning about a folder we never use.
+ */
 var uploadsPath = Path.Combine(builder.Environment.ContentRootPath, "uploads");
 Directory.CreateDirectory(uploadsPath);
 

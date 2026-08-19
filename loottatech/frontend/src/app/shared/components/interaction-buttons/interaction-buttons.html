@@ -1,0 +1,29 @@
+<div class="pair" [class.full]="variant === 'full'">
+  <button
+    type="button"
+    class="act like"
+    [class.on]="store.isLiked(productId)"
+    [disabled]="store.isPending(productId)"
+    (click)="like($event)"
+    [attr.aria-pressed]="store.isLiked(productId)"
+    [attr.aria-label]="store.isLiked(productId) ? 'Unlike' : 'Like'"
+    [title]="store.isLiked(productId) ? 'Liked' : 'Like'"
+  >
+    <span class="glyph">{{ store.isLiked(productId) ? '♥' : '♡' }}</span>
+    @if (variant === 'full') { <span class="label">Like</span> }
+  </button>
+
+  <button
+    type="button"
+    class="act save"
+    [class.on]="store.isSaved(productId)"
+    [disabled]="store.isPending(productId)"
+    (click)="save($event)"
+    [attr.aria-pressed]="store.isSaved(productId)"
+    [attr.aria-label]="store.isSaved(productId) ? 'Remove from saved' : 'Save for later'"
+    [title]="store.isSaved(productId) ? 'Saved' : 'Save for later'"
+  >
+    <span class="glyph">{{ store.isSaved(productId) ? '★' : '☆' }}</span>
+    @if (variant === 'full') { <span class="label">Save</span> }
+  </button>
+</div>

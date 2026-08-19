@@ -1,0 +1,40 @@
+.stars {
+  display: inline-flex;
+  gap: 1px;
+  line-height: 1;
+}
+
+.star {
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--border-strong);
+  transition: color var(--dur) var(--ease), transform var(--dur) var(--ease);
+}
+
+.star.full { color: #f5a623; }
+
+/*
+ * A half star: the same glyph clipped down the middle, layered over a grey
+ * one. No second icon, no image — just a gradient used as a text mask.
+ */
+.star.half {
+  background: linear-gradient(90deg, #f5a623 50%, var(--border-strong) 50%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.sm .star { font-size: 12px; }
+.md .star { font-size: 16px; }
+.lg .star { font-size: 26px; }
+
+.pick .star {
+  cursor: pointer;
+  &:hover { transform: scale(1.15); }
+  &:active { transform: scale(.95); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .star { transition: none; }
+}

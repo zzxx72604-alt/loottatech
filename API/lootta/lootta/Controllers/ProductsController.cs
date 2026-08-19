@@ -45,16 +45,23 @@ public class ProductsController : ControllerBase
         if (!string.IsNullOrWhiteSpace(search))
         {
             var term = search.Trim();
+
+            // Searching by share code as well as by text, so an admin can paste
+            // the code a customer quoted straight into the box.
             query = query.Where(p =>
                 EF.Functions.Like(p.Title, $"%{term}%") ||
-                EF.Functions.Like(p.Brand, $"%{term}%"));
+                EF.Functions.Like(p.Brand, $"%{term}%") ||
+                p.PublicId == term.ToLower());
         }
 
         var products = await query
             .OrderByDescending(p => p.CreatedAt)
             .ToListAsync();
 
-        return Ok(products.Select(ToListDto));
+        var dtos = products.Select(ToListDto).ToList();
+        await AttachRatingsAsync(dtos);
+
+        return Ok(dtos);
     }
 
     /// <summary>One product, with specs and every image.</summary>
@@ -73,7 +80,10 @@ public class ProductsController : ControllerBase
         if (product is null)
             return NotFound($"No product with id {id}.");
 
-        return Ok(ToDetailDto(product));
+        var detail = ToDetailDto(product);
+        await AttachRatingsAsync(new[] { (ProductListDto)detail });
+
+        return Ok(detail);
     }
 
     /// <summary>Create a product. Admin only.</summary>
@@ -86,7 +96,7 @@ public class ProductsController : ControllerBase
         if (!await _db.Categories.AnyAsync(c => c.Id == dto.CategoryId))
             return BadRequest($"Category {dto.CategoryId} does not exist.");
 
-        var product = new Product();
+        var product = new Product { PublicId = await UniquePublicIdAsync() };
         Apply(dto, product);
 
         _db.Products.Add(product);
@@ -157,6 +167,71 @@ public class ProductsController : ControllerBase
         product.UpdatedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync();
         return NoContent();
+    }
+
+    /// <summary>Finds a share code nobody else is using.</summary>
+    private async Task<string> UniquePublicIdAsync()
+    {
+        for (var attempt = 0; attempt < 10; attempt++)
+        {
+            var code = PublicIdGenerator.Next();
+            if (!await _db.Products.AnyAsync(p => p.PublicId == code)) return code;
+        }
+        return PublicIdGenerator.Next(12);
+    }
+
+    /// <summary>Look a product up by its share code — used by share links and admin.</summary>
+    [HttpGet("code/{publicId}")]
+    public async Task<ActionResult<ProductDetailDto>> GetByCode(string publicId)
+    {
+        var product = await _db.Products
+            .Include(p => p.Category)
+            .Include(p => p.Images)
+            .Include(p => p.Specs)
+            .AsNoTracking()
+            .FirstOrDefaultAsync(p => p.PublicId == publicId.Trim().ToLower());
+
+        if (product is null) return NotFound($"No product with code {publicId}.");
+
+        var detail = ToDetailDto(product);
+        await AttachRatingsAsync(new[] { (ProductListDto)detail });
+
+        return Ok(detail);
+    }
+
+    /// <summary>
+    /// Fills in the review averages for a whole page of products in ONE query.
+    ///
+    /// The obvious version asks the database per product, which is forty
+    /// queries for a forty-product page — the N+1 problem. Grouping once and
+    /// matching in memory keeps it at two queries no matter how long the list.
+    /// </summary>
+    private async Task AttachRatingsAsync(IReadOnlyCollection<ProductListDto> products)
+    {
+        if (products.Count == 0) return;
+
+        var ids = products.Select(p => p.Id).ToList();
+
+        var stats = await _db.Reviews
+            .Where(r => ids.Contains(r.ProductId) && !r.IsHidden)
+            .GroupBy(r => r.ProductId)
+            .Select(g => new
+            {
+                ProductId = g.Key,
+                Count = g.Count(),
+                Sum = g.Sum(r => r.Rating),
+            })
+            .ToListAsync();
+
+        var byProduct = stats.ToDictionary(s => s.ProductId);
+
+        foreach (var product in products)
+        {
+            if (!byProduct.TryGetValue(product.Id, out var stat) || stat.Count == 0) continue;
+
+            product.ReviewCount = stat.Count;
+            product.Rating = Math.Round((double)stat.Sum / stat.Count, 1);
+        }
     }
 
     /* ============================================================ images */
@@ -317,32 +392,14 @@ public class ProductsController : ControllerBase
         }
     }
 
-    private static ProductListDto ToListDto(Product p) => new()
-    {
-        Id = p.Id,
-        Title = p.Title,
-        Brand = p.Brand,
-        Category = p.Category?.Name ?? string.Empty,
-        CategoryId = p.CategoryId,
-        Condition = p.Condition.ToApi(),
-        Price = p.Price,
-        OriginalPrice = p.OriginalPrice,
-        Stock = p.Stock,
-        WarrantyMonths = p.WarrantyMonths,
-        Tested = p.Tested,
-        WatchCount = p.WatchCount,
-        IsActive = p.IsActive,
-        Images = p.Images.OrderByDescending(i => i.IsPrimary)
-                         .ThenBy(i => i.SortOrder)
-                         .Select(i => i.Url)
-                         .ToList()
-    };
+    private static ProductListDto ToListDto(Product p) => ProductMapping.ToListDto(p);
 
     private static ProductDetailDto ToDetailDto(Product p)
     {
         var dto = new ProductDetailDto
         {
             Id = p.Id,
+            PublicId = p.PublicId,
             Title = p.Title,
             Brand = p.Brand,
             Category = p.Category?.Name ?? string.Empty,

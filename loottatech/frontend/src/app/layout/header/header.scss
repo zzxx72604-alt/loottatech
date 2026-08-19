@@ -186,3 +186,21 @@
   color: var(--brand);
   font-weight: 700;
 }
+
+.avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--brand-ink);
+  color: var(--brand);
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 800;
+  flex: none;
+  transition: transform var(--dur) var(--ease);
+
+  &:hover { transform: scale(1.08); }
+}
+
+.signin { font-weight: 700; }

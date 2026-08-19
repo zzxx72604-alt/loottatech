@@ -1,0 +1,136 @@
+<header class="head">
+  <div>
+    <h1>Settings</h1>
+    <p class="sub">Your account details and security.</p>
+  </div>
+  <a routerLink="/profile" class="back">← Profile</a>
+</header>
+
+<nav class="tabs" role="tablist">
+  <button type="button" role="tab" [attr.aria-selected]="section() === 'preference'"
+          [class.on]="section() === 'preference'" (click)="setSection('preference')">Preference</button>
+  <button type="button" role="tab" [attr.aria-selected]="section() === 'security'"
+          [class.on]="section() === 'security'" (click)="setSection('security')">Security</button>
+</nav>
+
+@if (loading()) {
+  <div class="card pad">Loading…</div>
+} @else if (section() === 'preference') {
+
+  <section class="card block">
+    <h2>Profile picture</h2>
+
+    <div class="avatar-row">
+      @if (avatarSrc()) {
+        <img class="avatar" [src]="avatarSrc()" alt="Your profile picture" width="72" height="72" />
+      } @else {
+        <span class="avatar empty" aria-hidden="true">?</span>
+      }
+
+      <div>
+        <button type="button" class="btn" (click)="pickAvatar()" [disabled]="uploading()">
+          {{ uploading() ? 'Uploading…' : avatarSrc() ? 'Change picture' : 'Upload picture' }}
+        </button>
+        <p class="hint">Cropped to a square automatically. JPG, PNG or WebP, up to 8 MB.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="card block">
+    <h2>Your details</h2>
+
+    <form [formGroup]="form" (ngSubmit)="save()">
+      <div class="field">
+        <label for="name">Name</label>
+        <input id="name" type="text" formControlName="name" autocomplete="name" />
+        @if (form.controls.name.invalid && form.controls.name.touched) {
+          <p class="err">Please enter your name.</p>
+        }
+      </div>
+
+      <div class="row2">
+        <div class="field">
+          <label for="phone">Phone</label>
+          <input id="phone" type="tel" formControlName="phone" autocomplete="tel" placeholder="012 345 678" />
+        </div>
+
+        <div class="field">
+          <label for="gender">Gender</label>
+          <select id="gender" formControlName="gender">
+            @for (option of genders; track option) {
+              <option [value]="option">{{ option || 'Not said' }}</option>
+            }
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="address">Delivery address</label>
+        <input id="address" type="text" formControlName="address" autocomplete="street-address" />
+      </div>
+
+      @if (error()) { <p class="alert">{{ error() }}</p> }
+
+      <button type="submit" class="btn primary" [disabled]="saving()">
+        {{ saving() ? 'Saving…' : 'Save changes' }}
+      </button>
+    </form>
+  </section>
+
+  <section class="card block muted-block">
+    <h2>Email</h2>
+    <p class="hint">
+      Changing the address you sign in with is a security action, not a
+      preference. It isn't available yet.
+    </p>
+  </section>
+
+} @else {
+
+  <section class="card block">
+    <h2>Change password</h2>
+
+    <form [formGroup]="passwordForm" (ngSubmit)="changePassword()">
+      <div class="field">
+        <label for="current">Current password</label>
+        <input id="current" type="password" formControlName="currentPassword" autocomplete="current-password" />
+        <p class="hint">
+          Asked for even though you're signed in — a borrowed laptop is signed
+          in too.
+        </p>
+      </div>
+
+      <div class="row2">
+        <div class="field">
+          <label for="new">New password</label>
+          <input id="new" type="password" formControlName="newPassword" autocomplete="new-password" />
+          @if (passwordForm.controls.newPassword.invalid && passwordForm.controls.newPassword.touched) {
+            <p class="err">At least 6 characters.</p>
+          }
+        </div>
+
+        <div class="field">
+          <label for="confirm">Confirm new password</label>
+          <input id="confirm" type="password" formControlName="confirmNewPassword" autocomplete="new-password" />
+        </div>
+      </div>
+
+      @if (passwordError()) { <p class="alert">{{ passwordError() }}</p> }
+
+      <button type="submit" class="btn primary" [disabled]="passwordSaving()">
+        {{ passwordSaving() ? 'Changing…' : 'Change password' }}
+      </button>
+    </form>
+  </section>
+
+  <section class="card block muted-block">
+    <h2>Not built yet</h2>
+    <p class="hint">
+      Recovery email, linked accounts and two-factor sign-in are planned. They
+      are listed here so it's clear what exists and what doesn't — rather than
+      showing buttons that quietly do nothing.
+    </p>
+  </section>
+}
+
+<input #picker type="file" accept="image/jpeg,image/png,image/webp" hidden (change)="onAvatar($event)" />

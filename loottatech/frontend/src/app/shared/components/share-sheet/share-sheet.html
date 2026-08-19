@@ -1,0 +1,31 @@
+<div class="backdrop" (click)="close()"></div>
+
+<div class="sheet" role="dialog" aria-modal="true" aria-label="Share this product">
+  <header>
+    <h3>Share</h3>
+    <button type="button" class="x" (click)="close()" aria-label="Close">✕</button>
+  </header>
+
+  <p class="what">{{ title }}</p>
+
+  <div class="targets">
+    @for (target of targets; track target.key) {
+      <a class="target" [href]="link(target)" target="_blank" rel="noopener noreferrer">
+        {{ target.label }}
+      </a>
+    }
+
+    @if (hasNative) {
+      <button type="button" class="target more" (click)="native()">More…</button>
+    }
+  </div>
+
+  <div class="link-row">
+    <code>{{ url() }}</code>
+    <button type="button" class="copy" [class.done]="copied()" (click)="copy()">
+      {{ copied() ? 'Copied' : 'Copy link' }}
+    </button>
+  </div>
+
+  <p class="code">Product code <b>{{ publicId }}</b></p>
+</div>

@@ -10,6 +10,11 @@
 } @else if (product(); as p) {
   <div class="wrap">
     <div class="gallery">
+      @if (p.images.length > 1) {
+        <button type="button" class="arrow left" (click)="nextImage(-1)" aria-label="Previous image">‹</button>
+        <button type="button" class="arrow right" (click)="nextImage(1)" aria-label="Next image">›</button>
+      }
+
       <img
         [ngSrc]="p.images[activeImage()]"
         ngSrcset="480w, 800w"
@@ -46,6 +51,16 @@
     <div class="info">
       <h1>{{ p.title }}</h1>
 
+      @if (p.reviewCount > 0) {
+        <p class="rating-line">
+          <app-star-rating [value]="p.rating" size="md" />
+          <b>{{ p.rating }}</b>
+          <span>{{ p.reviewCount }} review{{ p.reviewCount === 1 ? '' : 's' }}</span>
+        </p>
+      } @else {
+        <p class="rating-line none">No reviews yet</p>
+      }
+
       <div class="prices">
         <span class="now">{{ p.price | currency: 'USD' : 'symbol' : '1.0-0' }}</span>
         @if (p.originalPrice && p.originalPrice > p.price) {
@@ -71,9 +86,41 @@
 
       <p class="desc">{{ p.description }}</p>
 
-      <button type="button" class="buy" (click)="add()" [disabled]="p.stock === 0">
-        {{ p.stock === 0 ? 'Sold out' : 'Add to cart' }}
+      <div class="actions">
+        <button type="button" class="buy-now" (click)="buyNow()" [disabled]="p.stock === 0">
+          Buy now
+        </button>
+        <button type="button" class="buy" (click)="addWithToast()" [disabled]="p.stock === 0">
+          {{ p.stock === 0 ? 'Sold out' : 'Add to cart' }}
+        </button>
+      </div>
+
+      <button type="button" class="share-btn" (click)="sharing.set(true)">
+        ↗ Share · code {{ p.publicId }}
       </button>
+
+      <app-interaction-buttons [productId]="p.id" variant="full" />
+
+      @if (sharing()) {
+        <app-share-sheet [publicId]="p.publicId" [title]="p.title" (closed)="sharing.set(false)" />
+      }
+
+      <!-- Buying directly must never silently check out the existing cart. -->
+      @if (confirmingBuy()) {
+        <div class="confirm-backdrop" (click)="confirmingBuy.set(false)"></div>
+        <div class="confirm" role="dialog" aria-modal="true">
+          <h3>Buy just this item?</h3>
+          <p>
+            You have {{ cartCount() }} item{{ cartCount() === 1 ? '' : 's' }} in your cart.
+            Buying now checks out <b>only {{ p.title }}</b> — your cart is kept for later.
+          </p>
+          <div class="confirm-actions">
+            <button type="button" class="ghost" (click)="confirmingBuy.set(false)">Cancel</button>
+            <button type="button" class="ghost" (click)="addInstead()">Add to cart instead</button>
+            <button type="button" class="primary" (click)="goDirect()">Buy this only</button>
+          </div>
+        </div>
+      }
 
       <h2 class="spec-title">Specifications</h2>
       <table class="specs">
@@ -90,4 +137,33 @@
   </div>
 } @else {
   <div class="wrap"><p>Product not found.</p></div>
+}
+
+<!-- Recently viewed, built from this browser's own history. -->
+@if (alsoViewed().length > 0) {
+  <section class="also-viewed">
+    <h2>You looked at these</h2>
+    <div class="strip">
+      @for (item of alsoViewed(); track item.id) {
+        <app-product-card
+          [product]="item"
+          (addToCart)="onRecentAdd($event)"
+          (buyNow)="onRecentBuy($event)"
+        />
+      }
+    </div>
+  </section>
+}
+
+<!--
+  Reviews load only when scrolled to. They are below the fold and cost an extra
+  request, so building them with the page would slow down the part people
+  actually came for.
+-->
+@if (product(); as p) {
+  @defer (on viewport) {
+    <app-reviews-section [productId]="p.id" />
+  } @placeholder {
+    <div class="reviews-placeholder"></div>
+  }
 }

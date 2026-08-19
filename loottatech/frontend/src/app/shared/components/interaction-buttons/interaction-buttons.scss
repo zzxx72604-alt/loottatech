@@ -1,0 +1,66 @@
+.pair {
+  display: flex;
+  gap: 5px;
+}
+
+.act {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 0;
+  background: rgba(255, 255, 255, .9);
+  color: #444;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  justify-content: center;
+  line-height: 1;
+  /* Only transform and colour animate - both are cheap and never reflow. */
+  transition: transform var(--dur) var(--ease), color var(--dur) var(--ease),
+              background-color var(--dur) var(--ease);
+
+  &:disabled { opacity: .6; cursor: progress; }
+  &:hover:not(:disabled) { background: #fff; }
+  &:active:not(:disabled) { transform: scale(.88); }
+}
+
+.glyph { font-size: 14px; }
+
+/* A short pop when the state turns on, so the tap feels acknowledged. */
+.act.on .glyph { animation: pop 260ms var(--ease); }
+
+.like.on { color: var(--sale); }
+.save.on { color: #f0a500; }
+
+@keyframes pop {
+  0%   { transform: scale(1); }
+  45%  { transform: scale(1.45); }
+  100% { transform: scale(1); }
+}
+
+/* ------------------------------------------------------------- full size */
+
+.pair.full {
+  gap: var(--sp-2);
+
+  .act {
+    width: auto;
+    height: auto;
+    padding: 8px var(--sp-4);
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--border-strong);
+    background: var(--surface);
+    color: var(--text-2);
+    font-size: 13px;
+    font-weight: 600;
+
+    &:hover:not(:disabled) { background: var(--surface-2); }
+    &.on { border-color: currentColor; }
+  }
+
+  .glyph { font-size: 15px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .act.on .glyph { animation: none; }
+}

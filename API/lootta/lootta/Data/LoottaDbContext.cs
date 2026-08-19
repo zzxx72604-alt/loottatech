@@ -24,6 +24,8 @@ public class LoottaDbContext : DbContext
     public DbSet<EconomyConfig> EconomyConfigs => Set<EconomyConfig>();
     public DbSet<RedeemCode> RedeemCodes => Set<RedeemCode>();
     public DbSet<RedeemCodeUse> RedeemCodeUses => Set<RedeemCodeUse>();
+    public DbSet<ProductInteraction> ProductInteractions => Set<ProductInteraction>();
+    public DbSet<Review> Reviews => Set<Review>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -89,6 +91,7 @@ public class LoottaDbContext : DbContext
                   .HasConversion<string>()
                   .HasMaxLength(20);
 
+            entity.HasIndex(p => p.PublicId).IsUnique();
             entity.HasIndex(p => p.Title);
             entity.HasIndex(p => p.IsActive);
 
@@ -214,6 +217,49 @@ public class LoottaDbContext : DbContext
             entity.HasOne(u => u.User)
                   .WithMany()
                   .HasForeignKey(u => u.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ------------------------------------------------- ProductInteraction
+        modelBuilder.Entity<ProductInteraction>(entity =>
+        {
+            // One row per customer per product, enforced by the database so a
+            // double-click can never create two conflicting rows.
+            entity.HasIndex(i => new { i.UserId, i.ProductId }).IsUnique();
+
+            // Answering "what has this customer saved" without scanning.
+            entity.HasIndex(i => new { i.UserId, i.Saved });
+            entity.HasIndex(i => new { i.ProductId, i.Liked });
+
+            entity.HasOne(i => i.User)
+                  .WithMany()
+                  .HasForeignKey(i => i.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(i => i.Product)
+                  .WithMany()
+                  .HasForeignKey(i => i.ProductId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ------------------------------------------------------------- Review
+        modelBuilder.Entity<Review>(entity =>
+        {
+            // One review per customer per product. Enforced by the database so
+            // nobody can inflate a score by posting five times.
+            entity.HasIndex(r => new { r.ProductId, r.UserId }).IsUnique();
+
+            // The product page reads by product and hides moderated rows.
+            entity.HasIndex(r => new { r.ProductId, r.IsHidden });
+
+            entity.HasOne(r => r.Product)
+                  .WithMany(p => p.Reviews)
+                  .HasForeignKey(r => r.ProductId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(r => r.User)
+                  .WithMany()
+                  .HasForeignKey(r => r.UserId)
                   .OnDelete(DeleteBehavior.Cascade);
         });
 

@@ -35,10 +35,14 @@
           ◎ {{ users.coins() }}
         </a>
         <a class="icon" routerLink="/my-orders">My orders</a>
-        <button type="button" class="icon" (click)="signOut()">Sign out</button>
+
+        <!-- The avatar IS the profile entry. Sign out lives inside. -->
+        <a class="avatar" routerLink="/profile" [title]="users.user()?.name ?? 'My profile'">
+          {{ initials() }}
+        </a>
       } @else {
         <a class="icon" routerLink="/my-orders">My orders</a>
-        <a class="icon" routerLink="/login">Sign in</a>
+        <a class="icon signin" routerLink="/login">Sign in</a>
       }
 
       <a class="icon cart" routerLink="/cart">

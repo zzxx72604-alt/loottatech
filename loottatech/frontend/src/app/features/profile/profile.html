@@ -1,0 +1,123 @@
+@if (loading()) {
+  <div class="card pad">Loading your profile…</div>
+} @else if (error()) {
+  <p class="alert">{{ error() }}</p>
+} @else if (profile(); as p) {
+
+  <!-- ---------------------------------------------------------- header -->
+  <section class="hero card">
+    <div class="who">
+      @if (p.avatarUrl) {
+        <img class="avatar" [src]="p.avatarUrl + '-480.webp'" [alt]="p.name" width="60" height="60" />
+      } @else {
+        <span class="avatar" aria-hidden="true">{{ initials() }}</span>
+      }
+
+      <div class="names">
+        <h1>{{ p.name }}</h1>
+        <p class="email">{{ p.email }}</p>
+        <p class="meta">
+          Customer #{{ p.id }} · member since {{ p.memberSince | date: 'MMM yyyy' }}
+        </p>
+      </div>
+    </div>
+
+    <div class="coins">
+      <span class="coin">◎</span>
+      <span class="amount">{{ p.coins }}</span>
+      <a routerLink="/arcade" class="arcade">Arcade →</a>
+    </div>
+  </section>
+
+  <!-- ----------------------------------------------------------- stats -->
+  <div class="stats">
+    <div class="stat card">
+      <b>{{ p.orderCount }}</b><span>orders</span>
+    </div>
+    <div class="stat card">
+      <b>{{ p.itemsBought }}</b><span>items bought</span>
+    </div>
+    <div class="stat card">
+      <b>{{ p.totalSpent | currency: 'USD' : 'symbol' : '1.0-0' }}</b><span>spent</span>
+    </div>
+    <div class="stat card">
+      <b>{{ p.bestScore }}</b><span>best score</span>
+    </div>
+  </div>
+
+  <!-- ------------------------------------------------------- shortcuts -->
+  <nav class="shortcuts">
+    <a routerLink="/my-orders" class="card link">
+      <span class="ico">📦</span> Orders
+    </a>
+    <a routerLink="/arcade" class="card link">
+      <span class="ico">🎮</span> Arcade
+    </a>
+    <a routerLink="/cart" class="card link">
+      <span class="ico">🛒</span> Cart
+    </a>
+    <a routerLink="/settings" class="card link">
+      <span class="ico">⚙</span> Settings
+    </a>
+    <button type="button" class="card link" (click)="signOut()">
+      <span class="ico">↩</span> Sign out
+    </button>
+  </nav>
+
+  <!-- ------------------------------------------------------------ tabs -->
+  <div class="tabs" role="tablist">
+    <button type="button" role="tab" [attr.aria-selected]="tab() === 'saved'"
+            [class.on]="tab() === 'saved'" (click)="setTab('saved')">
+      Saved <span class="count">{{ p.saveCount }}</span>
+    </button>
+    <button type="button" role="tab" [attr.aria-selected]="tab() === 'liked'"
+            [class.on]="tab() === 'liked'" (click)="setTab('liked')">
+      Liked <span class="count">{{ p.likeCount }}</span>
+    </button>
+    <button type="button" role="tab" [attr.aria-selected]="tab() === 'orders'"
+            [class.on]="tab() === 'orders'" (click)="setTab('orders')">
+      Orders <span class="count">{{ p.orderCount }}</span>
+    </button>
+  </div>
+
+  @if (tab() === 'saved') {
+    @if (saved().length === 0) {
+      <div class="card pad">
+        <p>Nothing saved yet.</p>
+        <p class="sub">Tap ☆ on any product to keep it here for later.</p>
+        <a routerLink="/" class="primary">Browse products</a>
+      </div>
+    } @else {
+      <div class="grid">
+        @for (product of saved(); track product.id) {
+          <app-product-card [product]="product" (addToCart)="onAddToCart($event)"
+            (buyNow)="onBuyNow($event)" />
+        }
+      </div>
+    }
+  }
+
+  @if (tab() === 'liked') {
+    @if (liked().length === 0) {
+      <div class="card pad">
+        <p>You haven't liked anything yet.</p>
+        <p class="sub">Tap ♡ on a product to show it some love.</p>
+        <a routerLink="/" class="primary">Browse products</a>
+      </div>
+    } @else {
+      <div class="grid">
+        @for (product of liked(); track product.id) {
+          <app-product-card [product]="product" (addToCart)="onAddToCart($event)"
+            (buyNow)="onBuyNow($event)" />
+        }
+      </div>
+    }
+  }
+
+  @if (tab() === 'orders') {
+    <div class="card pad">
+      <p>{{ p.orderCount }} order{{ p.orderCount === 1 ? '' : 's' }} placed.</p>
+      <a routerLink="/my-orders" class="primary">View order history</a>
+    </div>
+  }
+}

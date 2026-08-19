@@ -1,9 +1,11 @@
+import { Router } from '@angular/router';
 import { ChangeDetectionStrategy, Component, Input, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { NgOptimizedImage } from '@angular/common';
 import { ProductService } from '../../core/services/product.service';
 import { CartService } from '../../core/services/cart.service';
+import { ToastService } from '../../core/services/toast.service';
 import { ProductCard } from '../../shared/components/product-card/product-card';
 import { ProductCardSkeleton } from '../../shared/components/product-card-skeleton/product-card-skeleton';
 import { AdTile, Promo } from '../../shared/components/ad-tile/ad-tile';
@@ -26,6 +28,8 @@ interface CategoryCount {
 export class Catalog {
   private readonly productService = inject(ProductService);
   private readonly cart = inject(CartService);
+  private readonly router = inject(Router);
+  private readonly toasts = inject(ToastService);
 
   /* ----------------------------------------------------------- data ----- */
 
@@ -243,6 +247,10 @@ export class Catalog {
   /** Handles the @Output coming up from ProductCard. */
   protected onAddToCart(product: Product): void {
     this.cart.add(product);
+    this.toasts.success(`${product.title} added to your cart`, {
+      label: 'View cart',
+      link: '/cart',
+    });
   }
 
   protected onToggleWatch(product: Product): void {
@@ -261,5 +269,22 @@ export class Catalog {
 
   protected trackById(_index: number, product: Product): number {
     return product.id;
+  }
+
+  /**
+   * Buy one item straight from a card.
+   *
+   * With a cart already holding things, the detail page asks first. From a
+   * card we send the customer to the product instead, so the choice is made
+   * on the page that shows what they are actually buying.
+   */
+  protected onBuyNow(product: Product): void {
+    if (this.cart.items().length > 0) {
+      this.router.navigate(['/product', product.id], { queryParams: { buy: 1 } });
+      return;
+    }
+
+    this.cart.buyNow(product);
+    this.router.navigate(['/checkout']);
   }
 }

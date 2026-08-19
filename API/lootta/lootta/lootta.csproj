@@ -29,7 +29,12 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
 
-    <PackageReference Include="SixLabors.ImageSharp" Version="4.1.0" />
+    <!--
+      ImageSharp 3.1 is Apache-2.0 and free for any use. Version 4 moved to a
+      split licence and prints a licensing warning on every build, which looks
+      alarming in a student project and raises a question we do not need.
+    -->
+    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.*" />
 
     <!-- Swagger / OpenAPI documentation UI -->
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />

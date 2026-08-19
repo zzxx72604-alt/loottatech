@@ -21,6 +21,11 @@ export class ProductService {
     return this.api.get<Product>(`products/${id}`);
   }
 
+  /** Resolves a share link like /p/pkhj83421. */
+  getByCode(code: string): Observable<Product> {
+    return this.api.get<Product>(`products/code/${code}`);
+  }
+
   /** The C# API filters with a query parameter, not a path segment. */
   search(term: string): Observable<Product[]> {
     return this.api.get<Product[]>('products', { search: term });

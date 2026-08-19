@@ -1,0 +1,71 @@
+.stack {
+  position: fixed;
+  left: 50%;
+  bottom: var(--sp-5);
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  z-index: 200;
+  width: min(360px, calc(100vw - 2 * var(--sp-4)));
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-left: 4px solid var(--text-3);
+  border-radius: var(--radius);
+  padding: 10px var(--sp-3);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, .16);
+  font-size: 13px;
+  /* Only transform and opacity animate, so this never triggers layout. */
+  animation: rise 220ms cubic-bezier(.4, 0, .2, 1);
+}
+
+.toast.success { border-left-color: var(--cond-new); }
+.toast.error { border-left-color: var(--sale); }
+
+.mark {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  font-weight: 800;
+  color: #fff;
+  background: var(--text-3);
+  flex: none;
+}
+
+.success .mark { background: var(--cond-new); }
+.error .mark { background: var(--sale); }
+
+.text { flex: 1; }
+
+.action {
+  font-weight: 700;
+  color: var(--price);
+  white-space: nowrap;
+}
+
+.close {
+  border: 0;
+  background: none;
+  color: var(--text-3);
+  font-size: 12px;
+  padding: 0 2px;
+  &:hover { color: var(--text); }
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast { animation: none; }
+}

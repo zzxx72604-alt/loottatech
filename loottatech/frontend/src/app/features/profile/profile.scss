@@ -1,0 +1,151 @@
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.pad {
+  padding: var(--sp-6) var(--sp-4);
+  text-align: center;
+
+  p { margin: 0 0 var(--sp-2); }
+  .sub { font-size: 12.5px; color: var(--text-3); margin-bottom: var(--sp-4); }
+}
+
+.alert {
+  background: rgba(255, 59, 48, .1);
+  border: 1px solid var(--sale);
+  color: var(--sale);
+  border-radius: var(--radius);
+  padding: var(--sp-3);
+  font-size: 13px;
+}
+
+/* ---------------------------------------------------------------- hero */
+
+.hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  padding: var(--sp-4);
+  margin-bottom: var(--sp-3);
+  flex-wrap: wrap;
+}
+
+.who { display: flex; align-items: center; gap: var(--sp-4); }
+
+img.avatar { object-fit: cover; }
+
+.avatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: var(--brand);
+  color: var(--brand-ink);
+  display: grid;
+  place-items: center;
+  font-size: 21px;
+  font-weight: 800;
+  flex: none;
+}
+
+.names h1 { margin: 0; font-size: 19px; }
+.email { margin: 2px 0 0; font-size: 12.5px; color: var(--text-2); }
+.meta { margin: 3px 0 0; font-size: 11.5px; color: var(--text-3); }
+
+.coins {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-2);
+  background: var(--brand);
+  color: var(--brand-ink);
+  padding: 8px var(--sp-4);
+  border-radius: var(--radius-pill);
+  font-weight: 700;
+
+  .amount { font-size: 18px; }
+  .arcade { font-size: 11.5px; font-weight: 700; opacity: .7; }
+  .arcade:hover { opacity: 1; }
+}
+
+/* --------------------------------------------------------------- stats */
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-3);
+}
+
+.stat {
+  padding: var(--sp-3);
+  text-align: center;
+
+  b { display: block; font-size: 18px; }
+  span { font-size: 11px; color: var(--text-3); }
+}
+
+/* ----------------------------------------------------------- shortcuts */
+
+.shortcuts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-4);
+}
+
+.link {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-3);
+  font-size: 13px;
+  color: var(--text);
+  text-align: left;
+  transition: border-color var(--dur) var(--ease), transform var(--dur) var(--ease);
+
+  &:hover { border-color: var(--brand); transform: translateY(-1px); }
+  .ico { font-size: 15px; }
+}
+
+/* ---------------------------------------------------------------- tabs */
+
+.tabs {
+  display: flex;
+  gap: var(--sp-1);
+  margin-bottom: var(--sp-3);
+
+  button {
+    border: 1px solid var(--border-strong);
+    background: var(--surface);
+    color: var(--text-2);
+    font-size: 13px;
+    padding: 6px var(--sp-4);
+    border-radius: var(--radius-pill);
+
+    &.on { background: var(--brand); border-color: var(--brand); color: var(--brand-ink); font-weight: 700; }
+  }
+
+  .count { opacity: .6; margin-left: 3px; font-size: 11.5px; }
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: var(--sp-3);
+}
+
+.primary {
+  display: inline-block;
+  background: var(--brand);
+  color: var(--brand-ink);
+  font-weight: 700;
+  padding: 9px var(--sp-6);
+  border-radius: var(--radius-pill);
+}
+
+@media (max-width: 600px) {
+  .hero { flex-direction: column; align-items: flex-start; }
+  .grid { grid-template-columns: repeat(2, 1fr); gap: var(--sp-2); }
+}

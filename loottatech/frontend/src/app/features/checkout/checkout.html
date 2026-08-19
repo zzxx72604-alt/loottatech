@@ -1,5 +1,11 @@
 <h1 class="page-title">Checkout</h1>
 
+@if (isDirectBuy()) {
+  <p class="direct-note">
+    Buying this item on its own. Anything in your cart is untouched and still there.
+  </p>
+}
+
 @if (items().length === 0) {
   <div class="empty">
     <p>There's nothing to check out.</p>

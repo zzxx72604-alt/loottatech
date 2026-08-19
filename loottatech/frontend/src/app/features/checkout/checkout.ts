@@ -37,8 +37,17 @@ export class Checkout {
   protected readonly submitting = signal(false);
   protected readonly error = signal('');
 
-  protected readonly items = this.cart.items;
-  protected readonly subtotal = this.cart.total;
+  /**
+   * What is actually being bought: the single "buy now" item when one is set,
+   * otherwise the cart. Everything downstream reads this, so the two paths
+   * share one checkout instead of duplicating the page.
+   */
+  protected readonly items = computed(() => this.cart.linesForCheckout());
+
+  protected readonly isDirectBuy = computed(() => this.cart.directBuy() !== null);
+  protected readonly subtotal = computed(() =>
+    this.items().reduce((sum, line) => sum + line.product.price * line.quantity, 0),
+  );
 
   /** Mirrors the delivery control so the summary can react to it. */
   protected readonly chosenDelivery = signal<DeliveryOption>('Standard Delivery');
@@ -156,7 +165,8 @@ export class Checkout {
       })
       .subscribe({
         next: (order) => {
-          this.cart.clear();
+          if (this.isDirectBuy()) this.cart.clearDirectBuy();
+          else this.cart.clear();
           this.router.navigate(['/order', order.orderNumber]);
         },
         error: (err) => {

@@ -39,6 +39,14 @@ public class User
     [MaxLength(300)]
     public string Address { get; set; } = string.Empty;
 
+    /// <summary>Profile picture, stored as a base path like product images.</summary>
+    [MaxLength(400)]
+    public string AvatarUrl { get; set; } = string.Empty;
+
+    /// <summary>Optional, and never inferred. Empty means "not said".</summary>
+    [MaxLength(20)]
+    public string Gender { get; set; } = string.Empty;
+
     // ---- rewards ----
     public int Coins { get; set; }
 
