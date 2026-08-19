@@ -220,3 +220,5 @@ textarea {
 @media (max-width: 600px) {
   .summary { grid-template-columns: 1fr; gap: var(--sp-3); }
 }
+
+.review-acts { margin-top: var(--sp-2); }

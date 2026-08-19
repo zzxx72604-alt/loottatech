@@ -5,6 +5,14 @@
   align-items: start;
 }
 
+/* The picture's own box, so absolutely positioned arrows land on the image
+   rather than on the nearest positioned ancestor further up the page. */
+.main-shot {
+  position: relative;
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
 .gallery img {
   width: 100%;
   height: auto;
@@ -173,15 +181,29 @@ h1 {
   opacity: 0;
   transition: opacity var(--dur) var(--ease), background-color var(--dur) var(--ease);
 
-  &.left { left: 8px; }
-  &.right { right: 8px; }
+  &.left { left: 10px; }
+  &.right { right: 10px; }
   &:hover { background: #fff; }
 }
 
 /* Arrows appear on hover, and are always visible on touch where there is no
    hover state to reveal them. */
-.gallery:hover .arrow,
+.main-shot:hover .arrow,
 .arrow:focus-visible { opacity: 1; }
+
+/* Which image you're on, so the arrows have context. */
+.counter {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  background: rgba(0, 0, 0, .55);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  pointer-events: none;
+}
 
 @media (hover: none) {
   .arrow { opacity: 1; }
@@ -289,4 +311,43 @@ h1 {
 
 @media (max-width: 600px) {
   .also-viewed .strip { grid-auto-columns: minmax(150px, 1fr); }
+}
+
+.report-btn {
+  display: block;
+  width: 100%;
+  margin-top: var(--sp-2);
+  border: 0;
+  background: none;
+  color: var(--text-3);
+  font-size: 11.5px;
+  padding: 6px;
+
+  &:hover { color: var(--sale); text-decoration: underline; }
+}
+
+/* ------------------------------------------------------ recommendations */
+
+.related-strip {
+  margin-top: var(--sp-5);
+
+  h2 { font-size: 15px; margin: 0 0 var(--sp-3); }
+}
+
+.related-strip .strip {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(180px, 1fr);
+  gap: var(--sp-3);
+  overflow-x: auto;
+  padding-bottom: var(--sp-2);
+  scroll-snap-type: x mandatory;
+
+  > * { scroll-snap-align: start; }
+}
+
+.related-placeholder { height: 300px; margin-top: var(--sp-5); }
+
+@media (max-width: 600px) {
+  .related-strip .strip { grid-auto-columns: minmax(155px, 1fr); }
 }

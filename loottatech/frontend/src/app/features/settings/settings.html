@@ -77,6 +77,28 @@
     </form>
   </section>
 
+  <section class="card block">
+    <h2>Notifications</h2>
+    <p class="hint">
+      Where pop-up messages appear on this device. Saved per browser, so your
+      phone and laptop can differ.
+    </p>
+
+    <div class="corners">
+      @for (corner of corners; track corner.value) {
+        <button
+          type="button"
+          class="corner"
+          [class.on]="currentCorner === corner.value"
+          (click)="chooseCorner(corner.value)"
+        >
+          <span class="preview" [class]="corner.value"><span class="dot"></span></span>
+          {{ corner.label }}
+        </button>
+      }
+    </div>
+  </section>
+
   <section class="card block muted-block">
     <h2>Email</h2>
     <p class="hint">

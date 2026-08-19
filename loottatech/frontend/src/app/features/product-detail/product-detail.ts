@@ -17,6 +17,7 @@ import { InteractionButtons } from '../../shared/components/interaction-buttons/
 import { StarRating } from '../../shared/components/star-rating/star-rating';
 import { ReviewsSection } from './reviews-section';
 import { ShareSheet } from '../../shared/components/share-sheet/share-sheet';
+import { ReportDialog } from '../../shared/components/report-dialog/report-dialog';
 import { ProductCard } from '../../shared/components/product-card/product-card';
 import { ToastService } from '../../core/services/toast.service';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -33,6 +34,7 @@ import { Product, discountPercent } from '../../shared/models/product';
     StarRating,
     ReviewsSection,
     ShareSheet,
+    ReportDialog,
     ProductCard,
     NgOptimizedImage,
     CurrencyPipe,
@@ -70,6 +72,7 @@ export class ProductDetail {
         next: (product: Product) => {
           this.product.set(product);
           this.recent.add(product);
+          this.loadRelated(product.id);
           this.loading.set(false);
         },
         error: () => this.loading.set(false),
@@ -95,9 +98,12 @@ export class ProductDetail {
     return discountPercent(p);
   }
 
-  protected addWithToast(): void {
+  protected addWithToast(event?: Event): void {
     const p = this.product();
     if (!p) return;
+
+    const button = event?.currentTarget as HTMLElement | null;
+    if (button) this.cart.flyToCart(button.getBoundingClientRect());
 
     this.cart.add(p);
     this.toasts.success(`${p.title} added to your cart`, {
@@ -122,12 +128,16 @@ export class ProductDetail {
   /* ----------------------------------------------------------- share */
 
   protected readonly sharing = signal(false);
+  protected readonly reporting = signal(false);
 
   /* --------------------------------------------------------- buy now */
 
   protected readonly confirmingBuy = signal(false);
 
   protected readonly cartCount = this.cart.count;
+
+  /** Suggested products, loaded alongside the page. */
+  protected readonly relatedProducts = signal<Product[]>([]);
 
   /** Other things this browser looked at, minus the current product. */
   protected readonly alsoViewed = computed(() =>
@@ -185,5 +195,12 @@ export class ProductDetail {
 
     this.cart.buyNow(product);
     this.router.navigate(['/checkout']);
+  }
+
+  private loadRelated(id: number): void {
+    this.productService.related(id).subscribe({
+      next: (products) => this.relatedProducts.set(products),
+      error: () => this.relatedProducts.set([]),
+    });
   }
 }

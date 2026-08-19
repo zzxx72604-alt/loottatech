@@ -94,4 +94,48 @@ export class CartService {
     const single = this.direct();
     return single ? [single] : this.items();
   }
+
+  /**
+   * A small dot that arcs from wherever the button was to the cart icon.
+   *
+   * Written with the Web Animations API rather than a component: it is purely
+   * decorative, lives for 600ms, and should never cause a re-render. The
+   * element removes itself, so nothing is left in the DOM or in memory.
+   */
+  flyToCart(from: DOMRect): void {
+    if (typeof document === 'undefined') return;
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    const target = document.querySelector('[data-cart-icon]')?.getBoundingClientRect();
+    if (!target) return;
+
+    const dot = document.createElement('span');
+    dot.className = 'cart-fly-dot';
+    dot.style.cssText = `
+      position: fixed;
+      left: ${from.left + from.width / 2}px;
+      top: ${from.top + from.height / 2}px;
+      width: 14px; height: 14px; margin: -7px 0 0 -7px;
+      border-radius: 50%;
+      background: var(--price, #ff4e00);
+      pointer-events: none;
+      z-index: 400;
+    `;
+
+    document.body.appendChild(dot);
+
+    const dx = target.left + target.width / 2 - (from.left + from.width / 2);
+    const dy = target.top + target.height / 2 - (from.top + from.height / 2);
+
+    const animation = dot.animate(
+      [
+        { transform: 'translate(0, 0) scale(1)', opacity: 1 },
+        { transform: `translate(${dx * 0.5}px, ${dy * 0.5 - 60}px) scale(1.15)`, opacity: 1, offset: 0.55 },
+        { transform: `translate(${dx}px, ${dy}px) scale(0.3)`, opacity: 0.2 },
+      ],
+      { duration: 620, easing: 'cubic-bezier(.4, 0, .2, 1)' },
+    );
+
+    animation.onfinish = () => dot.remove();
+  }
 }

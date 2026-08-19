@@ -1,0 +1,50 @@
+<header class="head">
+  <div>
+    <h1>Reports</h1>
+    <p class="sub">
+      {{ rows().length }} shown
+      @if (openCount() > 0) { · <span class="warn">{{ openCount() }} waiting</span> }
+    </p>
+  </div>
+
+  <button type="button" class="btn" [class.btn-primary]="openOnly()" (click)="toggleFilter()">
+    {{ openOnly() ? 'Open only' : 'All reports' }}
+  </button>
+</header>
+
+@if (error()) { <p class="alert bad">{{ error() }}</p> }
+
+@if (loading()) {
+  <div class="card pad">Loading…</div>
+} @else if (rows().length === 0) {
+  <div class="card pad">Nothing reported. That's a good sign.</div>
+} @else {
+  <ul class="list">
+    @for (report of rows(); track report.id) {
+      <li class="card item" [class.done]="report.status !== 'Open'">
+        <div class="top">
+          <span class="kind" [class.review]="report.target === 'Review'">{{ report.target }}</span>
+          <a class="label" [routerLink]="linkFor(report)">{{ report.targetLabel }}</a>
+          <span class="when">{{ report.createdAt | date: 'MMM d, HH:mm' }}</span>
+        </div>
+
+        <p class="reason">{{ report.reason }}</p>
+        @if (report.details) { <p class="details">“{{ report.details }}”</p> }
+
+        <div class="foot">
+          <span class="by">Reported by {{ report.reporterName }} · #{{ report.reporterId }}</span>
+
+          @if (report.status === 'Open') {
+            <button type="button" class="btn btn-sm" (click)="resolve(report, 'Dismissed')">Dismiss</button>
+            <button type="button" class="btn btn-sm btn-primary" (click)="resolve(report, 'Actioned')">
+              Actioned
+            </button>
+          } @else {
+            <span class="status" [class.ok]="report.status === 'Actioned'">{{ report.status }}</span>
+            @if (report.resolution) { <span class="note">{{ report.resolution }}</span> }
+          }
+        </div>
+      </li>
+    }
+  </ul>
+}

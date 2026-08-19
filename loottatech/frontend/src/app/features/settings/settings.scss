@@ -122,3 +122,52 @@ input, select {
 @media (max-width: 560px) {
   .row2 { grid-template-columns: 1fr; }
 }
+
+/* ------------------------------------------------ notification position */
+
+.corners {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: var(--sp-2);
+}
+
+.corner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text-2);
+  border-radius: var(--radius);
+  padding: var(--sp-3) var(--sp-2);
+  font-size: 11.5px;
+  font-weight: 600;
+
+  &:hover { border-color: var(--brand); }
+  &.on { border-color: var(--brand); background: var(--surface-2); color: var(--text); }
+}
+
+/* A tiny screen, showing where the popup would sit. */
+.preview {
+  position: relative;
+  width: 52px;
+  height: 34px;
+  border: 1px solid var(--border-strong);
+  border-radius: 3px;
+  background: var(--bg);
+}
+
+.preview .dot {
+  position: absolute;
+  width: 16px;
+  height: 6px;
+  border-radius: 2px;
+  background: var(--brand);
+}
+
+.preview.top-left .dot     { top: 4px; left: 4px; }
+.preview.top-right .dot    { top: 4px; right: 4px; }
+.preview.bottom-left .dot  { bottom: 4px; left: 4px; }
+.preview.bottom-right .dot { bottom: 4px; right: 4px; }
+.preview.bottom-center .dot { bottom: 4px; left: 50%; transform: translateX(-50%); }

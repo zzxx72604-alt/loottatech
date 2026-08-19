@@ -15,6 +15,7 @@ import { ReviewService } from '../../core/services/review.service';
 import { UserService } from '../../core/services/user.service';
 import { RatingSummary, Review } from '../../shared/models/review';
 import { StarRating } from '../../shared/components/star-rating/star-rating';
+import { ReportDialog } from '../../shared/components/report-dialog/report-dialog';
 
 const PAGE = 3;
 
@@ -27,7 +28,7 @@ const PAGE = 3;
  */
 @Component({
   selector: 'app-reviews-section',
-  imports: [DatePipe, FormsModule, RouterLink, StarRating],
+  imports: [DatePipe, FormsModule, RouterLink, StarRating, ReportDialog],
   templateUrl: './reviews-section.html',
   styleUrl: './reviews-section.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -62,6 +63,9 @@ export class ReviewsSection {
   private photoFile: File | null = null;
 
   protected readonly stars = [5, 4, 3, 2, 1];
+
+  /** Which review is being reported, if any. */
+  protected readonly reportingId = signal<number | null>(null);
 
   /**
    * Review photos use the same sizing convention as product images. The path

@@ -23,6 +23,16 @@ public class ProfileDto
 
     public int LikeCount { get; set; }
     public int SaveCount { get; set; }
+    public int ReviewCount { get; set; }
+
+    // ---- level, derived from spending rather than stored ----
+    public int Exp { get; set; }
+    public int Level { get; set; }
+    public string LevelTitle { get; set; } = string.Empty;
+    public string Frame { get; set; } = string.Empty;
+    public int LevelProgress { get; set; }
+    public string? NextTitle { get; set; }
+    public int ExpToNext { get; set; }
 }
 
 /// <summary>Every product id this customer has liked or saved, in one payload.</summary>
@@ -70,4 +80,23 @@ public class EditableProfileDto
     public string Address { get; set; } = string.Empty;
     public string Gender { get; set; } = string.Empty;
     public string AvatarUrl { get; set; } = string.Empty;
+}
+
+public class BadgeDto
+{
+    public string Key { get; set; } = string.Empty;
+    public string Title { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public string Icon { get; set; } = string.Empty;
+    public int Goal { get; set; }
+    public int Current { get; set; }
+    public bool Earned { get; set; }
+    public int Percent { get; set; }
+}
+
+public class AchievementsDto
+{
+    public int EarnedCount { get; set; }
+    public int TotalCount { get; set; }
+    public List<BadgeDto> Badges { get; set; } = new();
 }

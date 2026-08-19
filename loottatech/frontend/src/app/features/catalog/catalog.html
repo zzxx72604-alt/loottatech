@@ -229,6 +229,21 @@
           }
         }
       </div>
+
+      <!--
+        The sentinel. When this scrolls into view the next page is fetched.
+        An IntersectionObserver via @defer costs nothing while off screen and
+        needs no scroll listener firing on every pixel.
+      -->
+      @if (hasMore()) {
+        <div class="scroll-sentinel" appIntersect (appIntersect)="loadMore()">
+          <span class="loading-more">
+            {{ loadingMore() ? 'Loading more…' : 'Scroll for more' }}
+          </span>
+        </div>
+      } @else if (visible().length > 0) {
+        <p class="end-of-list">That's everything — {{ total() }} items.</p>
+      }
     }
   </section>
 </div>

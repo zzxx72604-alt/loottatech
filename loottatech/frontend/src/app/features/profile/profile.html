@@ -7,17 +7,25 @@
   <!-- ---------------------------------------------------------- header -->
   <section class="hero card">
     <div class="who">
-      @if (p.avatarUrl) {
-        <img class="avatar" [src]="p.avatarUrl + '-480.webp'" [alt]="p.name" width="60" height="60" />
-      } @else {
-        <span class="avatar" aria-hidden="true">{{ initials() }}</span>
-      }
+      <!-- The frame is earned: its colour comes from the customer's level. -->
+      <span class="frame" [class]="'f-' + p.frame">
+        @if (p.avatarUrl) {
+          <img class="avatar" [src]="p.avatarUrl + '-480.webp'" [alt]="p.name" width="60" height="60" />
+        } @else {
+          <span class="avatar" aria-hidden="true">{{ initials() }}</span>
+        }
+      </span>
 
       <div class="names">
         <h1>{{ p.name }}</h1>
         <p class="email">{{ p.email }}</p>
         <p class="meta">
           Customer #{{ p.id }} · member since {{ p.memberSince | date: 'MMM yyyy' }}
+        </p>
+
+        <p class="level">
+          <span class="tag">Lv {{ p.level }}</span>
+          <b>{{ p.levelTitle }}</b>
         </p>
       </div>
     </div>
@@ -27,6 +35,24 @@
       <span class="amount">{{ p.coins }}</span>
       <a routerLink="/arcade" class="arcade">Arcade →</a>
     </div>
+  </section>
+
+  <!-- ----------------------------------------------------------- level -->
+  <section class="card level-card">
+    <div class="level-top">
+      <span>{{ p.exp }} EXP</span>
+      @if (p.nextTitle) {
+        <span class="to-next">{{ p.expToNext }} to {{ p.nextTitle }}</span>
+      } @else {
+        <span class="to-next">Top level reached</span>
+      }
+    </div>
+
+    <div class="bar"><div class="fill" [style.width.%]="p.levelProgress"></div></div>
+
+    <p class="level-note">
+      EXP comes from what you actually buy — $1 spent is 1 EXP, each item is 20.
+    </p>
   </section>
 
   <!-- ----------------------------------------------------------- stats -->
@@ -78,6 +104,11 @@
             [class.on]="tab() === 'orders'" (click)="setTab('orders')">
       Orders <span class="count">{{ p.orderCount }}</span>
     </button>
+    <button type="button" role="tab" [attr.aria-selected]="tab() === 'badges'"
+            [class.on]="tab() === 'badges'" (click)="setTab('badges')">
+      Badges
+      @if (badges(); as b) { <span class="count">{{ b.earnedCount }}/{{ b.totalCount }}</span> }
+    </button>
   </div>
 
   @if (tab() === 'saved') {
@@ -119,5 +150,38 @@
       <p>{{ p.orderCount }} order{{ p.orderCount === 1 ? '' : 's' }} placed.</p>
       <a routerLink="/my-orders" class="primary">View order history</a>
     </div>
+  }
+
+  @if (tab() === 'badges') {
+    @if (badges(); as b) {
+      <p class="badge-intro">
+        {{ b.earnedCount }} of {{ b.totalCount }} earned. Every badge is worked
+        out from what you've actually done — nothing is awarded by hand.
+      </p>
+
+      <div class="badges">
+        @for (badge of b.badges; track badge.key) {
+          <div class="badge-card" [class.earned]="badge.earned">
+            <span class="badge-icon" aria-hidden="true">{{ badge.icon }}</span>
+
+            <div class="badge-text">
+              <b>{{ badge.title }}</b>
+              <span>{{ badge.description }}</span>
+
+              @if (!badge.earned) {
+                <span class="badge-bar">
+                  <span class="badge-fill" [style.width.%]="badge.percent"></span>
+                </span>
+                <span class="badge-progress">{{ badge.current }} / {{ badge.goal }}</span>
+              } @else {
+                <span class="badge-done">Earned</span>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    } @else {
+      <div class="card pad">Loading badges…</div>
+    }
   }
 }

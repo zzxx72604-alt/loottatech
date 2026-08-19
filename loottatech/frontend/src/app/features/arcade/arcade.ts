@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, ViewChild, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -21,8 +28,16 @@ export class Arcade {
   private readonly arcade = inject(ArcadeService);
   protected readonly users = inject(UserService);
 
-  @ViewChild(FlyerGame) private flyer?: FlyerGame;
-  @ViewChild(PrizeWheel) private wheel?: PrizeWheel;
+  /*
+   * Signal queries rather than @ViewChild.
+   *
+   * Both components live inside an @if that swaps when the tab changes.
+   * A @ViewChild captured before the swap stays stale, which is why the wheel
+   * sometimes did not spin — the reference was undefined at the moment the
+   * result came back. A signal query re-reads the current view.
+   */
+  private readonly flyerRef = viewChild(FlyerGame);
+  private readonly wheelRef = viewChild(PrizeWheel);
 
   protected readonly mode = signal<Mode>('flyer');
   protected readonly state = signal<ArcadeState | null>(null);
@@ -104,7 +119,18 @@ export class Arcade {
         // towards a result that has already been decided and saved.
         this.spinning.set(true);
 
-        this.wheel?.spinTo(result.prizeIndex, () => {
+        const wheel = this.wheelRef();
+        if (!wheel) {
+          // No wheel in the view: report the result rather than hanging.
+          this.spinning.set(false);
+          this.message.set(result.message);
+          this.busy.set(false);
+          this.patchPlays(result.playsLeftToday, result.balance, result.streak);
+          this.reloadRewards();
+          return;
+        }
+
+        wheel.spinTo(result.prizeIndex, () => {
           this.spinning.set(false);
           this.message.set(result.message);
           this.busy.set(false);
@@ -133,7 +159,7 @@ export class Arcade {
       next: (start) => {
         this.roundToken.set(start.token);
         this.patchPlays(start.playsLeftToday);
-        this.flyer?.begin();
+        this.flyerRef()?.begin();
         this.busy.set(false);
       },
       error: (err) => {

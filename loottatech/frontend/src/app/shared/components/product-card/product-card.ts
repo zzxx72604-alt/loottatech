@@ -1,6 +1,8 @@
 import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output, computed, signal } from '@angular/core';
 import { CurrencyPipe, NgOptimizedImage } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { inject } from '@angular/core';
+import { CartService } from '../../../core/services/cart.service';
 import { InteractionButtons } from '../interaction-buttons/interaction-buttons';
 import { StarRating } from '../star-rating/star-rating';
 import {
@@ -26,6 +28,8 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ProductCard {
+  private readonly cart = inject(CartService);
+
   private readonly current = signal<Product | null>(null);
 
   @Input({ required: true }) set product(value: Product) {
@@ -81,7 +85,14 @@ export class ProductCard {
     event.stopPropagation();
 
     const p = this.current();
-    if (p) this.addToCart.emit(p);
+    if (!p) return;
+
+    // Fly from the button that was pressed, so the motion starts where the
+    // customer's attention already is.
+    const button = event.currentTarget as HTMLElement | null;
+    if (button) this.cart.flyToCart(button.getBoundingClientRect());
+
+    this.addToCart.emit(p);
   }
 
   protected onWatch(event: Event): void {

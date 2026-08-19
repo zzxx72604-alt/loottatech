@@ -1,0 +1,43 @@
+<button
+  type="button"
+  class="bell"
+  (click)="toggle()"
+  [attr.aria-expanded]="open()"
+  [attr.aria-label]="store.unreadCount() + ' unread notifications'"
+>
+  🔔
+  @if (store.hasUnread()) {
+    <span class="dot">{{ store.unreadCount() > 9 ? '9+' : store.unreadCount() }}</span>
+  }
+</button>
+
+@if (open()) {
+  <div class="panel" role="dialog" aria-label="Notifications">
+    <header>
+      <h3>Notifications</h3>
+      @if (store.hasUnread()) {
+        <button type="button" class="mark" (click)="store.markAllRead()">Mark all read</button>
+      }
+    </header>
+
+    @if (store.items().length === 0) {
+      <p class="empty">Nothing yet. Order updates will appear here.</p>
+    } @else {
+      <ul>
+        @for (item of store.items(); track item.id) {
+          <li [class.unread]="!item.isRead">
+            <button type="button" (click)="go(item)">
+              <span class="ico" aria-hidden="true">{{ icon(item.kind) }}</span>
+              <span class="text">
+                <b>{{ item.title }}</b>
+                <span class="body">{{ item.body }}</span>
+                <span class="when">{{ item.createdAt | date: 'MMM d, HH:mm' }}</span>
+              </span>
+              @if (!item.isRead) { <span class="new" aria-label="Unread"></span> }
+            </button>
+          </li>
+        }
+      </ul>
+    }
+  </div>
+}

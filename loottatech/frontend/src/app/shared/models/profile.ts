@@ -19,6 +19,16 @@ export interface Profile {
 
   likeCount: number;
   saveCount: number;
+  reviewCount: number;
+
+  /** Level, derived by the API from real spending — never stored. */
+  exp: number;
+  level: number;
+  levelTitle: string;
+  frame: string;
+  levelProgress: number;
+  nextTitle: string | null;
+  expToNext: number;
 }
 
 export interface InteractionState {
@@ -41,4 +51,21 @@ export interface EditableProfile {
   address: string;
   gender: string;
   avatarUrl: string;
+}
+
+export interface Badge {
+  key: string;
+  title: string;
+  description: string;
+  icon: string;
+  goal: number;
+  current: number;
+  earned: boolean;
+  percent: number;
+}
+
+export interface AchievementSet {
+  earnedCount: number;
+  totalCount: number;
+  badges: Badge[];
 }

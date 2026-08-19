@@ -1,0 +1,44 @@
+<div class="backdrop" (click)="close()"></div>
+
+<div class="dialog" role="dialog" aria-modal="true" aria-label="Report">
+  <header>
+    <h3>Report this {{ target === 'Review' ? 'review' : 'product' }}</h3>
+    <button type="button" class="x" (click)="close()" aria-label="Close">✕</button>
+  </header>
+
+  <p class="lede">
+    Reports go to the shop for a person to read. Nothing is hidden automatically.
+  </p>
+
+  <form (ngSubmit)="submit()">
+    <div class="field">
+      <label for="reason">Reason</label>
+      <select id="reason" name="reason" [(ngModel)]="reason">
+        @for (option of reasons(); track option) {
+          <option [value]="option">{{ option }}</option>
+        }
+      </select>
+    </div>
+
+    <div class="field">
+      <label for="details">Anything else? (optional)</label>
+      <textarea
+        id="details"
+        name="details"
+        rows="3"
+        maxlength="600"
+        [(ngModel)]="details"
+        placeholder="What did you notice?"
+      ></textarea>
+    </div>
+
+    @if (error()) { <p class="err">{{ error() }}</p> }
+
+    <div class="actions">
+      <button type="button" class="ghost" (click)="close()">Cancel</button>
+      <button type="submit" class="primary" [disabled]="submitting()">
+        {{ submitting() ? 'Sending…' : 'Send report' }}
+      </button>
+    </div>
+  </form>
+</div>

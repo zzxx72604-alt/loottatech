@@ -12,6 +12,19 @@ namespace lootta.Dtos;
  * public shape of the API, decided by us rather than by the database.
  */
 
+/// <summary>
+/// One page of products.
+///
+/// Endless scrolling needs to know whether there is more to fetch. Returning
+/// the total as well lets the page say "11 items" without a second request.
+/// </summary>
+public class ProductPageDto
+{
+    public List<ProductListDto> Items { get; set; } = new();
+    public int Total { get; set; }
+    public bool HasMore { get; set; }
+}
+
 /// <summary>Shape used by the product grid — small on purpose.</summary>
 public class ProductListDto
 {

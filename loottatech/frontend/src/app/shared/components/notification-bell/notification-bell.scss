@@ -1,0 +1,121 @@
+:host { position: relative; display: inline-block; }
+
+.bell {
+  position: relative;
+  border: 0;
+  background: transparent;
+  font-size: 15px;
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+  line-height: 1;
+
+  &:hover { background: rgba(0, 0, 0, .07); }
+}
+
+.dot {
+  position: absolute;
+  top: 0;
+  right: 0;
+  min-width: 15px;
+  height: 15px;
+  padding: 0 3px;
+  border-radius: var(--radius-pill);
+  background: var(--sale);
+  color: #fff;
+  font-size: 9.5px;
+  font-weight: 800;
+  line-height: 15px;
+  text-align: center;
+}
+
+.panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  width: min(320px, 90vw);
+  max-height: 380px;
+  overflow-y: auto;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .18);
+  z-index: 120;
+  animation: drop 160ms cubic-bezier(.4, 0, .2, 1);
+}
+
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--sp-3);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: var(--surface);
+
+  h3 { margin: 0; font-size: 13px; }
+}
+
+.mark {
+  border: 0;
+  background: none;
+  color: var(--price);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.empty { padding: var(--sp-5) var(--sp-3); text-align: center; font-size: 12.5px; color: var(--text-3); margin: 0; }
+
+ul { list-style: none; margin: 0; padding: 0; }
+
+li {
+  border-bottom: 1px solid var(--border);
+  &:last-child { border-bottom: 0; }
+  &.unread { background: var(--surface-2); }
+}
+
+li button {
+  display: flex;
+  gap: var(--sp-2);
+  align-items: flex-start;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: none;
+  padding: var(--sp-3);
+  color: var(--text);
+
+  &:hover { background: rgba(0, 0, 0, .04); }
+}
+
+.ico { font-size: 14px; flex: none; }
+
+.text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+
+  b { font-size: 12.5px; }
+  .body { font-size: 11.5px; color: var(--text-2); line-height: 1.4; }
+  .when { font-size: 10.5px; color: var(--text-3); }
+}
+
+.new {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--sale);
+  flex: none;
+  margin-top: 4px;
+}
+
+@keyframes drop {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel { animation: none; }
+}

@@ -4,7 +4,7 @@ import { Observable } from 'rxjs';
 import { ApiService } from './api.service';
 import { environment } from '../../../environments/environment';
 import { Product } from '../../shared/models/product';
-import { EditableProfile, Profile } from '../../shared/models/profile';
+import { AchievementSet, EditableProfile, Profile } from '../../shared/models/profile';
 
 @Injectable({ providedIn: 'root' })
 export class ProfileService {
@@ -21,6 +21,10 @@ export class ProfileService {
 
   saves(): Observable<Product[]> {
     return this.api.get<Product[]>('me/saves');
+  }
+
+  achievements(): Observable<AchievementSet> {
+    return this.api.get<AchievementSet>('me/achievements');
   }
 
   /** Unmasked details for editing. Separate from get(), which masks the phone. */

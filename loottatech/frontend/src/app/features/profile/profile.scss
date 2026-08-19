@@ -149,3 +149,145 @@ img.avatar { object-fit: cover; }
   .hero { flex-direction: column; align-items: flex-start; }
   .grid { grid-template-columns: repeat(2, 1fr); gap: var(--sp-2); }
 }
+
+/* ------------------------------------------------------- level + frame */
+
+.frame {
+  display: inline-grid;
+  place-items: center;
+  padding: 3px;
+  border-radius: 50%;
+  flex: none;
+  /* The ring is the reward. Colour is earned, not chosen. */
+  background: var(--border-strong);
+}
+
+.frame.f-bronze  { background: linear-gradient(135deg, #c98b4b, #8a5a2b); }
+.frame.f-silver  { background: linear-gradient(135deg, #d8d8d8, #9a9a9a); }
+.frame.f-gold    { background: linear-gradient(135deg, #f5c542, #c9971a); }
+.frame.f-emerald { background: linear-gradient(135deg, #4fd1a5, #1c8f6a); }
+.frame.f-aurora  { background: linear-gradient(135deg, #7c5cff, #ff4e00, #ffe411); }
+
+.level {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 5px 0 0;
+  font-size: 12.5px;
+
+  .tag {
+    background: var(--brand-ink);
+    color: var(--brand);
+    font-size: 10.5px;
+    font-weight: 800;
+    padding: 1px 7px;
+    border-radius: var(--radius-pill);
+  }
+}
+
+.level-card { padding: var(--sp-3) var(--sp-4); margin-bottom: var(--sp-3); }
+
+.level-top {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  margin-bottom: 6px;
+
+  .to-next { color: var(--text-3); }
+}
+
+.level-card .bar {
+  height: 8px;
+  background: var(--surface-2);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+
+.level-card .fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--brand), var(--price));
+  transition: width 500ms var(--ease);
+}
+
+.level-note { margin: 6px 0 0; font-size: 11px; color: var(--text-3); }
+
+/* ------------------------------------------------------------ badges */
+
+.badge-intro {
+  margin: 0 0 var(--sp-3);
+  font-size: 12.5px;
+  color: var(--text-2);
+  line-height: 1.5;
+}
+
+.badges {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: var(--sp-2);
+}
+
+.badge-card {
+  display: flex;
+  gap: var(--sp-3);
+  align-items: flex-start;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--sp-3);
+  /* Unearned badges are dimmed rather than hidden, so the next goal is
+     visible — a locked badge you can't see gives you nothing to aim at. */
+  opacity: .55;
+  transition: opacity var(--dur) var(--ease), border-color var(--dur) var(--ease);
+
+  &.earned {
+    opacity: 1;
+    border-color: var(--brand);
+  }
+}
+
+.badge-icon {
+  font-size: 22px;
+  line-height: 1;
+  flex: none;
+  filter: grayscale(1);
+}
+
+.badge-card.earned .badge-icon { filter: none; }
+
+.badge-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  flex: 1;
+
+  b { font-size: 13px; }
+  > span { font-size: 11.5px; color: var(--text-3); line-height: 1.4; }
+}
+
+.badge-bar {
+  height: 4px;
+  background: var(--surface-2);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+  margin-top: 3px;
+}
+
+.badge-fill {
+  display: block;
+  height: 100%;
+  background: var(--brand);
+  transition: width 400ms var(--ease);
+}
+
+.badge-progress { font-size: 10.5px; color: var(--text-3); }
+
+.badge-done {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--cond-new);
+}
+
+@media (max-width: 600px) {
+  .badges { grid-template-columns: 1fr; }
+}

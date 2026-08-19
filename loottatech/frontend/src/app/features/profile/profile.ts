@@ -6,11 +6,11 @@ import { InteractionStore } from '../../core/services/interaction.store';
 import { UserService } from '../../core/services/user.service';
 import { CartService } from '../../core/services/cart.service';
 import { ToastService } from '../../core/services/toast.service';
-import { Profile } from '../../shared/models/profile';
+import { AchievementSet, Profile } from '../../shared/models/profile';
 import { Product } from '../../shared/models/product';
 import { ProductCard } from '../../shared/components/product-card/product-card';
 
-type Tab = 'saved' | 'liked' | 'orders';
+type Tab = 'saved' | 'liked' | 'orders' | 'badges';
 
 @Component({
   selector: 'app-profile',
@@ -36,6 +36,7 @@ export class ProfilePage {
 
   protected readonly saved = signal<Product[]>([]);
   protected readonly liked = signal<Product[]>([]);
+  protected readonly badges = signal<AchievementSet | null>(null);
   private readonly loadedTabs = new Set<Tab>();
 
   /** Initials as a stand-in avatar until picture upload exists. */
@@ -73,6 +74,14 @@ export class ProfilePage {
   private load(tab: Tab): void {
     if (tab === 'orders' || this.loadedTabs.has(tab)) return;
     this.loadedTabs.add(tab);
+
+    if (tab === 'badges') {
+      this.api.achievements().subscribe({
+        next: (set) => this.badges.set(set),
+        error: () => this.loadedTabs.delete(tab),
+      });
+      return;
+    }
 
     const request = tab === 'saved' ? this.api.saves() : this.api.likes();
     const target = tab === 'saved' ? this.saved : this.liked;

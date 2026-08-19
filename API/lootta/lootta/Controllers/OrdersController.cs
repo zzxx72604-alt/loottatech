@@ -15,11 +15,16 @@ public class OrdersController : ControllerBase
 {
     private readonly LoottaDbContext _db;
     private readonly EconomyService _economy;
+    private readonly NotificationService _notifications;
 
-    public OrdersController(LoottaDbContext db, EconomyService economy)
+    public OrdersController(
+        LoottaDbContext db,
+        EconomyService economy,
+        NotificationService notifications)
     {
         _db = db;
         _economy = economy;
+        _notifications = notifications;
     }
 
     /// <summary>Place an order. Open to guests — no account needed.</summary>
@@ -313,6 +318,11 @@ public class OrdersController : ControllerBase
 
         order.Status = status;
         order.UpdatedAt = DateTime.UtcNow;
+
+        // Queued, not saved separately: the status change and the notification
+        // land together or not at all.
+        _notifications.OrderStatusChanged(order);
+
         await _db.SaveChangesAsync();
 
         return Ok(order.ToDto());

@@ -10,7 +10,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ProfileService } from '../../core/services/profile.service';
 import { UserService } from '../../core/services/user.service';
-import { ToastService } from '../../core/services/toast.service';
+import { TOAST_CORNERS, ToastCorner, ToastService } from '../../core/services/toast.service';
 import { ApiService } from '../../core/services/api.service';
 import { EditableProfile } from '../../shared/models/profile';
 
@@ -34,7 +34,7 @@ export class Settings {
   private readonly fb = inject(FormBuilder);
   private readonly profiles = inject(ProfileService);
   private readonly api = inject(ApiService);
-  private readonly toasts = inject(ToastService);
+  protected readonly toasts = inject(ToastService);
 
   protected readonly users = inject(UserService);
 
@@ -48,6 +48,18 @@ export class Settings {
   protected readonly uploading = signal(false);
 
   protected readonly genders = ['', 'Female', 'Male', 'Other', 'Prefer not to say'];
+
+  protected readonly corners = TOAST_CORNERS;
+
+  protected chooseCorner(corner: ToastCorner): void {
+    this.toasts.setPosition(corner);
+    // Show one immediately, so the choice is visible where it will appear.
+    this.toasts.success('Notifications will appear here');
+  }
+
+  protected get currentCorner(): ToastCorner {
+    return this.toasts.position();
+  }
 
   protected readonly form = this.fb.nonNullable.group({
     name: ['', [Validators.required, Validators.minLength(2)]],

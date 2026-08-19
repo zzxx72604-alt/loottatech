@@ -48,6 +48,11 @@ public class MeController : ControllerBase
             .ToListAsync();
 
         var itemsBought = orders.Sum(o => o.Items.Sum(i => i.Quantity));
+        var totalSpent = orders.Sum(o => o.Total);
+
+        var exp = LevelSystem.ExpFor(totalSpent, itemsBought);
+        var tier = LevelSystem.TierFor(exp);
+        var next = LevelSystem.NextTier(exp);
 
         return Ok(new ProfileDto
         {
@@ -66,10 +71,19 @@ public class MeController : ControllerBase
 
             OrderCount = orders.Count,
             ItemsBought = itemsBought,
-            TotalSpent = orders.Sum(o => o.Total),
+            TotalSpent = totalSpent,
+
+            Exp = exp,
+            Level = tier.Level,
+            LevelTitle = tier.Title,
+            Frame = tier.Frame,
+            LevelProgress = LevelSystem.ProgressPercent(exp),
+            NextTitle = next?.Title,
+            ExpToNext = next is null ? 0 : Math.Max(0, next.RequiredExp - exp),
 
             LikeCount = await _db.ProductInteractions.CountAsync(i => i.UserId == user.Id && i.Liked),
             SaveCount = await _db.ProductInteractions.CountAsync(i => i.UserId == user.Id && i.Saved),
+            ReviewCount = await _db.Reviews.CountAsync(r => r.UserId == user.Id),
         });
     }
 
@@ -183,6 +197,130 @@ public class MeController : ControllerBase
             Saved = rows.Where(r => r.Saved).Select(r => r.ProductId).ToList(),
         });
     }
+
+    /* -------------------------------------------------------- achievements */
+
+    /// <summary>
+    /// Badges for the signed-in customer.
+    ///
+    /// Every figure is read from existing tables, so the answer is always
+    /// current — there is no achievement state to keep in step.
+    /// </summary>
+    [HttpGet("achievements")]
+    public async Task<ActionResult<AchievementsDto>> AchievementList()
+    {
+        var userId = CurrentUserId;
+
+        var user = await _db.Users.FindAsync(userId);
+        if (user is null) return Unauthorized();
+
+        var orders = await _db.Orders
+            .Where(o => o.UserId == userId && o.Status != OrderStatus.Cancelled)
+            .Include(o => o.Items)
+            .AsNoTracking()
+            .ToListAsync();
+
+        var items = orders.Sum(o => o.Items.Sum(i => i.Quantity));
+        var spent = orders.Sum(o => o.Total);
+        var exp = LevelSystem.ExpFor(spent, items);
+
+        var stats = new Achievements.Stats(
+            Orders: orders.Count,
+            Items: items,
+            Spent: spent,
+            Reviews: await _db.Reviews.CountAsync(r => r.UserId == userId),
+            Likes: await _db.ProductInteractions.CountAsync(i => i.UserId == userId && i.Liked),
+            Saves: await _db.ProductInteractions.CountAsync(i => i.UserId == userId && i.Saved),
+            BestScore: user.BestScore,
+            PlayStreak: user.PlayStreak,
+            Level: LevelSystem.TierFor(exp).Level,
+            Coins: user.Coins,
+            VouchersRedeemed: await _db.Vouchers.CountAsync(v => v.UserId == userId && !v.IsAdminIssued));
+
+        var badges = Achievements.For(stats);
+
+        return Ok(new AchievementsDto
+        {
+            EarnedCount = badges.Count(b => b.Earned),
+            TotalCount = badges.Count,
+            Badges = badges
+                // Earned first, then whatever is closest to being earned —
+                // so the next thing to aim for is always near the top.
+                .OrderByDescending(b => b.Earned)
+                .ThenByDescending(b => b.Percent)
+                .Select(b => new BadgeDto
+                {
+                    Key = b.Key,
+                    Title = b.Title,
+                    Description = b.Description,
+                    Icon = b.Icon,
+                    Goal = b.Goal,
+                    Current = b.Current,
+                    Earned = b.Earned,
+                    Percent = b.Percent,
+                })
+                .ToList(),
+        });
+    }
+
+    /* ------------------------------------------------------ notifications */
+
+    /// <summary>The bell: recent notifications and how many are unread.</summary>
+    [HttpGet("notifications")]
+    public async Task<ActionResult<NotificationFeedDto>> Notifications([FromQuery] int take = 20)
+    {
+        var userId = CurrentUserId;
+
+        var items = await _db.Notifications
+            .Where(n => n.UserId == userId)
+            .OrderByDescending(n => n.CreatedAt)
+            .Take(Math.Clamp(take, 1, 100))
+            .AsNoTracking()
+            .ToListAsync();
+
+        return Ok(new NotificationFeedDto
+        {
+            Items = items.Select(ToDto).ToList(),
+            UnreadCount = await _db.Notifications.CountAsync(n => n.UserId == userId && !n.IsRead),
+        });
+    }
+
+    [HttpPut("notifications/{id:int}/read")]
+    public async Task<IActionResult> MarkRead(int id)
+    {
+        var notification = await _db.Notifications
+            .FirstOrDefaultAsync(n => n.Id == id && n.UserId == CurrentUserId);
+
+        if (notification is null) return NotFound();
+
+        notification.IsRead = true;
+        await _db.SaveChangesAsync();
+        return NoContent();
+    }
+
+    [HttpPut("notifications/read-all")]
+    public async Task<IActionResult> MarkAllRead()
+    {
+        var userId = CurrentUserId;
+
+        // One UPDATE rather than loading every row to flip a boolean.
+        await _db.Notifications
+            .Where(n => n.UserId == userId && !n.IsRead)
+            .ExecuteUpdateAsync(setters => setters.SetProperty(n => n.IsRead, true));
+
+        return NoContent();
+    }
+
+    private static NotificationDto ToDto(Notification n) => new()
+    {
+        Id = n.Id,
+        Kind = n.Kind.ToString(),
+        Title = n.Title,
+        Body = n.Body,
+        Link = n.Link,
+        IsRead = n.IsRead,
+        CreatedAt = n.CreatedAt,
+    };
 
     /* ------------------------------------------------------------ toggles */
 

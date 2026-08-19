@@ -5,7 +5,7 @@
       <span class="word">Lootta<b>Tech</b></span>
     </a>
 
-    <form class="search" (ngSubmit)="search()" role="search">
+    <form class="search" (ngSubmit)="onEnter()" role="search">
       <label class="sr-only" for="q">Search second-hand electronics</label>
       <input
         id="q"
@@ -13,10 +13,42 @@
         type="search"
         placeholder="Search iPhone, ThinkPad, camera…"
         [ngModel]="term()"
-        (ngModelChange)="term.set($event)"
+        (ngModelChange)="onType($event)"
+        (focus)="onFocus()"
+        (blur)="onBlur()"
+        (keydown.arrowdown)="move(1); $event.preventDefault()"
+        (keydown.arrowup)="move(-1); $event.preventDefault()"
+        (keydown.escape)="showSuggestions.set(false)"
         autocomplete="off"
+        role="combobox"
+        [attr.aria-expanded]="showSuggestions()"
+        aria-autocomplete="list"
       />
       <button type="submit">Search</button>
+
+      @if (showSuggestions()) {
+        <ul class="suggestions" role="listbox">
+          @for (item of suggestions(); track item.product.id; let i = $index) {
+            <li role="option" [attr.aria-selected]="activeIndex() === i">
+              <button
+                type="button"
+                [class.active]="activeIndex() === i"
+                (click)="choose(item)"
+                (mouseenter)="activeIndex.set(i)"
+              >
+                <img [src]="item.product.images[0] + '-480.webp'" alt="" width="34" height="34" />
+
+                <span class="s-text">
+                  <b>{{ item.product.title }}</b>
+                  <span class="s-meta">{{ item.product.brand }} · {{ item.product.category }}</span>
+                </span>
+
+                <span class="s-price">{{ item.product.price | currency: 'USD' : 'symbol' : '1.0-0' }}</span>
+              </button>
+            </li>
+          }
+        </ul>
+      }
     </form>
 
     <nav class="actions">
@@ -36,6 +68,8 @@
         </a>
         <a class="icon" routerLink="/my-orders">My orders</a>
 
+        <app-notification-bell />
+
         <!-- The avatar IS the profile entry. Sign out lives inside. -->
         <a class="avatar" routerLink="/profile" [title]="users.user()?.name ?? 'My profile'">
           {{ initials() }}
@@ -45,7 +79,7 @@
         <a class="icon signin" routerLink="/login">Sign in</a>
       }
 
-      <a class="icon cart" routerLink="/cart">
+      <a class="icon cart" routerLink="/cart" data-cart-icon>
         Cart
         @if (cart.count() > 0) {
           <span class="badge">{{ cart.count() }}</span>

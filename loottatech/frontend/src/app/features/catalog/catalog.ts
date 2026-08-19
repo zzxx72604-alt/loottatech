@@ -1,5 +1,13 @@
 import { Router } from '@angular/router';
-import { ChangeDetectionStrategy, Component, Input, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  Input,
+  computed,
+  effect,
+  inject,
+  signal,
+} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { NgOptimizedImage } from '@angular/common';
@@ -9,6 +17,7 @@ import { ToastService } from '../../core/services/toast.service';
 import { ProductCard } from '../../shared/components/product-card/product-card';
 import { ProductCardSkeleton } from '../../shared/components/product-card-skeleton/product-card-skeleton';
 import { AdTile, Promo } from '../../shared/components/ad-tile/ad-tile';
+import { IntersectDirective } from '../../shared/directives/intersect.directive';
 import { Condition, Product, discountPercent } from '../../shared/models/product';
 
 type SortMode = 'recommended' | 'price-asc' | 'price-desc' | 'discount';
@@ -20,7 +29,7 @@ interface CategoryCount {
 
 @Component({
   selector: 'app-catalog',
-  imports: [FormsModule, NgOptimizedImage, ProductCard, ProductCardSkeleton, AdTile],
+  imports: [FormsModule, NgOptimizedImage, ProductCard, ProductCardSkeleton, AdTile, IntersectDirective],
   templateUrl: './catalog.html',
   styleUrl: './catalog.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -35,6 +44,81 @@ export class Catalog {
 
   protected readonly products = signal<Product[]>([]);
   protected readonly loading = signal(true);
+
+  /* ------------------------------------------------------ endless scroll */
+
+  /** How many arrive per request. Small enough to feel instant. */
+  private readonly PAGE_SIZE = 24;
+
+  protected readonly total = signal(0);
+  protected readonly hasMore = signal(false);
+  protected readonly loadingMore = signal(false);
+
+  /**
+   * Bumped whenever a filter changes, so a slow reply for the previous filter
+   * cannot append its results to the new list.
+   */
+  private requestId = 0;
+
+  /** Fetches the first page for the current filters, replacing what's shown. */
+  protected reload(): void {
+    const id = ++this.requestId;
+    this.loading.set(true);
+
+    this.productService
+      .page({
+        search: this.searchTerm(),
+        categoryId: 0,
+        condition: this.condition() === 'all' ? '' : this.condition(),
+        maxPrice: this.maxPrice() ?? 0,
+        sort: this.sort(),
+        skip: 0,
+        take: this.PAGE_SIZE,
+      })
+      .subscribe({
+        next: (page) => {
+          if (id !== this.requestId) return;   // a newer filter won
+
+          this.products.set(page.items);
+          this.total.set(page.total);
+          this.hasMore.set(page.hasMore);
+          this.loading.set(false);
+        },
+        error: () => {
+          if (id !== this.requestId) return;
+          this.loading.set(false);
+        },
+      });
+  }
+
+  /** Appends the next page. Called when the sentinel scrolls into view. */
+  protected loadMore(): void {
+    if (this.loadingMore() || !this.hasMore() || this.loading()) return;
+
+    const id = this.requestId;
+    this.loadingMore.set(true);
+
+    this.productService
+      .page({
+        search: this.searchTerm(),
+        condition: this.condition() === 'all' ? '' : this.condition(),
+        maxPrice: this.maxPrice() ?? 0,
+        sort: this.sort(),
+        skip: this.products().length,
+        take: this.PAGE_SIZE,
+      })
+      .subscribe({
+        next: (page) => {
+          if (id !== this.requestId) return;
+
+          this.products.update((list) => [...list, ...page.items]);
+          this.total.set(page.total);
+          this.hasMore.set(page.hasMore);
+          this.loadingMore.set(false);
+        },
+        error: () => this.loadingMore.set(false),
+      });
+  }
   protected readonly failed = signal(false);
 
   /* -------------------------------------------------------- filters ----- */
@@ -89,38 +173,18 @@ export class Catalog {
   });
 
   /**
-   * The visible list. Every filter and the sort are applied here, in one place.
-   * Because it's a `computed`, it only recalculates when something it reads
-   * actually changes — clicking a chip never re-runs the HTTP call.
+   * What the grid shows.
+   *
+   * Search, condition, price and sort are done by the DATABASE and arrive
+   * already filtered. Only the category sidebar is applied here, because it
+   * filters by name and the pages are already narrow.
    */
   protected readonly visible = computed<Product[]>(() => {
-    const term = this.searchTerm().trim().toLowerCase();
     const cat = this.category();
-    const cond = this.condition();
-    const max = this.maxPrice();
 
-    let list = this.products().filter((p) => {
-      if (cat !== 'All' && p.category !== cat) return false;
-      if (cond !== 'all' && p.condition !== cond) return false;
-      if (max !== null && p.price > max) return false;
-      if (term) {
-        const haystack = `${p.title} ${p.brand} ${p.category}`.toLowerCase();
-        if (!haystack.includes(term)) return false;
-      }
-      return true;
-    });
+    let list = this.products().filter((p) => cat === 'All' || p.category === cat);
 
-    switch (this.sort()) {
-      case 'price-asc':
-        list = [...list].sort((a, b) => a.price - b.price);
-        break;
-      case 'price-desc':
-        list = [...list].sort((a, b) => b.price - a.price);
-        break;
-      case 'discount':
-        list = [...list].sort((a, b) => discountPercent(b) - discountPercent(a));
-        break;
-    }
+    // Ordering is decided by the query, so nothing to re-sort here.
     return list;
   });
 
@@ -135,9 +199,16 @@ export class Catalog {
   /** Newest arrivals — the API returns newest first. */
   protected readonly newArrivals = computed(() => this.products().slice(0, 5));
 
-  /** True only on the plain homepage, so search results stay uncluttered. */
+  /**
+   * The homepage sections stay put while FILTERING, and hide only for a text
+   * search.
+   *
+   * Removing them on every chip click changed the page height above the grid,
+   * so the viewport jumped to the top and the reader lost their place. A filter
+   * is a refinement of the same page; a search is a different intent.
+   */
   protected readonly showSections = computed(
-    () => !this.hasFilters() && this.products().length > 0,
+    () => this.searchTerm().trim() === '' && this.products().length > 0,
   );
 
   protected readonly categoryIcons: Record<string, string> = {
@@ -227,19 +298,22 @@ export class Catalog {
   /* ---------------------------------------------------------- setup ----- */
 
   constructor() {
-    this.productService
-      .getAll()
-      .pipe(takeUntilDestroyed())
-      .subscribe({
-        next: (products) => {
-          this.products.set(products);
-          this.loading.set(false);
-        },
-        error: () => {
-          this.failed.set(true);
-          this.loading.set(false);
-        },
-      });
+    /*
+     * Any change to a server-side filter starts a fresh first page.
+     *
+     * An effect rather than wiring each control, so adding a filter later
+     * cannot forget to trigger a reload — the dependency is picked up simply
+     * by being read.
+     */
+    effect(() => {
+      // Read them so the effect re-runs when any of them change.
+      this.searchTerm();
+      this.condition();
+      this.maxPrice();
+      this.sort();
+
+      this.reload();
+    });
   }
 
   /* -------------------------------------------------------- actions ----- */

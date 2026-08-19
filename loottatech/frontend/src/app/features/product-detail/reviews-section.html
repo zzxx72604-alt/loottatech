@@ -111,9 +111,13 @@
               <img class="shot" [src]="image(review.imageUrl)" alt="" width="120" height="120" loading="lazy" />
             }
 
-            @if (review.isMine) {
-              <button type="button" class="delete" (click)="remove(review)">Delete</button>
-            }
+            <div class="review-acts">
+              @if (review.isMine) {
+                <button type="button" class="delete" (click)="remove(review)">Delete</button>
+              } @else {
+                <button type="button" class="delete" (click)="reportingId.set(review.id)">Report</button>
+              }
+            </div>
           </li>
         }
       </ul>
@@ -128,3 +132,7 @@
 </section>
 
 <input #picker type="file" accept="image/jpeg,image/png,image/webp" hidden (change)="onPhoto($event)" />
+
+@if (reportingId(); as id) {
+  <app-report-dialog target="Review" [targetId]="id" (closed)="reportingId.set(null)" />
+}

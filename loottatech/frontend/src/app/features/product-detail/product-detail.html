@@ -10,20 +10,26 @@
 } @else if (product(); as p) {
   <div class="wrap">
     <div class="gallery">
-      @if (p.images.length > 1) {
-        <button type="button" class="arrow left" (click)="nextImage(-1)" aria-label="Previous image">‹</button>
-        <button type="button" class="arrow right" (click)="nextImage(1)" aria-label="Next image">›</button>
-      }
+      <!-- The arrows belong to the PICTURE, so they live in a wrapper that is
+           the picture's size. Placed on .gallery they anchored to the page. -->
+      <div class="main-shot">
+        <img
+          [ngSrc]="p.images[activeImage()]"
+          ngSrcset="480w, 800w"
+          sizes="(max-width: 800px) 92vw, 460px"
+          [alt]="p.title"
+          width="800"
+          height="800"
+          priority
+        />
 
-      <img
-        [ngSrc]="p.images[activeImage()]"
-        ngSrcset="480w, 800w"
-        sizes="(max-width: 800px) 92vw, 460px"
-        [alt]="p.title"
-        width="800"
-        height="800"
-        priority
-      />
+        @if (p.images.length > 1) {
+          <button type="button" class="arrow left" (click)="nextImage(-1)" aria-label="Previous image">‹</button>
+          <button type="button" class="arrow right" (click)="nextImage(1)" aria-label="Next image">›</button>
+
+          <span class="counter">{{ activeImage() + 1 }} / {{ p.images.length }}</span>
+        }
+      </div>
 
       @if (p.images.length > 1) {
         <div class="thumbs">
@@ -90,7 +96,7 @@
         <button type="button" class="buy-now" (click)="buyNow()" [disabled]="p.stock === 0">
           Buy now
         </button>
-        <button type="button" class="buy" (click)="addWithToast()" [disabled]="p.stock === 0">
+        <button type="button" class="buy" (click)="addWithToast($event)" [disabled]="p.stock === 0">
           {{ p.stock === 0 ? 'Sold out' : 'Add to cart' }}
         </button>
       </div>
@@ -101,8 +107,16 @@
 
       <app-interaction-buttons [productId]="p.id" variant="full" />
 
+      <button type="button" class="report-btn" (click)="reporting.set(true)">
+        Report this listing
+      </button>
+
       @if (sharing()) {
         <app-share-sheet [publicId]="p.publicId" [title]="p.title" (closed)="sharing.set(false)" />
+      }
+
+      @if (reporting()) {
+        <app-report-dialog target="Product" [targetId]="p.id" (closed)="reporting.set(false)" />
       }
 
       <!-- Buying directly must never silently check out the existing cart. -->
@@ -165,5 +179,28 @@
     <app-reviews-section [productId]="p.id" />
   } @placeholder {
     <div class="reviews-placeholder"></div>
+  }
+}
+
+<!--
+  Recommendations sit BELOW the reviews, where someone who has read about this
+  item and decided against it is looking for the next thing.
+-->
+@if (relatedProducts().length > 0) {
+  @defer (on viewport) {
+    <section class="related-strip">
+      <h2>You might also like</h2>
+      <div class="strip">
+        @for (item of relatedProducts(); track item.id) {
+          <app-product-card
+            [product]="item"
+            (addToCart)="onRecentAdd($event)"
+            (buyNow)="onRecentBuy($event)"
+          />
+        }
+      </div>
+    </section>
+  } @placeholder {
+    <div class="related-placeholder"></div>
   }
 }

@@ -21,47 +21,87 @@ public class ProductsController : ControllerBase
         _images = images;
     }
 
-    /// <summary>List products, with optional search and category filters.</summary>
+    /// <summary>
+    /// A page of products.
+    ///
+    /// Every filter is applied in SQL, including condition, price and sort.
+    /// Filtering in the browser only works while the browser has everything —
+    /// which stops being true the moment the catalogue outgrows one page.
+    /// </summary>
     [HttpGet]
-    [ProducesResponseType(typeof(IEnumerable<ProductListDto>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<IEnumerable<ProductListDto>>> GetAll(
+    [ProducesResponseType(typeof(ProductPageDto), StatusCodes.Status200OK)]
+    public async Task<ActionResult<ProductPageDto>> GetAll(
         [FromQuery] string? search,
         [FromQuery] int? categoryId,
+        [FromQuery] string? condition,
+        [FromQuery] decimal? maxPrice,
+        [FromQuery] string? sort,
+        [FromQuery] int skip = 0,
+        [FromQuery] int take = 24,
         [FromQuery] bool includeInactive = false)
     {
+        take = Math.Clamp(take, 1, 60);
+        skip = Math.Max(0, skip);
+
         var query = _db.Products
             .Include(p => p.Category)
             .Include(p => p.Images)
-            .AsNoTracking()          // read-only, so skip change tracking
+            .AsNoTracking()
             .AsQueryable();
 
-        // Customers only ever see active products. The admin app opts in.
+        // Customers only ever see active products. The admin opts in.
         if (!includeInactive)
             query = query.Where(p => p.IsActive);
 
         if (categoryId is > 0)
             query = query.Where(p => p.CategoryId == categoryId);
 
+        if (!string.IsNullOrWhiteSpace(condition))
+        {
+            var wanted = ConditionMap.FromApi(condition);
+            query = query.Where(p => p.Condition == wanted);
+        }
+
+        if (maxPrice is > 0)
+            query = query.Where(p => p.Price <= maxPrice);
+
         if (!string.IsNullOrWhiteSpace(search))
         {
             var term = search.Trim();
 
-            // Searching by share code as well as by text, so an admin can paste
-            // the code a customer quoted straight into the box.
             query = query.Where(p =>
                 EF.Functions.Like(p.Title, $"%{term}%") ||
                 EF.Functions.Like(p.Brand, $"%{term}%") ||
                 p.PublicId == term.ToLower());
         }
 
-        var products = await query
-            .OrderByDescending(p => p.CreatedAt)
-            .ToListAsync();
+        // Count before paging, so "11 items" is the total and not the page size.
+        var total = await query.CountAsync();
+
+        query = sort switch
+        {
+            "price-asc" => query.OrderBy(p => p.Price),
+            "price-desc" => query.OrderByDescending(p => p.Price),
+            "discount" => query.OrderByDescending(p => p.OriginalPrice - p.Price),
+            "popular" => query.OrderByDescending(p => p.WatchCount),
+            _ => query.OrderByDescending(p => p.CreatedAt),
+        };
+
+        // A stable tiebreak, or two products with the same price can swap
+        // between pages and appear twice while scrolling.
+        query = ((IOrderedQueryable<Product>)query).ThenBy(p => p.Id);
+
+        var products = await query.Skip(skip).Take(take).ToListAsync();
 
         var dtos = products.Select(ToListDto).ToList();
         await AttachRatingsAsync(dtos);
 
-        return Ok(dtos);
+        return Ok(new ProductPageDto
+        {
+            Items = dtos,
+            Total = total,
+            HasMore = skip + dtos.Count < total,
+        });
     }
 
     /// <summary>One product, with specs and every image.</summary>
@@ -178,6 +218,57 @@ public class ProductsController : ControllerBase
             if (!await _db.Products.AnyAsync(p => p.PublicId == code)) return code;
         }
         return PublicIdGenerator.Next(12);
+    }
+
+    /// <summary>
+    /// Products to suggest alongside this one.
+    ///
+    /// Same category first, then anything else, so the row is never empty on a
+    /// small catalogue. Ordered by how much people watch and how big the saving
+    /// is — a recommendation nobody clicks is just clutter.
+    /// </summary>
+    [HttpGet("{id:int}/related")]
+    public async Task<ActionResult<IEnumerable<ProductListDto>>> Related(int id, [FromQuery] int take = 8)
+    {
+        var product = await _db.Products.AsNoTracking().FirstOrDefaultAsync(p => p.Id == id);
+        if (product is null) return NotFound($"No product with id {id}.");
+
+        take = Math.Clamp(take, 1, 24);
+
+        var sameCategory = await _db.Products
+            .Where(p => p.IsActive && p.Id != id && p.CategoryId == product.CategoryId)
+            .Include(p => p.Category)
+            .Include(p => p.Images)
+            .OrderByDescending(p => p.WatchCount)
+            .Take(take)
+            .AsNoTracking()
+            .ToListAsync();
+
+        var results = sameCategory.ToList();
+
+        // Top up from the rest of the shop so the strip always has something,
+        // which matters a lot on a catalogue this size.
+        if (results.Count < take)
+        {
+            var have = results.Select(p => p.Id).Append(id).ToList();
+
+            var filler = await _db.Products
+                .Where(p => p.IsActive && !have.Contains(p.Id))
+                .Include(p => p.Category)
+                .Include(p => p.Images)
+                .OrderByDescending(p => p.OriginalPrice - p.Price)
+                .ThenByDescending(p => p.WatchCount)
+                .Take(take - results.Count)
+                .AsNoTracking()
+                .ToListAsync();
+
+            results.AddRange(filler);
+        }
+
+        var dtos = results.Select(ToListDto).ToList();
+        await AttachRatingsAsync(dtos);
+
+        return Ok(dtos);
     }
 
     /// <summary>Look a product up by its share code — used by share links and admin.</summary>

@@ -26,6 +26,8 @@ public class LoottaDbContext : DbContext
     public DbSet<RedeemCodeUse> RedeemCodeUses => Set<RedeemCodeUse>();
     public DbSet<ProductInteraction> ProductInteractions => Set<ProductInteraction>();
     public DbSet<Review> Reviews => Set<Review>();
+    public DbSet<Notification> Notifications => Set<Notification>();
+    public DbSet<Report> Reports => Set<Report>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -260,6 +262,38 @@ public class LoottaDbContext : DbContext
             entity.HasOne(r => r.User)
                   .WithMany()
                   .HasForeignKey(r => r.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ------------------------------------------------------- Notification
+        modelBuilder.Entity<Notification>(entity =>
+        {
+            // The bell asks "what's unread for me" constantly, so index exactly
+            // that rather than scanning every notification ever written.
+            entity.HasIndex(n => new { n.UserId, n.IsRead });
+            entity.Property(n => n.Kind).HasConversion<string>().HasMaxLength(20);
+
+            entity.HasOne(n => n.User)
+                  .WithMany()
+                  .HasForeignKey(n => n.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ------------------------------------------------------------- Report
+        modelBuilder.Entity<Report>(entity =>
+        {
+            entity.Property(r => r.Target).HasConversion<string>().HasMaxLength(20);
+            entity.Property(r => r.Status).HasConversion<string>().HasMaxLength(20);
+
+            // The admin queue asks for open reports, newest first.
+            entity.HasIndex(r => new { r.Status, r.CreatedAt });
+
+            // One report per person per thing: repeat clicks are not evidence.
+            entity.HasIndex(r => new { r.ReporterId, r.Target, r.TargetId }).IsUnique();
+
+            entity.HasOne(r => r.Reporter)
+                  .WithMany()
+                  .HasForeignKey(r => r.ReporterId)
                   .OnDelete(DeleteBehavior.Cascade);
         });
 
