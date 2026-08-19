@@ -122,6 +122,11 @@ public class CustomerDetailDto
     public int VouchersOwned { get; set; }
     public int VouchersUsed { get; set; }
 
+    // ---- engagement ----
+    public int LikeCount { get; set; }
+    public int SaveCount { get; set; }
+    public int ReviewCount { get; set; }
+
     public List<CustomerOrderRowDto> Orders { get; set; } = new();
 }
 

@@ -56,3 +56,22 @@ public class WriteReviewDto
     [MaxLength(1500)]
     public string Body { get; set; } = string.Empty;
 }
+
+/// <summary>A review as the admin sees it: with the product and real name.</summary>
+public class AdminReviewDto
+{
+    public int Id { get; set; }
+
+    public int ProductId { get; set; }
+    public string ProductTitle { get; set; } = string.Empty;
+
+    public int CustomerId { get; set; }
+    public string CustomerName { get; set; } = string.Empty;
+
+    public int Rating { get; set; }
+    public string Body { get; set; } = string.Empty;
+    public string ImageUrl { get; set; } = string.Empty;
+    public bool VerifiedPurchase { get; set; }
+    public bool IsHidden { get; set; }
+    public DateTime CreatedAt { get; set; }
+}

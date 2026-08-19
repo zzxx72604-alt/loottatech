@@ -118,6 +118,13 @@
       <app-image-manager [productId]="editingId()" [images]="images()" />
     </section>
 
+    <!-- ------------------------------------------- reviews for this item -->
+    @if (editingId()) {
+      <section class="card block">
+        <app-product-reviews [productId]="editingId()" />
+      </section>
+    }
+
     <!-- ------------------------------------------------- specs FormArray -->
     <section class="card block">
       <div class="specs-head">

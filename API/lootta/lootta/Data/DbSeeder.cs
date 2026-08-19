@@ -18,7 +18,13 @@ public static class DbSeeder
         await SeedUsersAsync(db);
         await BackfillPublicIdsAsync(db);
 
-        if (await db.Products.AnyAsync()) return;   // already stocked
+        if (await db.Products.AnyAsync())
+        {
+            // Already stocked, but a database seeded before reviews existed
+            // still needs them — so this runs either way.
+            await SeedReviewsAsync(db);
+            return;
+        }
 
         var phones = await db.Categories.FirstAsync(c => c.Slug == "phones");
         var laptops = await db.Categories.FirstAsync(c => c.Slug == "laptops");
@@ -113,6 +119,95 @@ public static class DbSeeder
         };
 
         db.Products.AddRange(products);
+        await db.SaveChangesAsync();
+
+        await SeedReviewsAsync(db);
+    }
+
+    /// <summary>
+    /// Demo reviews, so the ratings and distribution bars have something real
+    /// to show on a fresh install.
+    ///
+    /// Marked VerifiedPurchase because in the real flow they could only exist
+    /// after a completed order — seeding them any other way would misrepresent
+    /// what the badge means.
+    /// </summary>
+    private static async Task SeedReviewsAsync(LoottaDbContext db)
+    {
+        if (await db.Reviews.AnyAsync()) return;
+
+        var reviewers = new[]
+        {
+            ("Chan Sophea", "sophea@gmail.com"),
+            ("Kim Rithy", "rithy@gmail.com"),
+            ("Nou Sreyneang", "sreyneang@gmail.com"),
+            ("Heng Vibol", "vibol@gmail.com"),
+            ("Long Dara", "longdara@gmail.com"),
+        };
+
+        var users = new List<User>();
+        foreach (var (name, email) in reviewers)
+        {
+            var existing = await db.Users.FirstOrDefaultAsync(u => u.Email == email);
+            if (existing is not null) { users.Add(existing); continue; }
+
+            var user = new User
+            {
+                Name = name,
+                Email = email,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword("Demo123"),
+                Role = UserRole.Customer,
+                Address = "Phnom Penh",
+                Coins = 200,
+            };
+            db.Users.Add(user);
+            users.Add(user);
+        }
+
+        await db.SaveChangesAsync();
+
+        var products = await db.Products.OrderBy(p => p.Id).ToListAsync();
+        if (products.Count == 0) return;
+
+        // (product index, reviewer index, stars, comment)
+        var written = new (int Product, int User, int Stars, string Body)[]
+        {
+            (0, 0, 5, "Battery is exactly as described at 89%. Screen has no scratches at all. Arrived in two days."),
+            (0, 1, 4, "Good phone for the price. The scuff on the frame is real but you only see it in bright light."),
+            (0, 2, 5, "Second one I've bought from LoottaTech. Both were honest about condition."),
+            (1, 3, 4, "Battery is weaker than the 128GB one, as the listing says. Still fine for a day of light use."),
+            (2, 0, 5, "120Hz screen is lovely. Genuinely looks unused."),
+            (2, 4, 5, "Fast charging works properly. Very happy."),
+            (3, 1, 3, "Works well but the frame scuffing is more than I expected from the photos."),
+            (4, 2, 5, "The ThinkPad keyboard is worth it alone. Ran a long build with no throttling."),
+            (4, 3, 5, "Paint chip is tiny and photographed honestly. Great machine for the money."),
+            (4, 4, 4, "Battery at 91% as stated. Only wish it had more RAM slots free."),
+            (5, 0, 3, "Cheap way into a ThinkPad but the keycaps are quite worn. Runs fine plugged in."),
+            (6, 1, 5, "Watch looks new. Charger included as promised."),
+            (6, 2, 4, "Screen is perfect, small mark underneath as described."),
+            (7, 3, 4, "Smaller case suits me better. Battery health is honest."),
+            (8, 4, 5, "55g really does feel different. Dongle included."),
+            (8, 0, 5, "Great mouse, arrived quickly."),
+            (9, 1, 5, "Sealed in the box exactly as listed."),
+        };
+
+        var random = new Random(7);   // fixed seed, so the demo data is stable
+
+        foreach (var row in written)
+        {
+            if (row.Product >= products.Count || row.User >= users.Count) continue;
+
+            db.Reviews.Add(new Review
+            {
+                ProductId = products[row.Product].Id,
+                UserId = users[row.User].Id,
+                Rating = row.Stars,
+                Body = row.Body,
+                VerifiedPurchase = true,
+                CreatedAt = DateTime.UtcNow.AddDays(-random.Next(1, 40)),
+            });
+        }
+
         await db.SaveChangesAsync();
     }
 

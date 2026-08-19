@@ -100,6 +100,13 @@
         <div><b>{{ c.vouchersUsed }}/{{ c.vouchersOwned }}</b><span>vouchers used</span></div>
       </div>
 
+      <h3>Engagement</h3>
+      <div class="stats">
+        <div><b>{{ c.likeCount }}</b><span>liked</span></div>
+        <div><b>{{ c.saveCount }}</b><span>saved</span></div>
+        <div><b>{{ c.reviewCount }}</b><span>reviews</span></div>
+      </div>
+
       <h3>Orders</h3>
       @if (c.orders.length === 0) {
         <p class="muted">No orders yet.</p>

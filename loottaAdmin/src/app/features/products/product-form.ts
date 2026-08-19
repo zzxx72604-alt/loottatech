@@ -10,6 +10,7 @@ import {
   ProductWrite,
 } from '../../shared/models/product';
 import { ImageManager } from './image-manager';
+import { ProductReviews } from './product-reviews';
 
 /**
  * Reactive form for creating and editing a product.
@@ -21,7 +22,7 @@ import { ImageManager } from './image-manager';
  */
 @Component({
   selector: 'app-product-form',
-  imports: [ReactiveFormsModule, RouterLink, ImageManager],
+  imports: [ReactiveFormsModule, RouterLink, ImageManager, ProductReviews],
   templateUrl: './product-form.html',
   styleUrl: './product-form.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

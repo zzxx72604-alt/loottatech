@@ -43,5 +43,9 @@ export interface CustomerDetail {
   vouchersOwned: number;
   vouchersUsed: number;
 
+  likeCount: number;
+  saveCount: number;
+  reviewCount: number;
+
   orders: CustomerOrderRow[];
 }

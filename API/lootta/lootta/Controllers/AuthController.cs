@@ -239,6 +239,10 @@ public class AuthController : ControllerBase
             VouchersOwned = vouchers.Count,
             VouchersUsed = vouchers.Count(v => v.UsedAt != null),
 
+            LikeCount = await _db.ProductInteractions.CountAsync(i => i.UserId == id && i.Liked),
+            SaveCount = await _db.ProductInteractions.CountAsync(i => i.UserId == id && i.Saved),
+            ReviewCount = await _db.Reviews.CountAsync(r => r.UserId == id),
+
             Orders = orders.Select(o => new CustomerOrderRowDto
             {
                 Id = o.Id,

@@ -1,0 +1,76 @@
+<header class="head">
+  <div>
+    <h1>Reviews</h1>
+    <p class="sub">
+      {{ rows().length }} shown
+      @if (hiddenCount() > 0) { · {{ hiddenCount() }} hidden }
+      @if (lowRated() > 0) { · <span class="warn">{{ lowRated() }} rated 1–2★</span> }
+    </p>
+  </div>
+
+  <div class="actions">
+    <input
+      type="search"
+      class="search"
+      placeholder="Search text, product or customer…"
+      [(ngModel)]="term"
+      (ngModelChange)="search($event)"
+      aria-label="Search reviews"
+    />
+    <button type="button" class="btn" [class.btn-primary]="onlyHidden()" (click)="toggleHiddenFilter()">
+      {{ onlyHidden() ? 'Showing hidden' : 'All reviews' }}
+    </button>
+  </div>
+</header>
+
+@if (error()) { <p class="alert bad">{{ error() }}</p> }
+
+@if (loading()) {
+  <div class="card pad">Loading…</div>
+} @else if (rows().length === 0) {
+  <div class="card pad">No reviews match.</div>
+} @else {
+  <ul class="list">
+    @for (review of rows(); track review.id) {
+      <li class="card item" [class.hidden-row]="review.isHidden">
+        <div class="top">
+          <span class="stars" [attr.aria-label]="review.rating + ' out of 5'">
+            {{ stars(review.rating) }}
+          </span>
+
+          <a class="product" [routerLink]="['/products', review.productId]">
+            {{ review.productTitle }}
+          </a>
+
+          @if (review.verifiedPurchase) {
+            <span class="badge verified">Verified</span>
+          }
+          @if (review.isHidden) {
+            <span class="badge off">Hidden</span>
+          }
+
+          <span class="when">{{ review.createdAt | date: 'MMM d, HH:mm' }}</span>
+        </div>
+
+        @if (review.body) { <p class="body">{{ review.body }}</p> }
+
+        @if (image(review.imageUrl)) {
+          <img class="shot" [src]="image(review.imageUrl)" alt="" width="88" height="88" loading="lazy" />
+        }
+
+        <div class="foot">
+          <a class="who" [routerLink]="['/customers']">
+            {{ review.customerName }} · #{{ review.customerId }}
+          </a>
+
+          <button type="button" class="btn btn-sm" (click)="toggle(review)">
+            {{ review.isHidden ? 'Show' : 'Hide' }}
+          </button>
+          <button type="button" class="btn btn-sm btn-danger" (click)="remove(review)">
+            Delete
+          </button>
+        </div>
+      </li>
+    }
+  </ul>
+}
