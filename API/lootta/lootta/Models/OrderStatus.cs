@@ -24,9 +24,34 @@ public enum OrderStatus
 public enum RefundState
 {
     None,
+
+    /// <summary>Asked for. Nobody has looked at it yet.</summary>
     Requested,
-    Approved,
-    Declined
+
+    /// <summary>Looked at and turned down.</summary>
+    Declined,
+
+    /// <summary>
+    /// Agreed, but the customer already has the item, so it has to come back
+    /// before the money goes out. They say how it is travelling.
+    /// </summary>
+    ReturnPending,
+
+    /// <summary>They said how. The shop is waiting for the parcel.</summary>
+    ReturnArranged,
+
+    /// <summary>Money returned. The end of the road either way.</summary>
+    Refunded
+}
+
+/// <summary>How a returned item gets back to the shop.</summary>
+public enum ReturnMethod
+{
+    /// <summary>The customer brings it in.</summary>
+    DropOff,
+
+    /// <summary>The shop sends a courier to collect it.</summary>
+    CourierPickup
 }
 
 public enum DeliveryOption

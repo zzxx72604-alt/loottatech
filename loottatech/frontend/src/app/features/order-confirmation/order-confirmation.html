@@ -17,7 +17,7 @@
           </li>
         }
       </ol>
-    } @else if (o.refund === 'Approved') {
+    } @else if (o.refund === 'Refunded') {
       <p class="cancelled">Refunded. The order was cancelled and the money goes back the way it came.</p>
     } @else {
       <p class="cancelled">This order was cancelled.</p>
@@ -68,6 +68,20 @@
       <div class="grand"><dt>Total</dt><dd>{{ o.totalPrice | currency: 'USD' : 'symbol' : '1.2-2' }}</dd></div>
     </dl>
 
+    @if (o.coinsEarned > 0) {
+      <p class="coins" [class.paid]="o.coinsCredited">
+        @if (o.coinsCredited) {
+          ◎ {{ o.coinsEarned }} coins added to your balance.
+        } @else if (o.refund === 'Refunded') {
+          ◎ {{ o.coinsEarned }} coins came back off your balance with the refund.
+        } @else if (o.status === 'Cancelled') {
+          ◎ {{ o.coinsEarned }} coins were never paid — this order didn't arrive.
+        } @else {
+          ◎ {{ o.coinsEarned }} coins land in your balance when this arrives.
+        }
+      </p>
+    }
+
     @switch (o.refund) {
       @case ('Requested') {
         <section class="refund waiting">
@@ -77,14 +91,25 @@
             reads every one of these — you'll get a notification with the answer.
           </p>
           @if (o.refundReason) { <p class="said">“{{ o.refundReason }}”</p> }
+
+          @if (o.refundPhotos.length) {
+            <div class="shots">
+              @for (shot of o.refundPhotos; track shot) {
+                <img [src]="photo(shot)" alt="Photo sent with the refund request" />
+              }
+            </div>
+          }
+
+          @if (o.refundPhotos.length < 3) {
+            <label class="add-photo">
+              <input type="file" accept="image/*" (change)="onExtraPhoto($event, o)" />
+              <span>{{ uploading() ? 'Adding…' : '+ Add a photo' }}</span>
+            </label>
+          }
+          @if (refundError()) { <p class="error">{{ refundError() }}</p> }
         </section>
       }
-      @case ('Approved') {
-        <section class="refund good">
-          <h2>Refund approved</h2>
-          <p>Approved {{ o.refundDecidedAt | date: 'medium' }}. The money goes back the way it came.</p>
-        </section>
-      }
+
       @case ('Declined') {
         <section class="refund bad">
           <h2>Refund declined</h2>
@@ -94,6 +119,96 @@
           </p>
         </section>
       }
+
+      @case ('ReturnPending') {
+        <section class="refund waiting">
+          <h2>Approved — now send it back</h2>
+          <p>
+            The refund is agreed. The money goes out once the item is back with
+            us, so tell us how it is travelling.
+          </p>
+
+          <div class="choices">
+            <label [class.picked]="returnMethod() === 'DropOff'">
+              <input
+                type="radio"
+                name="return-method"
+                value="DropOff"
+                [checked]="returnMethod() === 'DropOff'"
+                (change)="returnMethod.set('DropOff')"
+              />
+              <span><b>I'll bring it in</b><small>Drop it at the shop, any opening hour</small></span>
+            </label>
+
+            <label [class.picked]="returnMethod() === 'CourierPickup'">
+              <input
+                type="radio"
+                name="return-method"
+                value="CourierPickup"
+                [checked]="returnMethod() === 'CourierPickup'"
+                (change)="returnMethod.set('CourierPickup')"
+              />
+              <span><b>Send a courier</b><small>We collect it from you</small></span>
+            </label>
+          </div>
+
+          @if (returnMethod() === 'CourierPickup') {
+            <label for="return-address">Where should the courier collect?</label>
+            <input
+              id="return-address"
+              type="text"
+              maxlength="300"
+              [value]="returnAddress()"
+              (input)="returnAddress.set($any($event.target).value)"
+            />
+          }
+
+          <label for="return-note">Anything we should know? (optional)</label>
+          <textarea
+            id="return-note"
+            rows="2"
+            maxlength="300"
+            placeholder="Best time to come, what's in the box…"
+            [value]="returnNote()"
+            (input)="returnNote.set($any($event.target).value)"
+          ></textarea>
+
+          @if (refundError()) { <p class="error">{{ refundError() }}</p> }
+
+          <div class="row">
+            <button type="button" class="primary send" (click)="sendReturn(o)" [disabled]="sending()">
+              {{ sending() ? 'Sending…' : 'Confirm the return' }}
+            </button>
+          </div>
+        </section>
+      }
+
+      @case ('ReturnArranged') {
+        <section class="refund waiting">
+          <h2>We know how it's coming back</h2>
+          <p>
+            @if (o.returnMethod === 'CourierPickup') {
+              A courier will collect it from {{ o.returnAddress }}. We'll message
+              you to agree a time.
+            } @else {
+              Bring it to the shop whenever suits. The refund goes out once it's
+              back on the counter.
+            }
+          </p>
+          @if (o.returnNote) { <p class="said">“{{ o.returnNote }}”</p> }
+        </section>
+      }
+
+      @case ('Refunded') {
+        <section class="refund good">
+          <h2>Refunded</h2>
+          <p>
+            Done {{ o.refundedAt | date: 'medium' }}. The money goes back the way
+            it came.
+          </p>
+        </section>
+      }
+
       @default {
         @if (o.canRequestRefund) {
           <section class="refund">
@@ -112,6 +227,21 @@
                 [value]="reason()"
                 (input)="reason.set($any($event.target).value)"
               ></textarea>
+
+              <label class="add-photo">
+                <input type="file" accept="image/*" multiple (change)="onPickFiles($event)" />
+                <span>
+                  @if (files().length) {
+                    {{ files().length }} photo{{ files().length === 1 ? '' : 's' }} attached
+                  } @else {
+                    + Add photos (optional, up to 3)
+                  }
+                </span>
+              </label>
+              <p class="hint">
+                A photo of the fault settles most of these in one go. Nothing is
+                sent until you press the button.
+              </p>
 
               @if (refundError()) { <p class="error">{{ refundError() }}</p> }
 

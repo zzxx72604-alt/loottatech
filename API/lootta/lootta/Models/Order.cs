@@ -51,8 +51,20 @@ public class Order
     [MaxLength(20)]
     public string VoucherCode { get; set; } = string.Empty;
 
-    /// <summary>Coins this order paid the customer. Reversed if cancelled.</summary>
+    /// <summary>
+    /// Coins this order is worth. Held, not paid, until the parcel arrives.
+    /// </summary>
     public int CoinsEarned { get; set; }
+
+    /// <summary>
+    /// Whether those coins have actually reached the customer's balance.
+    ///
+    /// They are paid when the order is completed, not when it is placed. An
+    /// order that never arrives, or comes back as a refund, must not leave
+    /// coins behind it — and without this flag, marking an order completed
+    /// twice would pay them twice.
+    /// </summary>
+    public bool CoinsCredited { get; set; }
 
     public OrderStatus Status { get; set; } = OrderStatus.Pending;
 
@@ -60,12 +72,30 @@ public class Order
 
     public RefundState Refund { get; set; } = RefundState.None;
 
+    /// <summary>Evidence the customer attached. Up to three.</summary>
+    public ICollection<RefundPhoto> RefundPhotos { get; set; } = new List<RefundPhoto>();
+
     /// <summary>In the customer's own words. Empty until they ask.</summary>
     [MaxLength(300)]
     public string RefundReason { get; set; } = string.Empty;
 
     public DateTime? RefundRequestedAt { get; set; }
     public DateTime? RefundDecidedAt { get; set; }
+    public DateTime? RefundedAt { get; set; }
+
+    // ---- getting a delivered item back before the money goes out ----
+
+    public ReturnMethod? ReturnMethod { get; set; }
+
+    /// <summary>Where the courier collects, when that is the arrangement.</summary>
+    [MaxLength(300)]
+    public string ReturnAddress { get; set; } = string.Empty;
+
+    /// <summary>Anything else the customer wants the shop to know.</summary>
+    [MaxLength(300)]
+    public string ReturnNote { get; set; } = string.Empty;
+
+    public DateTime? ReturnArrangedAt { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;

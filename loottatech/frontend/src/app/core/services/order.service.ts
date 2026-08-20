@@ -66,6 +66,26 @@ export class OrderService {
     return this.api.post<Order>(`orders/${id}/refund`, { reason });
   }
 
+  /**
+   * Attach evidence to an open request.
+   *
+   * One file per call, the way the avatar and review uploads work — three
+   * photos is three requests, and one failing does not lose the other two.
+   */
+  addRefundPhoto(id: number, file: File): Observable<Order> {
+    const form = new FormData();
+    form.append('file', file);
+    return this.api.post<Order>(`orders/${id}/refund/photos`, form);
+  }
+
+  /** Tell the shop how an approved return is coming back. */
+  arrangeReturn(
+    id: number,
+    arrangement: { method: string; address: string; note: string },
+  ): Observable<Order> {
+    return this.api.post<Order>(`orders/${id}/refund/return`, arrangement);
+  }
+
   /** The signed-in customer's real history, straight from SQL Server. */
   mine(): Observable<OrderSummary[]> {
     return this.api.get<OrderSummary[]>('orders/mine');

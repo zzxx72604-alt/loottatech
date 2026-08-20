@@ -17,6 +17,7 @@ public class OrdersController : ControllerBase
     private readonly LoottaDbContext _db;
     private readonly EconomyService _economy;
     private readonly NotificationService _notifications;
+    private readonly ImageService _images;
 
     /// <summary>
     /// Money inside a message, always in US dollars.
@@ -32,8 +33,10 @@ public class OrdersController : ControllerBase
     public OrdersController(
         LoottaDbContext db,
         EconomyService economy,
-        NotificationService notifications)
+        NotificationService notifications,
+        ImageService images)
     {
+        _images = images;
         _db = db;
         _economy = economy;
         _notifications = notifications;
@@ -149,16 +152,16 @@ public class OrdersController : ControllerBase
          * Shopping is how coins enter the economy. Coins are awarded on the
          * amount actually paid, so a discount doesn't earn coins on money that
          * was never spent. Guests earn nothing — there's no account to hold it.
+         *
+         * The amount is worked out now and PAID WHEN THE ORDER ARRIVES, not
+         * here. Paying at checkout would let somebody order, spend the coins in
+         * the arcade, and then ask for their money back — the coins would
+         * already be gone. Nothing is owed until the customer has the goods.
          */
         if (userId is not null)
         {
             var config = await _economy.GetAsync();
-            var buyer = await _db.Users.FindAsync(userId.Value);
-            if (buyer is not null)
-            {
-                order.CoinsEarned = EconomyService.CoinsForSpend(order.Total, config);
-                buyer.Coins += order.CoinsEarned;
-            }
+            order.CoinsEarned = EconomyService.CoinsForSpend(order.Total, config);
         }
 
         await _db.SaveChangesAsync();
@@ -191,7 +194,7 @@ public class OrdersController : ControllerBase
     [HttpGet("{id:int}")]
     public async Task<ActionResult<OrderDto>> GetById(int id)
     {
-        var order = await _db.Orders.Include(o => o.Items).AsNoTracking()
+        var order = await _db.Orders.Include(o => o.Items).Include(o => o.RefundPhotos).AsNoTracking()
                                     .FirstOrDefaultAsync(o => o.Id == id);
 
         return order is null ? NotFound($"No order with id {id}.") : Ok(order.ToDto());
@@ -329,7 +332,7 @@ public class OrdersController : ControllerBase
     {
         var code = orderNumber.Trim().ToUpperInvariant();
 
-        var order = await _db.Orders.Include(o => o.Items).AsNoTracking()
+        var order = await _db.Orders.Include(o => o.Items).Include(o => o.RefundPhotos).AsNoTracking()
                                     .FirstOrDefaultAsync(o => o.OrderNumber == code);
 
         if (order is null) return NotFound($"No order with number {code}.");
@@ -358,7 +361,7 @@ public class OrdersController : ControllerBase
         if (!OrderMapping.TryParseStatus(dto.Status, out var status))
             return BadRequest($"Unknown status '{dto.Status}'. Valid: {string.Join(", ", OrderMapping.StatusNames)}");
 
-        var order = await _db.Orders.Include(o => o.Items).FirstOrDefaultAsync(o => o.Id == id);
+        var order = await LoadForRefundAsync(id);
         if (order is null) return NotFound($"No order with id {id}.");
 
         var wasCancelled = order.Status == OrderStatus.Cancelled;
@@ -367,6 +370,11 @@ public class OrdersController : ControllerBase
         if (status == OrderStatus.Cancelled && !wasCancelled)
         {
             await UnwindAsync(order);
+        }
+        // Arriving is what earns the coins. Held until now, paid once.
+        else if (status == OrderStatus.Completed && !order.CoinsCredited && order.CoinsEarned > 0)
+        {
+            await PayCoinsAsync(order);
         }
         // Un-cancelling takes them back out again.
         else if (wasCancelled && status != OrderStatus.Cancelled)
@@ -399,11 +407,14 @@ public class OrdersController : ControllerBase
     /// </summary>
     private async Task UnwindAsync(Order order)
     {
-        // Take back the coins it paid out, or cancelling would be free money.
-        if (order.UserId is not null && order.CoinsEarned > 0)
+        // Only take back coins that were actually handed over. An order that
+        // never arrived was never paid any, and subtracting them anyway would
+        // quietly rob the customer of coins earned elsewhere.
+        if (order.CoinsCredited && order.UserId is not null && order.CoinsEarned > 0)
         {
             var buyer = await _db.Users.FindAsync(order.UserId.Value);
             if (buyer is not null) buyer.Coins = Math.Max(0, buyer.Coins - order.CoinsEarned);
+            order.CoinsCredited = false;
         }
 
         foreach (var item in order.Items.Where(i => i.ProductId.HasValue))
@@ -411,6 +422,18 @@ public class OrdersController : ControllerBase
             var product = await _db.Products.FindAsync(item.ProductId!.Value);
             if (product is not null) product.Stock += item.Quantity;
         }
+    }
+
+    /// <summary>Pays the coins an arrived order earned. Once.</summary>
+    private async Task PayCoinsAsync(Order order)
+    {
+        if (order.UserId is null) return;
+
+        var buyer = await _db.Users.FindAsync(order.UserId.Value);
+        if (buyer is null) return;
+
+        buyer.Coins += order.CoinsEarned;
+        order.CoinsCredited = true;
     }
 
     /* ---------------------------------------------------------------- */
@@ -428,7 +451,7 @@ public class OrdersController : ControllerBase
     [Authorize]
     public async Task<ActionResult<OrderDto>> RequestRefund(int id, RefundRequestDto dto)
     {
-        var order = await _db.Orders.Include(o => o.Items).FirstOrDefaultAsync(o => o.Id == id);
+        var order = await LoadForRefundAsync(id);
         if (order is null) return NotFound($"No order with id {id}.");
 
         // A guest order has no owner to check against, so the code alone would
@@ -439,7 +462,10 @@ public class OrdersController : ControllerBase
         if (order.Refund == RefundState.Requested)
             return BadRequest("You've already asked for a refund on this order. We're looking at it.");
 
-        if (order.Refund == RefundState.Approved)
+        if (order.Refund is RefundState.ReturnPending or RefundState.ReturnArranged)
+            return BadRequest("A refund on this order is already agreed and under way.");
+
+        if (order.Refund == RefundState.Refunded)
             return BadRequest("This order has already been refunded.");
 
         if (order.Status == OrderStatus.Cancelled)
@@ -462,30 +488,77 @@ public class OrdersController : ControllerBase
     }
 
     /// <summary>
+    /// Attach a photo to an open request. Up to three.
+    ///
+    /// Words alone leave the shop taking somebody's account of the damage on
+    /// trust, which is fine right up until two accounts disagree. Only while
+    /// the request is still open: evidence added after a decision would be
+    /// evidence for a decision already made.
+    /// </summary>
+    [HttpPost("{id:int}/refund/photos")]
+    [Authorize]
+    public async Task<ActionResult<OrderDto>> AddRefundPhoto(int id, IFormFile file)
+    {
+        var order = await LoadForRefundAsync(id);
+        if (order is null) return NotFound($"No order with id {id}.");
+
+        if (order.UserId is null || order.UserId != CurrentUserIdOrNull())
+            return StatusCode(StatusCodes.Status403Forbidden, "That isn't your order.");
+
+        if (order.Refund != RefundState.Requested)
+            return BadRequest("Photos can only be added while the request is open.");
+
+        if (order.RefundPhotos.Count >= 3)
+            return BadRequest("Three photos is the limit — pick the clearest ones.");
+
+        if (file is null) return BadRequest("No file was sent.");
+
+        var saved = await _images.SaveAsync(file, $"refund-{order.Id}-{Guid.NewGuid():N}"[..28]);
+        if (!saved.Ok) return BadRequest(saved.Error);
+
+        order.RefundPhotos.Add(new RefundPhoto { Path = saved.BasePath });
+        order.UpdatedAt = DateTime.UtcNow;
+
+        await _db.SaveChangesAsync();
+
+        return Ok(order.ToDto(viewerOwnsOrder: true));
+    }
+
+    /// <summary>
     /// The shop answers a refund request.
     ///
-    /// Approving unwinds the order the same way cancelling does — the units go
-    /// back on the shelf and the coins it paid out are taken back — and marks
-    /// it cancelled, because a refunded order is not one the shop still owes.
+    /// Where it goes next depends on who is holding the item. If it never
+    /// arrived, there is nothing to send back: the order is unwound and the
+    /// money returned there and then. If the customer has it, the refund waits
+    /// until it is back — the shop is not in the business of paying for goods
+    /// and letting them keep the goods too.
     /// </summary>
     [HttpPut("{id:int}/refund")]
     [Authorize(Policy = "CanManageOrders")]
     public async Task<ActionResult<OrderDto>> DecideRefund(int id, RefundDecisionDto dto)
     {
-        var order = await _db.Orders.Include(o => o.Items).FirstOrDefaultAsync(o => o.Id == id);
+        var order = await LoadForRefundAsync(id);
         if (order is null) return NotFound($"No order with id {id}.");
 
         if (order.Refund != RefundState.Requested)
             return BadRequest("There is no open refund request on this order.");
 
-        order.Refund = dto.Approve ? RefundState.Approved : RefundState.Declined;
         order.RefundDecidedAt = DateTime.UtcNow;
         order.UpdatedAt = DateTime.UtcNow;
 
-        if (dto.Approve && order.Status != OrderStatus.Cancelled)
+        if (!dto.Approve)
         {
-            await UnwindAsync(order);
-            order.Status = OrderStatus.Cancelled;
+            order.Refund = RefundState.Declined;
+        }
+        else if (order.Status == OrderStatus.Completed)
+        {
+            // Delivered. It has to come back before the money goes out.
+            order.Refund = RefundState.ReturnPending;
+        }
+        else
+        {
+            // Still with the shop or in transit: stop it and pay the customer.
+            await RefundNowAsync(order);
         }
 
         _notifications.RefundDecided(order);
@@ -493,6 +566,99 @@ public class OrdersController : ControllerBase
 
         return Ok(order.ToDto());
     }
+
+    /// <summary>
+    /// The customer says how the item is coming back.
+    ///
+    /// Their choice, not the shop's: someone who cannot get to the shop should
+    /// not lose a refund over it, and someone who works next door should not
+    /// wait three days for a courier.
+    /// </summary>
+    [HttpPost("{id:int}/refund/return")]
+    [Authorize]
+    public async Task<ActionResult<OrderDto>> ArrangeReturn(int id, ReturnArrangementDto dto)
+    {
+        var order = await LoadForRefundAsync(id);
+        if (order is null) return NotFound($"No order with id {id}.");
+
+        if (order.UserId is null || order.UserId != CurrentUserIdOrNull())
+            return StatusCode(StatusCodes.Status403Forbidden, "That isn't your order.");
+
+        if (order.Refund != RefundState.ReturnPending && order.Refund != RefundState.ReturnArranged)
+            return BadRequest("There is no approved return waiting on this order.");
+
+        if (!Enum.TryParse<ReturnMethod>(dto.Method, ignoreCase: true, out var method))
+            return BadRequest("Choose either DropOff or CourierPickup.");
+
+        var address = (dto.Address ?? string.Empty).Trim();
+
+        if (method == ReturnMethod.CourierPickup && address.Length < 5)
+            return BadRequest("A courier needs somewhere to collect from.");
+
+        order.ReturnMethod = method;
+        order.ReturnAddress = address.Length > 300 ? address[..300] : address;
+
+        var note = (dto.Note ?? string.Empty).Trim();
+        order.ReturnNote = note.Length > 300 ? note[..300] : note;
+
+        order.Refund = RefundState.ReturnArranged;
+        order.ReturnArrangedAt = DateTime.UtcNow;
+        order.UpdatedAt = DateTime.UtcNow;
+
+        await _notifications.ReturnArrangedAsync(order);
+        await _db.SaveChangesAsync();
+
+        return Ok(order.ToDto(viewerOwnsOrder: true));
+    }
+
+    /// <summary>
+    /// The item is back on the counter: pay the customer.
+    ///
+    /// A person confirms this rather than a courier status, because the shop
+    /// is signing off on what actually turned up in the box.
+    /// </summary>
+    [HttpPut("{id:int}/refund/received")]
+    [Authorize(Policy = "CanManageOrders")]
+    public async Task<ActionResult<OrderDto>> ConfirmReturned(int id)
+    {
+        var order = await LoadForRefundAsync(id);
+        if (order is null) return NotFound($"No order with id {id}.");
+
+        if (order.Refund != RefundState.ReturnPending && order.Refund != RefundState.ReturnArranged)
+            return BadRequest("This order is not waiting on a return.");
+
+        await RefundNowAsync(order);
+        order.UpdatedAt = DateTime.UtcNow;
+
+        _notifications.RefundDecided(order);
+        await _db.SaveChangesAsync();
+
+        return Ok(order.ToDto());
+    }
+
+    /// <summary>
+    /// Money back: unwind the order and close the request.
+    ///
+    /// The order is marked cancelled because a refunded order is not one the
+    /// shop still owes anything on, and the stock is on the shelf again.
+    /// </summary>
+    private async Task RefundNowAsync(Order order)
+    {
+        if (order.Status != OrderStatus.Cancelled)
+        {
+            await UnwindAsync(order);
+            order.Status = OrderStatus.Cancelled;
+        }
+
+        order.Refund = RefundState.Refunded;
+        order.RefundedAt = DateTime.UtcNow;
+    }
+
+    private Task<Order?> LoadForRefundAsync(int id) =>
+        _db.Orders
+            .Include(o => o.Items)
+            .Include(o => o.RefundPhotos)
+            .FirstOrDefaultAsync(o => o.Id == id);
 
     /// <summary>The list of statuses, so the admin UI never hardcodes them.</summary>
     [HttpGet("statuses")]

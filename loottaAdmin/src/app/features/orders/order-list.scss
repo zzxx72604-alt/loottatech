@@ -157,3 +157,23 @@ h3 {
 }
 
 .refund-head { margin-top: var(--sp-3, 12px); }
+
+.refund-tag {
+  &.r-returnpending  { background: #fff3d6; color: #8a5b00; }
+  &.r-returnarranged { background: #e6efff; color: #234a8f; }
+  &.r-refunded       { background: #e2f5e9; color: #1d6b3c; }
+}
+
+.refund-shots {
+  display: flex;
+  gap: 8px;
+  margin: 8px 0;
+
+  img {
+    width: 64px;
+    height: 64px;
+    object-fit: cover;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+  }
+}

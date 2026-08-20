@@ -27,7 +27,15 @@ export const STATUS_FLOW: OrderStatus[] = [
 ];
 
 /** Where an order stands with the customer's money. */
-export type RefundState = 'None' | 'Requested' | 'Approved' | 'Declined';
+export type RefundState =
+  | 'None'
+  | 'Requested'
+  | 'Declined'
+  /** Agreed, but the customer still has the item. */
+  | 'ReturnPending'
+  /** They said how it is coming back; the shop is waiting for it. */
+  | 'ReturnArranged'
+  | 'Refunded';
 
 export interface OrderSummary {
   id: number;
@@ -59,6 +67,14 @@ export interface OrderItem {
 }
 
 export interface Order extends OrderSummary {
+  /** Evidence the customer attached to the refund request. */
+  refundPhotos: string[];
+  returnMethod: 'DropOff' | 'CourierPickup' | '';
+  returnAddress: string;
+  returnNote: string;
+  returnArrangedAt: string | null;
+  coinsEarned: number;
+  coinsCredited: boolean;
   address: string;
   note: string;
   subtotal: number;

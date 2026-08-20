@@ -33,6 +33,7 @@ public class LoottaDbContext : DbContext
     public DbSet<QuickTag> QuickTags => Set<QuickTag>();
     public DbSet<SiteText> SiteTexts => Set<SiteText>();
     public DbSet<PaymentMethodSetting> PaymentMethodSettings => Set<PaymentMethodSetting>();
+    public DbSet<RefundPhoto> RefundPhotos => Set<RefundPhoto>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -136,6 +137,13 @@ public class LoottaDbContext : DbContext
 
             entity.Property(o => o.Status).HasConversion<string>().HasMaxLength(20);
             entity.Property(o => o.Refund).HasConversion<string>().HasMaxLength(20);
+            entity.Property(o => o.ReturnMethod).HasConversion<string>().HasMaxLength(20);
+
+            // The photos belong to the request: delete the order, they go too.
+            entity.HasMany(o => o.RefundPhotos)
+                  .WithOne(p => p.Order!)
+                  .HasForeignKey(p => p.OrderId)
+                  .OnDelete(DeleteBehavior.Cascade);
             entity.Property(o => o.DeliveryOption).HasConversion<string>().HasMaxLength(20);
             entity.Property(o => o.PaymentMethod).HasConversion<string>().HasMaxLength(30);
 

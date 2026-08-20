@@ -52,7 +52,7 @@
               <span class="date">{{ o.createdAt | date: 'MMM d, HH:mm' }}</span>
               @if (o.refund !== 'None') {
                 <span class="refund-tag" [class]="'r-' + o.refund.toLowerCase()">
-                  {{ o.refund === 'Requested' ? 'Refund asked' : 'Refund ' + o.refund.toLowerCase() }}
+                  {{ refundLabel(o.refund) }}
                 </span>
               }
             </td>
@@ -85,10 +85,14 @@
             <td class="c-act">
               @if (o.refund === 'Requested') {
                 <button type="button" class="btn btn-sm btn-refund" (click)="decideRefund(o, true)">
-                  Refund
+                  Approve
                 </button>
                 <button type="button" class="btn btn-sm" (click)="decideRefund(o, false)">
                   Decline
+                </button>
+              } @else if (o.refund === 'ReturnPending' || o.refund === 'ReturnArranged') {
+                <button type="button" class="btn btn-sm btn-refund" (click)="confirmReturned(o)">
+                  Item's back — refund
                 </button>
               } @else if (next(o.status); as n) {
                 <button type="button" class="btn btn-sm btn-primary" (click)="advance(o)">
@@ -117,10 +121,27 @@
                       @if (d.note) { <p class="note">“{{ d.note }}”</p> }
 
                       @if (o.refund !== 'None') {
-                        <h3 class="refund-head">Refund {{ o.refund.toLowerCase() }}</h3>
-                        <p class="note">
-                          {{ o.refundReason || 'No reason given.' }}
-                        </p>
+                        <h3 class="refund-head">{{ refundLabel(o.refund) }}</h3>
+                        <p class="note">{{ o.refundReason || 'No reason given.' }}</p>
+
+                        @if (d.refundPhotos.length) {
+                          <div class="refund-shots">
+                            @for (shot of d.refundPhotos; track shot) {
+                              <a [href]="image(shot)" target="_blank" rel="noopener">
+                                <img [src]="image(shot)" alt="Photo the customer sent" />
+                              </a>
+                            }
+                          </div>
+                        }
+
+                        @if (d.returnMethod) {
+                          <p class="opt">
+                            {{ d.returnMethod === 'CourierPickup'
+                                ? 'Courier collects from ' + d.returnAddress
+                                : 'Customer is bringing it in' }}
+                          </p>
+                          @if (d.returnNote) { <p class="note">“{{ d.returnNote }}”</p> }
+                        }
                       }
                     </div>
 

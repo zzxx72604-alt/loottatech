@@ -35,7 +35,18 @@ export interface OrderItem {
 }
 
 /** Where an order stands with the customer's money. */
-export type RefundState = 'None' | 'Requested' | 'Approved' | 'Declined';
+export type RefundState =
+  | 'None'
+  | 'Requested'
+  | 'Declined'
+  /** Agreed, but the item is with the customer and has to come back first. */
+  | 'ReturnPending'
+  /** They said how it is travelling; the shop is waiting for it. */
+  | 'ReturnArranged'
+  | 'Refunded';
+
+/** How a returned item gets back to the shop. */
+export type ReturnMethod = 'DropOff' | 'CourierPickup';
 
 export interface Order {
   id: number;
@@ -57,8 +68,20 @@ export interface Order {
   refund: RefundState;
   /** Withheld from a guest tracking by code. */
   refundReason: string;
+  /** Evidence photos, base paths. Withheld from a guest too. */
+  refundPhotos: string[];
   refundRequestedAt: string | null;
   refundDecidedAt: string | null;
+  refundedAt: string | null;
+
+  returnMethod: ReturnMethod | '';
+  returnAddress: string;
+  returnNote: string;
+  returnArrangedAt: string | null;
+
+  /** What the order is worth in coins, and whether they have been paid. */
+  coinsEarned: number;
+  coinsCredited: boolean;
   /** The API decides this: only the buyer, and only while it would be taken. */
   canRequestRefund: boolean;
   createdAt: string;

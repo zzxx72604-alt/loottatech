@@ -51,6 +51,24 @@ export class OrderList {
     () => this.orders().filter((o) => o.refund === 'Requested').length,
   );
 
+  /** Returns the shop is waiting to receive. */
+  protected readonly returnsExpected = computed(
+    () => this.orders().filter((o) => o.refund === 'ReturnPending' || o.refund === 'ReturnArranged')
+      .length,
+  );
+
+  /** Wording for the badge, since the state names are not sentences. */
+  protected refundLabel(state: string): string {
+    switch (state) {
+      case 'Requested': return 'Refund asked';
+      case 'Declined': return 'Refund declined';
+      case 'ReturnPending': return 'Waiting on return';
+      case 'ReturnArranged': return 'Return on its way';
+      case 'Refunded': return 'Refunded';
+      default: return '';
+    }
+  }
+
   protected readonly revenue = computed(() =>
     this.orders()
       .filter((o) => o.status !== 'Cancelled')
@@ -118,13 +136,28 @@ export class OrderList {
    * the same courtesy the status dropdown gives before cancelling.
    */
   protected decideRefund(order: OrderSummary, approve: boolean): void {
-    const question = approve
-      ? `Refund ${order.orderNumber}? The order is cancelled and the items go back into stock.`
-      : `Decline the refund on ${order.orderNumber}?`;
+    const question = !approve
+      ? `Decline the refund on ${order.orderNumber}?`
+      : order.status === 'Completed'
+        ? `Approve the refund on ${order.orderNumber}? The customer sends the item back first, and you pay once it arrives.`
+        : `Refund ${order.orderNumber}? It hasn't been delivered, so the order is cancelled and the items go back into stock.`;
 
     if (!confirm(question)) return;
 
     this.api.decideRefund(order.id, approve).subscribe({
+      next: (updated) =>
+        this.patch(order.id, { refund: updated.refund, status: updated.status }),
+      error: (err) => this.error.set(this.explain(err)),
+    });
+  }
+
+  /** The item came back: unwind the order and pay the customer. */
+  protected confirmReturned(order: OrderSummary): void {
+    if (!confirm(`Has ${order.orderNumber} arrived back? This refunds the customer and returns the items to stock.`)) {
+      return;
+    }
+
+    this.api.confirmReturned(order.id).subscribe({
       next: (updated) =>
         this.patch(order.id, { refund: updated.refund, status: updated.status }),
       error: (err) => this.error.set(this.explain(err)),

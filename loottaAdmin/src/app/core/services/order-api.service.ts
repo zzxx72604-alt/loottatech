@@ -28,4 +28,14 @@ export class OrderApi {
   decideRefund(id: number, approve: boolean): Observable<Order> {
     return this.api.put<Order>(`orders/${id}/refund`, { approve });
   }
+
+  /**
+   * The returned item is back on the counter: pay the customer.
+   *
+   * A person confirms this rather than a courier status, because the shop is
+   * signing off on what actually turned up in the box.
+   */
+  confirmReturned(id: number): Observable<Order> {
+    return this.api.put<Order>(`orders/${id}/refund/received`, {});
+  }
 }

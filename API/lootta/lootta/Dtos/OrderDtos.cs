@@ -107,6 +107,20 @@ public class OrderDto
 
     public DateTime? RefundRequestedAt { get; set; }
     public DateTime? RefundDecidedAt { get; set; }
+    public DateTime? RefundedAt { get; set; }
+
+    /// <summary>Base paths of the evidence photos, newest last.</summary>
+    public List<string> RefundPhotos { get; set; } = new();
+
+    /// <summary>DropOff | CourierPickup | empty until the customer says.</summary>
+    public string ReturnMethod { get; set; } = string.Empty;
+    public string ReturnAddress { get; set; } = string.Empty;
+    public string ReturnNote { get; set; } = string.Empty;
+    public DateTime? ReturnArrangedAt { get; set; }
+
+    /// <summary>Coins this order is worth, and whether they have been paid.</summary>
+    public int CoinsEarned { get; set; }
+    public bool CoinsCredited { get; set; }
 
     /// <summary>True only for the customer who placed the order, and only
     /// while a request would actually be accepted.</summary>
@@ -147,6 +161,21 @@ public class RefundRequestDto
 public class RefundDecisionDto
 {
     public bool Approve { get; set; }
+}
+
+/// <summary>How an approved return is travelling back to the shop.</summary>
+public class ReturnArrangementDto
+{
+    /// <summary>DropOff | CourierPickup</summary>
+    [Required]
+    public string Method { get; set; } = string.Empty;
+
+    /// <summary>Where a courier collects. Not needed for a drop-off.</summary>
+    [MaxLength(300)]
+    public string Address { get; set; } = string.Empty;
+
+    [MaxLength(300)]
+    public string Note { get; set; } = string.Empty;
 }
 
 public class UpdateOrderStatusDto
@@ -190,6 +219,17 @@ public static class OrderMapping
         RefundReason = order.RefundReason,
         RefundRequestedAt = order.RefundRequestedAt,
         RefundDecidedAt = order.RefundDecidedAt,
+        RefundedAt = order.RefundedAt,
+        RefundPhotos = order.RefundPhotos
+                            .OrderBy(p => p.Id)
+                            .Select(p => p.Path)
+                            .ToList(),
+        ReturnMethod = order.ReturnMethod?.ToString() ?? string.Empty,
+        ReturnAddress = order.ReturnAddress,
+        ReturnNote = order.ReturnNote,
+        ReturnArrangedAt = order.ReturnArrangedAt,
+        CoinsEarned = order.CoinsEarned,
+        CoinsCredited = order.CoinsCredited,
         CanRequestRefund = viewerOwnsOrder
                            && order.Refund == RefundState.None
                            && order.Status != OrderStatus.Cancelled,
@@ -230,6 +270,9 @@ public static class OrderMapping
         // goes for whatever they said when asking for their money back.
         dto.Note = string.Empty;
         dto.RefundReason = string.Empty;
+        dto.RefundPhotos = new List<string>();
+        dto.ReturnAddress = string.Empty;
+        dto.ReturnNote = string.Empty;
 
         return dto;
     }

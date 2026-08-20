@@ -81,20 +81,55 @@ public class NotificationService
         }
     }
 
-    /// <summary>Tells the customer what the shop decided.</summary>
+    /// <summary>Tells the customer where their refund got to.</summary>
     public void RefundDecided(Order order)
     {
         if (order.UserId is null) return;
 
-        var approved = order.Refund == RefundState.Approved;
+        var (title, body) = order.Refund switch
+        {
+            RefundState.Declined =>
+                ("Refund declined",
+                 "We looked at your request and cannot refund this order. Get in touch if you think that is wrong."),
+
+            RefundState.ReturnPending =>
+                ("Refund approved — send it back",
+                 "Approved. Open the order and tell us how the item is coming back: bring it in, or we send a courier for it."),
+
+            RefundState.Refunded =>
+                ("Refund done",
+                 "The money goes back the way it came. The order is cancelled and any coins it would have earned are off the table."),
+
+            _ =>
+                ("Refund updated", $"Your refund is now {order.Refund}."),
+        };
 
         Add(order.UserId.Value, NotificationKind.Order,
-            approved
-                ? $"Refund approved · {order.OrderNumber}"
-                : $"Refund declined · {order.OrderNumber}",
-            approved
-                ? "Your refund was approved. The order is cancelled and the money goes back the way it came."
-                : "We looked at your request and cannot refund this order. Get in touch if you think that is wrong.",
-            $"/order/{order.OrderNumber}");
+            $"{title} · {order.OrderNumber}", body, $"/order/{order.OrderNumber}");
+    }
+
+    /// <summary>
+    /// Tells the shop how a returned item is travelling, so somebody can be
+    /// ready for it — a courier turning up unannounced is how parcels get
+    /// refused at the door.
+    /// </summary>
+    public async Task ReturnArrangedAsync(Order order)
+    {
+        var how = order.ReturnMethod == ReturnMethod.CourierPickup
+            ? $"Courier pickup from {order.ReturnAddress}"
+            : "Customer is bringing it in";
+
+        var admins = await _db.Users
+            .Where(u => u.Role == UserRole.Admin && u.IsActive)
+            .Select(u => u.Id)
+            .ToListAsync();
+
+        foreach (var adminId in admins)
+        {
+            Add(adminId, NotificationKind.Order,
+                $"Return arranged · {order.OrderNumber}",
+                string.IsNullOrWhiteSpace(order.ReturnNote) ? how : $"{how} — {order.ReturnNote}",
+                "/orders");
+        }
     }
 }

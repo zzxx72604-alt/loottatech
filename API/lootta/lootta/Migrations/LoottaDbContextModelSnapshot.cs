@@ -294,6 +294,9 @@ namespace lootta.Migrations
                         .HasMaxLength(300)
                         .HasColumnType("nvarchar(300)");
 
+                    b.Property<bool>("CoinsCredited")
+                        .HasColumnType("bit");
+
                     b.Property<int>("CoinsEarned")
                         .HasColumnType("int");
 
@@ -356,6 +359,26 @@ namespace lootta.Migrations
 
                     b.Property<DateTime?>("RefundRequestedAt")
                         .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("RefundedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ReturnAddress")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<DateTime?>("ReturnArrangedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ReturnMethod")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("ReturnNote")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -759,6 +782,32 @@ namespace lootta.Migrations
                     b.ToTable("RedeemCodeUses");
                 });
 
+            modelBuilder.Entity("lootta.Models.RefundPhoto", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("OrderId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Path")
+                        .IsRequired()
+                        .HasMaxLength(400)
+                        .HasColumnType("nvarchar(400)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrderId");
+
+                    b.ToTable("RefundPhotos");
+                });
+
             modelBuilder.Entity("lootta.Models.Report", b =>
                 {
                     b.Property<int>("Id")
@@ -1072,6 +1121,17 @@ namespace lootta.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("lootta.Models.RefundPhoto", b =>
+                {
+                    b.HasOne("lootta.Models.Order", "Order")
+                        .WithMany("RefundPhotos")
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Order");
+                });
+
             modelBuilder.Entity("lootta.Models.OrderItem", b =>
                 {
                     b.HasOne("lootta.Models.Order", "Order")
@@ -1209,6 +1269,8 @@ namespace lootta.Migrations
             modelBuilder.Entity("lootta.Models.Order", b =>
                 {
                     b.Navigation("Items");
+
+                    b.Navigation("RefundPhotos");
                 });
 
             modelBuilder.Entity("lootta.Models.Product", b =>
