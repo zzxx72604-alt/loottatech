@@ -14,6 +14,29 @@
   &::-webkit-scrollbar { display: none; }
 
   > * { scroll-snap-align: start; }
+
+  /* Only offer the hand when there is somewhere to drag to. */
+  &.grabbable { cursor: grab; }
+
+  &.pressing { cursor: grabbing; }
+
+  &.dragging {
+    cursor: grabbing;
+
+    /*
+     * Mandatory snapping fights a drag: every frame the browser pulls the row
+     * back to the nearest card. Off while the hand is down, back on when it
+     * lifts, which is what settles the row on a card at the end.
+     */
+    scroll-snap-type: none;
+
+    /* Nothing should look selected or hovered mid-drag. */
+    user-select: none;
+    * { pointer-events: none; }
+  }
+
+  /* The cards' own controls keep their own cursor. */
+  a, button { cursor: pointer; }
 }
 
 .nudge {

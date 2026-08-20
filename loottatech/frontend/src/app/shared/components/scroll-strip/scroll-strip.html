@@ -3,7 +3,19 @@
     <button type="button" class="nudge left" (click)="nudge(-1)" aria-label="Scroll left">‹</button>
   }
 
-  <div class="track" #track (scroll)="measure()">
+  <div
+    class="track"
+    #track
+    [class.grabbable]="canLeft() || canRight()"
+    [class.pressing]="pressing()"
+    [class.dragging]="dragging()"
+    (scroll)="measure()"
+    (pointerdown)="onPointerDown($event)"
+    (pointermove)="onPointerMove($event)"
+    (pointerup)="onPointerUp($event)"
+    (pointercancel)="onPointerUp($event)"
+    (dragstart)="$event.preventDefault()"
+  >
     <ng-content />
   </div>
 
