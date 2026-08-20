@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, HostBinding, Input } from '@angular/core';
 
 /** Grey placeholder shown while products load. Same shape as a real card, so
     nothing jumps when the data arrives. */
@@ -16,7 +16,17 @@ import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
     }
   `,
   styles: `
+    /* Several skeletons dissolve into the parent grid, one card each. */
     :host { display: contents; }
+
+    /*
+     * A lone skeleton stands in for a single card, so it needs a box of its
+     * own. As a @defer placeholder it is the element the viewport trigger
+     * measures, and display:contents leaves nothing to measure: the card
+     * behind it would sit there grey forever, never scrolling into view.
+     */
+    :host(.single) { display: block; }
+
     .card {
       background: var(--surface);
       border-radius: var(--radius);
@@ -33,6 +43,10 @@ import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
 })
 export class ProductCardSkeleton {
   @Input() count = 10;
+
+  @HostBinding('class.single') protected get single(): boolean {
+    return this.count === 1;
+  }
 
   get items(): number[] {
     return Array.from({ length: this.count }, (_, i) => i);
