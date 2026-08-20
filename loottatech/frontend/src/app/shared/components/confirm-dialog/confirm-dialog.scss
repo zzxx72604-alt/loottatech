@@ -1,0 +1,71 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, .45);
+  z-index: 300;
+}
+
+.dialog {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(360px, calc(100vw - 2 * var(--sp-4)));
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--sp-4);
+  z-index: 301;
+  box-shadow: var(--shadow-lift);
+}
+
+h3 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.lede {
+  margin: 6px 0 0;
+  font-size: 12.5px;
+  color: var(--text-3);
+  line-height: 1.5;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--sp-2);
+  margin-top: var(--sp-4);
+}
+
+.actions button {
+  padding: 7px var(--sp-4);
+  border-radius: var(--radius-pill);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ghost {
+  border: 1px solid var(--border-strong);
+  background: none;
+  color: var(--text);
+
+  &:hover { background: var(--surface-2); }
+}
+
+.primary {
+  border: 0;
+  background: var(--brand);
+  color: var(--brand-ink);
+
+  &:hover { background: var(--brand-dark); }
+}
+
+/* Destructive actions are red, so the button itself says what it does. */
+.primary.danger {
+  background: var(--sale);
+  color: #fff;
+
+  &:hover { filter: brightness(1.08); }
+}

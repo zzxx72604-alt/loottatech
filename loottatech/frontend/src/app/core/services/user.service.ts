@@ -1,6 +1,7 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Observable, tap } from 'rxjs';
 import { ApiService } from './api.service';
+import { GuestOrderStore } from './guest-orders.service';
 import { AuthUser, LoginRequest, RegisterRequest } from '../../shared/models/user';
 
 const STORAGE_KEY = 'lootta-user';
@@ -14,6 +15,7 @@ const STORAGE_KEY = 'lootta-user';
 @Injectable({ providedIn: 'root' })
 export class UserService {
   private readonly api = inject(ApiService);
+  private readonly guests = inject(GuestOrderStore);
 
   private readonly current = signal<AuthUser | null>(this.restore());
 
@@ -21,6 +23,20 @@ export class UserService {
   readonly isLoggedIn = computed(() => this.current() !== null);
   readonly token = computed(() => this.current()?.token ?? null);
   readonly coins = computed(() => this.current()?.coins ?? 0);
+
+  /**
+   * Profile picture path, or empty.
+   *
+   * Login does not return it, so it is filled in when the profile or settings
+   * page loads. The header then shows the picture instead of initials without
+   * fetching anything itself.
+   */
+  private readonly avatar = signal('');
+  readonly avatarUrl = this.avatar.asReadonly();
+
+  setAvatar(url: string): void {
+    this.avatar.set(url ?? '');
+  }
 
   login(credentials: LoginRequest): Observable<AuthUser> {
     return this.api.post<AuthUser>('auth/login', credentials).pipe(tap((u) => this.persist(u)));
@@ -32,6 +48,11 @@ export class UserService {
 
   logout(): void {
     localStorage.removeItem(STORAGE_KEY);
+
+    // Guest order codes go too. Leaving them behind means the next person to
+    // open this browser sees what was bought and for how much.
+    this.guests.clear();
+
     this.current.set(null);
   }
 

@@ -171,3 +171,38 @@ input, select {
 .preview.bottom-left .dot  { bottom: 4px; left: 4px; }
 .preview.bottom-right .dot { bottom: 4px; right: 4px; }
 .preview.bottom-center .dot { bottom: 4px; left: 50%; transform: translateX(-50%); }
+
+/* -------------------------------------------------------- wallet/privacy */
+
+.wallet-balance {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  background: var(--brand);
+  color: var(--brand-ink);
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: var(--radius);
+  margin-bottom: var(--sp-3);
+  font-weight: 700;
+
+  .coin { font-size: 17px; }
+  .amount { font-size: 24px; }
+  .unit { font-size: 12px; opacity: .7; }
+}
+
+.privacy-list {
+  margin: 0;
+
+  div { margin-bottom: var(--sp-3); &:last-child { margin-bottom: 0; } }
+
+  dt {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    color: var(--text-3);
+    margin-bottom: 3px;
+  }
+
+  dd { margin: 0; font-size: 12.5px; line-height: 1.55; color: var(--text-2); }
+}

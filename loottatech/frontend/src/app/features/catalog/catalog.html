@@ -47,7 +47,7 @@
     <div class="cat-tiles">
       @for (c of categories(); track c.name) {
         @if (c.name !== 'All') {
-          <button type="button" class="tile" (click)="category.set(c.name)">
+          <button type="button" class="tile" (click)="jumpToCatalogue(c.name)">
             <span class="tile-icon" aria-hidden="true">{{ icon(c.name) }}</span>
             <span class="tile-name">{{ c.name }}</span>
             <span class="tile-count">{{ c.count }} item{{ c.count === 1 ? '' : 's' }}</span>
@@ -58,13 +58,13 @@
   </section>
 
   <!-- ------------------------------------------------------ best deals -->
-  @if (bestDeals().length > 0) {
+  @if (bestDeals().length > 0 && !filtering()) {
     <section class="strip">
       <div class="strip-head">
         <h2>Best deals</h2>
         <span class="strip-note">Biggest savings against retail price</span>
       </div>
-      <div class="row-grid">
+      <app-scroll-strip>
         @for (p of bestDeals(); track p.id) {
           <app-product-card
             [product]="p"
@@ -73,27 +73,36 @@
             (toggleWatch)="onToggleWatch($event)"
           />
         }
-      </div>
+      </app-scroll-strip>
     </section>
   }
 
   <!-- ---------------------------------------------------- new arrivals -->
+  @if (!filtering()) {
   <section class="strip">
     <div class="strip-head">
       <h2>Just arrived</h2>
       <span class="strip-note">Latest items in the shop</span>
     </div>
-    <div class="row-grid">
+    <app-scroll-strip>
       @for (p of newArrivals(); track p.id) {
         <app-product-card
           [product]="p"
           (addToCart)="onAddToCart($event)"
-            (buyNow)="onBuyNow($event)"
+          (buyNow)="onBuyNow($event)"
           (toggleWatch)="onToggleWatch($event)"
         />
       }
-    </div>
+    </app-scroll-strip>
   </section>
+  }
+
+  @if (filtering()) {
+    <p class="filtering-note">
+      Showing filtered results below. Clear the filters to see deals and new
+      arrivals again.
+    </p>
+  }
 }
 
 <h2 class="section-title" id="catalogue">

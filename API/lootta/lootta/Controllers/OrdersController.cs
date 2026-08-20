@@ -43,6 +43,7 @@ public class OrdersController : ControllerBase
             Phone = dto.Phone.Trim(),
             Address = dto.Address.Trim(),
             DeliveryOption = DeliveryPricing.Parse(dto.DeliveryOption),
+            PaymentMethod = PaymentMethods.Parse(dto.PaymentMethod),
             Note = dto.Note?.Trim() ?? string.Empty,
             Status = OrderStatus.Pending
         };
@@ -249,6 +250,50 @@ public class OrdersController : ControllerBase
         return Ok(preview);
     }
 
+    /// <summary>
+    /// The payment methods offered.
+    ///
+    /// Served by the API so the checkout page cannot offer something the shop
+    /// does not accept — and so adding a provider later is a server change,
+    /// not a redeploy of the front end.
+    /// </summary>
+    [HttpGet("payment-methods")]
+    [AllowAnonymous]
+    public async Task<ActionResult<IEnumerable<object>>> PaymentMethodList()
+    {
+        /*
+         * The enum lists what the code can handle; the settings table says
+         * which of those the shop currently offers. A method with no row yet
+         * counts as on, so adding one in code does not silently switch it off
+         * for a shop that has been running for a while.
+         */
+        var settings = await _db.PaymentMethodSettings.AsNoTracking()
+            .ToDictionaryAsync(s => s.Method, s => s);
+
+        var offered = PaymentMethods.All
+            .Select((o, index) =>
+            {
+                settings.TryGetValue(o.Value.ToString(), out var saved);
+                return new
+                {
+                    option = o,
+                    enabled = saved?.IsEnabled ?? true,
+                    order = saved?.SortOrder ?? index,
+                };
+            })
+            .Where(row => row.enabled)
+            .OrderBy(row => row.order)
+            .Select(row => new
+            {
+                value = row.option.Value.ToString(),
+                label = row.option.Label,
+                note = row.option.Note,
+                group = row.option.Group,
+            });
+
+        return Ok(offered);
+    }
+
     /// <summary>Orders belonging to the signed-in customer.</summary>
     [HttpGet("mine")]
     [Authorize]
@@ -274,7 +319,22 @@ public class OrdersController : ControllerBase
         var order = await _db.Orders.Include(o => o.Items).AsNoTracking()
                                     .FirstOrDefaultAsync(o => o.OrderNumber == code);
 
-        return order is null ? NotFound($"No order with number {code}.") : Ok(order.ToDto());
+        if (order is null) return NotFound($"No order with number {code}.");
+
+        /*
+         * No [Authorize] on purpose: a guest who checked out without an
+         * account still has to be able to track their parcel.
+         *
+         * But an order code alone does not prove who you are, so an
+         * unidentified caller gets the tracking view with the contact
+         * details masked. The buyer, once signed in, and staff see the
+         * order in full.
+         */
+        var userId = CurrentUserIdOrNull();
+        var isOwner = userId is not null && order.UserId == userId;
+        var isStaff = User.IsInRole(nameof(UserRole.Admin));
+
+        return Ok(isOwner || isStaff ? order.ToDto() : order.ToTrackingDto());
     }
 
     /// <summary>Admin: move an order along. Cancelling puts the stock back.</summary>

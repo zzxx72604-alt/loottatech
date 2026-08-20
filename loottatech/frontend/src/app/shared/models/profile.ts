@@ -1,5 +1,6 @@
 export interface Profile {
   id: number;
+  publicId: string;
   name: string;
   email: string;
   /** Masked by the API, e.g. "0***-3457". */

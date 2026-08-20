@@ -1,0 +1,200 @@
+.head {
+  margin-bottom: var(--sp-4);
+
+  h1 { margin: 0; font-size: 20px; }
+  .sub { margin: 2px 0 0; font-size: 13px; color: var(--text-3); }
+}
+
+/* ------------------------------------------------------------------ tabs */
+
+.tabs {
+  display: flex;
+  gap: var(--sp-1);
+  margin-bottom: var(--sp-4);
+  border-bottom: 1px solid var(--border);
+}
+
+.tabs button {
+  border: 0;
+  background: none;
+  padding: var(--sp-2) var(--sp-3);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-2);
+  cursor: pointer;
+
+  /* Transparent by default so the active tab does not shift the row by 2px
+     when it gains its underline. */
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+
+  &:hover { color: var(--text); }
+  &.on { color: var(--text); border-bottom-color: var(--brand); }
+}
+
+/* --------------------------------------------------------------- notices */
+
+.notice {
+  margin: 0 0 var(--sp-3);
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+}
+.notice.ok  { background: color-mix(in srgb, var(--ok) 12%, transparent); color: var(--ok); }
+.notice.bad { background: color-mix(in srgb, var(--danger) 12%, transparent); color: var(--danger); }
+
+/* ----------------------------------------------------------------- cards */
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--sp-4);
+}
+
+.lede {
+  margin: 0 0 var(--sp-4);
+  font-size: 13px;
+  color: var(--text-2);
+  line-height: 1.6;
+  max-width: 62ch;
+}
+
+/* ------------------------------------------------------------ add row */
+
+.add {
+  display: flex;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-4);
+  flex-wrap: wrap;
+
+  input { flex: 1; min-width: 160px; }
+}
+
+/* ----------------------------------------------------------- form bits */
+
+input[type='text'],
+input:not([type]),
+input[type='number'] {
+  width: 100%;
+  padding: 6px var(--sp-2);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+
+  &:focus { outline: 2px solid var(--brand); outline-offset: -1px; }
+}
+
+button.primary {
+  border: 0;
+  background: var(--brand);
+  color: var(--ink);
+  font-weight: 700;
+  font-size: 13px;
+  padding: 7px var(--sp-4);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+
+  &:hover { filter: brightness(.96); }
+}
+
+button.primary.wide {
+  margin-top: var(--sp-4);
+  width: 100%;
+  padding: 9px;
+}
+
+button.ghost {
+  border: 1px solid var(--border-strong);
+  background: none;
+  color: var(--text-2);
+  font-size: 12.5px;
+  padding: 6px var(--sp-3);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+
+  &:hover:not(:disabled) { background: var(--surface-2); color: var(--text); }
+  &:disabled { opacity: .4; cursor: default; }
+}
+
+button.danger {
+  border: 0;
+  background: none;
+  color: var(--danger);
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 4px var(--sp-2);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+
+  &:hover:not(:disabled) { background: color-mix(in srgb, var(--danger) 10%, transparent); }
+  &:disabled { color: var(--text-3); cursor: default; }
+}
+
+/* ---------------------------------------------------------------- table */
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+th {
+  text-align: left;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--text-3);
+  padding: 0 var(--sp-2) var(--sp-2);
+  font-weight: 700;
+}
+
+td {
+  padding: var(--sp-1) var(--sp-2);
+  border-top: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+td.narrow { width: 1%; white-space: nowrap; }
+td.count  { text-align: center; color: var(--text-2); font-variant-numeric: tabular-nums; }
+td.muted  { color: var(--text-3); }
+
+/* A switched-off payment method is dimmed, not hidden, so it is clear it
+   exists and could be turned back on. */
+tr.off td { opacity: .5; }
+
+.empty {
+  text-align: center;
+  color: var(--text-3);
+  padding: var(--sp-5) 0;
+}
+
+/* ----------------------------------------------------------- text fields */
+
+.field {
+  margin-bottom: var(--sp-3);
+
+  label {
+    display: flex;
+    align-items: baseline;
+    gap: var(--sp-2);
+    font-size: 12.5px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+
+  code {
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--text-3);
+  }
+
+  .row {
+    display: flex;
+    gap: var(--sp-2);
+    align-items: center;
+  }
+}

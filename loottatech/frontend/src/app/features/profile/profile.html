@@ -20,7 +20,7 @@
         <h1>{{ p.name }}</h1>
         <p class="email">{{ p.email }}</p>
         <p class="meta">
-          Customer #{{ p.id }} · member since {{ p.memberSince | date: 'MMM yyyy' }}
+          Customer {{ p.publicId || p.id }} · member since {{ p.memberSince | date: 'MMM yyyy' }}
         </p>
 
         <p class="level">
@@ -61,10 +61,12 @@
       <b>{{ p.orderCount }}</b><span>orders</span>
     </div>
     <div class="stat card">
-      <b>{{ p.itemsBought }}</b><span>items bought</span>
+      <b>{{ p.likeCount }}</b><span>liked</span>
     </div>
+    <!-- Total spend is deliberately NOT shown. It tells a customer how much
+         they have handed over, which is a number that makes people buy less. -->
     <div class="stat card">
-      <b>{{ p.totalSpent | currency: 'USD' : 'symbol' : '1.0-0' }}</b><span>spent</span>
+      <b>{{ p.saveCount }}</b><span>saved</span>
     </div>
     <div class="stat card">
       <b>{{ p.bestScore }}</b><span>best score</span>
@@ -85,7 +87,7 @@
     <a routerLink="/settings" class="card link">
       <span class="ico">⚙</span> Settings
     </a>
-    <button type="button" class="card link" (click)="signOut()">
+    <button type="button" class="card link sign-out" (click)="confirmingSignOut.set(true)">
       <span class="ico">↩</span> Sign out
     </button>
   </nav>
@@ -184,4 +186,15 @@
       <div class="card pad">Loading badges…</div>
     }
   }
+}
+
+@if (confirmingSignOut()) {
+  <app-confirm-dialog
+    title="Sign out?"
+    message="You will need to sign in again to see your orders and coins."
+    confirmLabel="Sign out"
+    [danger]="true"
+    (confirmed)="signOut()"
+    (cancelled)="confirmingSignOut.set(false)"
+  />
 }

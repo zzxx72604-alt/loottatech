@@ -37,13 +37,23 @@
         <tbody>
           @for (r of rows(); track r.id) {
             <tr [class.on]="selected()?.id === r.id" [class.off]="!r.isActive" (click)="open(r)">
-              <td class="id">{{ r.id }}</td>
+              <td class="id">{{ r.publicId || r.id }}</td>
               <td>
-                <span class="name">
-                  {{ r.name }}
-                  @if (r.role === 'Admin') { <span class="badge admin">ADMIN</span> }
+                <span class="who-cell">
+                  @if (avatar(r.avatarUrl)) {
+                    <img class="mini-avatar" [src]="avatar(r.avatarUrl)" [alt]="r.name" width="28" height="28" />
+                  } @else {
+                    <span class="mini-avatar fallback" aria-hidden="true">{{ initials(r.name) }}</span>
+                  }
+
+                  <span class="who-text">
+                    <span class="name">
+                      {{ r.name }}
+                      @if (r.role === 'Admin') { <span class="badge admin">ADMIN</span> }
+                    </span>
+                    <span class="email">{{ r.email }}</span>
+                  </span>
                 </span>
-                <span class="email">{{ r.email }}</span>
               </td>
               <td class="num">{{ r.orderCount }}</td>
               <td class="num">◎ {{ r.coins }}</td>
@@ -64,15 +74,28 @@
       <p class="pad">Loading…</p>
     } @else if (selected(); as c) {
       <header class="d-head">
-        <div>
-          <h2>{{ c.name }}</h2>
-          <p class="email">{{ c.email }}</p>
+        <div class="d-who">
+          @if (avatar(c.avatarUrl)) {
+            <img class="d-avatar" [src]="avatar(c.avatarUrl)" [alt]="c.name" width="46" height="46" />
+          } @else {
+            <span class="d-avatar fallback" aria-hidden="true">{{ initials(c.name) }}</span>
+          }
+
+          <div>
+            <h2>{{ c.name }}</h2>
+            <p class="email">{{ c.email }}</p>
+
+            <button type="button" class="code" (click)="copyCode(c.publicId)" title="Copy account number">
+              {{ c.publicId || ('#' + c.id) }}
+            </button>
+          </div>
         </div>
+
         <span class="tier">{{ c.tier }}</span>
       </header>
 
       <dl class="facts">
-        <div><dt>Account id</dt><dd>{{ c.id }}</dd></div>
+        <div><dt>Account no.</dt><dd>{{ c.publicId || c.id }}</dd></div>
         <div><dt>Joined</dt><dd>{{ c.createdAt | date: 'mediumDate' }}</dd></div>
         <div><dt>Role</dt><dd>{{ c.role }}</dd></div>
         <div><dt>Phone</dt><dd>{{ c.phone || '—' }}</dd></div>
@@ -125,8 +148,13 @@
 
       <div class="actions">
         @if (isSelf(c.id)) {
-          <p class="muted">This is your own account.</p>
+          <p class="muted">This is your own account — role and access can't be changed here.</p>
+          <button type="button" class="btn" (click)="resetPassword(c)">Set a new password</button>
         } @else {
+          <button type="button" class="btn" (click)="resetPassword(c)">Reset password</button>
+          <button type="button" class="btn" (click)="changeRole(c)">
+            Make {{ c.role === 'Admin' ? 'Customer' : 'Admin' }}
+          </button>
           <button type="button" class="btn" [class.btn-danger]="c.isActive" (click)="toggleActive(c)">
             {{ c.isActive ? 'Disable account' : 'Enable account' }}
           </button>

@@ -18,6 +18,7 @@ import { ProductCard } from '../../shared/components/product-card/product-card';
 import { ProductCardSkeleton } from '../../shared/components/product-card-skeleton/product-card-skeleton';
 import { AdTile, Promo } from '../../shared/components/ad-tile/ad-tile';
 import { IntersectDirective } from '../../shared/directives/intersect.directive';
+import { ScrollStrip } from '../../shared/components/scroll-strip/scroll-strip';
 import { Condition, Product, discountPercent } from '../../shared/models/product';
 
 type SortMode = 'recommended' | 'price-asc' | 'price-desc' | 'discount';
@@ -29,7 +30,7 @@ interface CategoryCount {
 
 @Component({
   selector: 'app-catalog',
-  imports: [FormsModule, NgOptimizedImage, ProductCard, ProductCardSkeleton, AdTile, IntersectDirective],
+  imports: [FormsModule, NgOptimizedImage, ProductCard, ProductCardSkeleton, AdTile, IntersectDirective, ScrollStrip],
   templateUrl: './catalog.html',
   styleUrl: './catalog.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -211,6 +212,21 @@ export class Catalog {
     () => this.searchTerm().trim() === '' && this.products().length > 0,
   );
 
+  /**
+   * True when any filter is narrowing the page.
+   *
+   * The strips at the top show "best deals" and "just arrived" from the WHOLE
+   * shop, which is confusing beside a filtered grid — you tick "Brand new" and
+   * the top of the page carries on showing used items. So the strips collapse
+   * into a summary line instead.
+   */
+  protected readonly filtering = computed(
+    () =>
+      this.condition() !== 'all' ||
+      this.maxPrice() !== null ||
+      this.category() !== 'All',
+  );
+
   protected readonly categoryIcons: Record<string, string> = {
     Phones: '📱',
     Laptops: '💻',
@@ -223,6 +239,21 @@ export class Catalog {
     Accessories: '🖱️',
     Drones: '🚁',
   };
+
+  /**
+   * Picking a category scrolls to the grid rather than teleporting there.
+   *
+   * A smooth scroll keeps the reader oriented — they can see where they came
+   * from, which is exactly what an abrupt jump takes away.
+   */
+  protected jumpToCatalogue(categoryName: string): void {
+    this.category.set(categoryName);
+
+    document.getElementById('catalogue')?.scrollIntoView({
+      behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+      block: 'start',
+    });
+  }
 
   protected icon(name: string): string {
     return this.categoryIcons[name] ?? '📦';

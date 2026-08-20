@@ -1,0 +1,47 @@
+<div class="backdrop" (click)="cancelled.emit()"></div>
+
+<div class="dialog" role="dialog" aria-modal="true" aria-label="Choose the crop">
+  <header>
+    <h3>Choose what to keep</h3>
+    <p>Product photos are square. Drag the box, and use the slider to resize it.</p>
+  </header>
+
+  <div
+    class="frame"
+    #frame
+    (pointermove)="onPointerMove($event)"
+    (pointerup)="onPointerUp()"
+    (pointercancel)="onPointerUp()"
+  >
+    @if (preview(); as src) {
+      <img [src]="src" alt="" (load)="onImageLoad($event)" />
+    }
+
+    <div
+      class="box"
+      [style]="boxStyle()"
+      (pointerdown)="onPointerDown($event)"
+      role="button"
+      tabindex="0"
+      aria-label="Crop area"
+    >
+      <span class="grid" aria-hidden="true"></span>
+    </div>
+  </div>
+
+  <label class="zoom">
+    Size
+    <input
+      type="range"
+      min="20"
+      max="100"
+      [value]="size() * 100"
+      (input)="onSizeChange($any($event.target).value)"
+    />
+  </label>
+
+  <div class="actions">
+    <button type="button" class="btn" (click)="cancelled.emit()">Cancel</button>
+    <button type="button" class="btn btn-primary" (click)="confirm()">Use this crop</button>
+  </div>
+</div>

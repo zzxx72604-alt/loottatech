@@ -40,6 +40,7 @@ public class AuthController : ControllerBase
 
         var user = new User
         {
+            PublicId = await UniqueUserCodeAsync(),
             Name = dto.Name.Trim(),
             Email = email,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
@@ -131,6 +132,7 @@ public class AuthController : ControllerBase
 
         var user = new User
         {
+            PublicId = await UniqueUserCodeAsync(),
             Name = dto.Name.Trim(),
             Email = email,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
@@ -161,15 +163,19 @@ public class AuthController : ControllerBase
 
             // A bare number is treated as an account id, the way a game
             // support tool lets you paste a player id straight in.
+            // Matches the account number too, so an admin can paste whatever
+            // the customer read out — "UE8145" or their email.
             if (int.TryParse(term, out var id))
             {
                 query = query.Where(u => u.Id == id
+                                      || u.PublicId == term.ToUpper()
                                       || EF.Functions.Like(u.Name, $"%{term}%")
                                       || EF.Functions.Like(u.Email, $"%{term}%"));
             }
             else
             {
-                query = query.Where(u => EF.Functions.Like(u.Name, $"%{term}%")
+                query = query.Where(u => u.PublicId == term.ToUpper()
+                                      || EF.Functions.Like(u.Name, $"%{term}%")
                                       || EF.Functions.Like(u.Email, $"%{term}%"));
             }
         }
@@ -179,6 +185,8 @@ public class AuthController : ControllerBase
             .Select(u => new UserRowDto
             {
                 Id = u.Id,
+                PublicId = u.PublicId,
+                AvatarUrl = u.AvatarUrl,
                 Name = u.Name,
                 Email = u.Email,
                 Role = u.Role.ToString(),
@@ -216,6 +224,8 @@ public class AuthController : ControllerBase
         return Ok(new CustomerDetailDto
         {
             Id = user.Id,
+            PublicId = user.PublicId,
+            AvatarUrl = user.AvatarUrl,
             Name = user.Name,
             Email = user.Email,
             Role = user.Role.ToString(),
@@ -309,6 +319,17 @@ public class AuthController : ControllerBase
     }
 
     /* ------------------------------------------------------------ helpers */
+
+    /// <summary>Finds an account number nobody else has.</summary>
+    private async Task<string> UniqueUserCodeAsync()
+    {
+        for (var attempt = 0; attempt < 12; attempt++)
+        {
+            var code = PublicIdGenerator.NextUser();
+            if (!await _db.Users.AnyAsync(u => u.PublicId == code)) return code;
+        }
+        return $"UE{DateTime.UtcNow.Ticks % 100000}";
+    }
 
     private int CurrentUserId =>
         int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var id) ? id : 0;

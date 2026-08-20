@@ -1,0 +1,182 @@
+<header class="head">
+  <div>
+    <h1>Store</h1>
+    <p class="sub">The wording and shortcuts on the customer site.</p>
+  </div>
+</header>
+
+<nav class="tabs">
+  <button type="button" [class.on]="tab() === 'tags'" (click)="open('tags')">Tag row</button>
+  <button type="button" [class.on]="tab() === 'categories'" (click)="open('categories')">Categories</button>
+  <button type="button" [class.on]="tab() === 'text'" (click)="open('text')">Shop text</button>
+  <button type="button" [class.on]="tab() === 'payments'" (click)="open('payments')">Payment methods</button>
+</nav>
+
+@if (message()) {
+  <p class="notice ok">{{ message() }}</p>
+}
+@if (error()) {
+  <p class="notice bad">{{ error() }}</p>
+}
+
+<!-- ------------------------------------------------------------- tags -->
+@if (tab() === 'tags') {
+  <section class="card">
+    <p class="lede">
+      The shortcuts under the search box. The label is what shoppers see; the
+      search is what runs when they click it, so a friendly word can look for
+      something else.
+    </p>
+
+    <div class="add">
+      <input [(ngModel)]="newTagLabel" placeholder="Label, e.g. Under $100" maxlength="40" />
+      <input [(ngModel)]="newTagQuery" placeholder="Search (optional)" maxlength="80" />
+      <button type="button" class="primary" (click)="addTag()">Add</button>
+    </div>
+
+    <table>
+      <thead>
+        <tr><th>Label</th><th>Search</th><th>Order</th><th>Shown</th><th></th></tr>
+      </thead>
+      <tbody>
+        @for (tag of tags(); track tag.id) {
+          <tr>
+            <td><input [(ngModel)]="tag.label" (blur)="saveTag(tag)" maxlength="40" /></td>
+            <td><input [(ngModel)]="tag.query" (blur)="saveTag(tag)" maxlength="80" /></td>
+            <td class="narrow">
+              <input type="number" [(ngModel)]="tag.sortOrder" (blur)="saveTag(tag)" />
+            </td>
+            <td class="narrow">
+              <input type="checkbox" [(ngModel)]="tag.isActive" (change)="saveTag(tag)" />
+            </td>
+            <td class="narrow">
+              <button type="button" class="danger" (click)="deleteTag(tag)">Delete</button>
+            </td>
+          </tr>
+        } @empty {
+          <tr><td colspan="5" class="empty">No shortcuts yet.</td></tr>
+        }
+      </tbody>
+    </table>
+  </section>
+}
+
+<!-- ------------------------------------------------------- categories -->
+@if (tab() === 'categories') {
+  <section class="card">
+    <p class="lede">
+      The groups in the customer sidebar. A category holding products cannot be
+      deleted — move them somewhere else first.
+    </p>
+
+    <div class="add">
+      <input [(ngModel)]="newCategoryName" placeholder="Name, e.g. Cameras" maxlength="60" />
+      <button type="button" class="primary" (click)="addCategory()">Add</button>
+    </div>
+
+    <table>
+      <thead>
+        <tr><th>Name</th><th>Slug</th><th>Order</th><th>Products</th><th></th></tr>
+      </thead>
+      <tbody>
+        @for (category of categories(); track category.id) {
+          <tr>
+            <td><input [(ngModel)]="category.name" (blur)="saveCategory(category)" maxlength="60" /></td>
+            <td><input [(ngModel)]="category.slug" (blur)="saveCategory(category)" maxlength="60" /></td>
+            <td class="narrow">
+              <input type="number" [(ngModel)]="category.sortOrder" (blur)="saveCategory(category)" />
+            </td>
+            <td class="narrow count">{{ category.productCount }}</td>
+            <td class="narrow">
+              <button
+                type="button"
+                class="danger"
+                [disabled]="category.productCount > 0"
+                [title]="category.productCount > 0 ? 'Move its products first' : 'Delete'"
+                (click)="deleteCategory(category)"
+              >
+                Delete
+              </button>
+            </td>
+          </tr>
+        } @empty {
+          <tr><td colspan="5" class="empty">No categories yet.</td></tr>
+        }
+      </tbody>
+    </table>
+  </section>
+}
+
+<!-- --------------------------------------------------------- shop text -->
+@if (tab() === 'text') {
+  <section class="card">
+    <p class="lede">Headings and wording on the customer site.</p>
+
+    @for (row of texts(); track row.key) {
+      <div class="field">
+        <label [attr.for]="row.key">
+          {{ row.description }}
+          <code>{{ row.key }}</code>
+        </label>
+
+        <div class="row">
+          <input [id]="row.key" [(ngModel)]="row.value" maxlength="400" />
+          <button
+            type="button"
+            class="ghost"
+            [disabled]="row.value === row.defaultValue"
+            (click)="resetText(row)"
+          >
+            Reset
+          </button>
+        </div>
+      </div>
+    } @empty {
+      <p class="empty">Loading…</p>
+    }
+
+    @if (texts().length > 0) {
+      <button type="button" class="primary wide" (click)="saveTexts()">Save wording</button>
+    }
+  </section>
+}
+
+<!-- ---------------------------------------------------- payment methods -->
+@if (tab() === 'payments') {
+  <section class="card">
+    <p class="lede">
+      Which options appear at checkout. Nothing here takes money — the order
+      records how the customer intends to pay, and the shop settles it on
+      delivery or in store.
+    </p>
+
+    <table>
+      <thead>
+        <tr><th>Offered</th><th>Method</th><th>Note</th><th>Group</th></tr>
+      </thead>
+      <tbody>
+        @for (method of payments(); track method.method) {
+          <tr [class.off]="!method.isEnabled">
+            <td class="narrow">
+              <input
+                type="checkbox"
+                [checked]="method.isEnabled"
+                (change)="togglePayment(method)"
+                [attr.aria-label]="'Offer ' + method.label"
+              />
+            </td>
+            <td>{{ method.label }}</td>
+            <td class="muted">{{ method.note }}</td>
+            <td class="muted">{{ method.group }}</td>
+          </tr>
+        } @empty {
+          <tr><td colspan="4" class="empty">Loading…</td></tr>
+        }
+      </tbody>
+    </table>
+
+    @if (payments().length > 0) {
+      <button type="button" class="primary wide" (click)="savePayments()">Save payment methods</button>
+    }
+  </section>
+}

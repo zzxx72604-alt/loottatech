@@ -20,6 +20,11 @@ export class CustomerApi {
     return this.api.put<void>(`auth/users/${id}/active?value=${value}`, {});
   }
 
+  /** Overwrites the password. The old one is a hash and cannot be read back. */
+  resetPassword(id: number, newPassword: string): Observable<void> {
+    return this.api.put<void>(`auth/users/${id}/password`, { newPassword });
+  }
+
   setRole(id: number, role: 'Customer' | 'Admin'): Observable<void> {
     return this.api.put<void>(`auth/users/${id}/role`, { role });
   }

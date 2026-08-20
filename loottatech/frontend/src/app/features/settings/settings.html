@@ -11,6 +11,10 @@
           [class.on]="section() === 'preference'" (click)="setSection('preference')">Preference</button>
   <button type="button" role="tab" [attr.aria-selected]="section() === 'security'"
           [class.on]="section() === 'security'" (click)="setSection('security')">Security</button>
+  <button type="button" role="tab" [attr.aria-selected]="section() === 'wallet'"
+          [class.on]="section() === 'wallet'" (click)="setSection('wallet')">Wallet</button>
+  <button type="button" role="tab" [attr.aria-selected]="section() === 'privacy'"
+          [class.on]="section() === 'privacy'" (click)="setSection('privacy')">Privacy</button>
 </nav>
 
 @if (loading()) {
@@ -104,6 +108,88 @@
     <p class="hint">
       Changing the address you sign in with is a security action, not a
       preference. It isn't available yet.
+    </p>
+  </section>
+
+} @else if (section() === 'wallet') {
+
+  <section class="card block">
+    <h2>Lootta Wallet</h2>
+
+    <div class="wallet-balance">
+      <span class="coin">◎</span>
+      <span class="amount">{{ users.coins() }}</span>
+      <span class="unit">coins</span>
+    </div>
+
+    <p class="hint">
+      Coins are earned by shopping and spent in the
+      <a routerLink="/arcade">arcade</a> on discount vouchers. They are not
+      money and cannot be withdrawn.
+    </p>
+  </section>
+
+  <section class="card block muted-block">
+    <h2>Payment methods</h2>
+    <p class="hint">
+      LoottaTech collects payment on delivery or in store, so there is nothing
+      to store here yet. You choose how you'd like to pay at checkout — card,
+      bank transfer, or a wallet app.
+    </p>
+    <p class="hint">
+      Saved cards and a top-up balance need a payment provider integrated
+      first. Until that exists, this page would only be pretending.
+    </p>
+  </section>
+
+} @else if (section() === 'privacy') {
+
+  <section class="card block">
+    <h2>What this site stores</h2>
+
+    <dl class="privacy-list">
+      <div>
+        <dt>On our server</dt>
+        <dd>
+          Your name, email, phone and address; your orders; your reviews; the
+          products you like and save; your coin balance.
+        </dd>
+      </div>
+      <div>
+        <dt>In this browser only</dt>
+        <dd>
+          Your cart, recent searches, recently viewed products, theme choice
+          and notification position. Clearing your browser data removes them.
+        </dd>
+      </div>
+      <div>
+        <dt>Not collected</dt>
+        <dd>
+          Card numbers, location, contacts, or any third-party tracking. There
+          are no advertising cookies on this site.
+        </dd>
+      </div>
+    </dl>
+  </section>
+
+  <section class="card block">
+    <h2>Your data</h2>
+
+    <button type="button" class="btn" (click)="clearLocal()">
+      Clear searches and recently viewed
+    </button>
+    <p class="hint">
+      Removes what this browser remembers. Your account, orders and reviews are
+      untouched.
+    </p>
+  </section>
+
+  <section class="card block muted-block">
+    <h2>Account deletion</h2>
+    <p class="hint">
+      Not available in the app yet. Orders are financial records, so deleting an
+      account needs a policy about what is kept and for how long — that decision
+      comes before the button.
     </p>
   </section>
 

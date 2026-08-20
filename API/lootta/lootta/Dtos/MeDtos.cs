@@ -4,6 +4,8 @@ namespace lootta.Dtos;
 public class ProfileDto
 {
     public int Id { get; set; }
+    /// <summary>The account number shown to the customer, e.g. "UE8145".</summary>
+    public string PublicId { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     /// <summary>Masked, e.g. "0***-3457". The full number is never sent back.</summary>

@@ -1,7 +1,7 @@
 <header class="head">
   <div>
     <h1>My orders</h1>
-    <p class="sub">Orders placed from this browser.</p>
+    <p class="sub">Your order history.</p>
   </div>
 </header>
 
@@ -9,7 +9,7 @@
   <div class="card"><div class="skeleton line"></div><div class="skeleton line w40"></div></div>
 } @else if (orders().length === 0) {
   <div class="card empty">
-    <p>No orders from this browser yet.</p>
+    <p>No orders yet.</p>
     <a routerLink="/" class="primary">Browse products</a>
   </div>
 } @else {
@@ -21,7 +21,7 @@
             <span class="num">{{ order.orderNumber }}</span>
             <span class="date">{{ order.createdAt | date: 'mediumDate' }}</span>
             <span class="items">
-              {{ order.items.length }} {{ order.items.length === 1 ? 'item' : 'items' }}
+              {{ order.itemCount }} {{ order.itemCount === 1 ? 'item' : 'items' }}
             </span>
           </div>
           <div class="right">

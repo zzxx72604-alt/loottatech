@@ -9,6 +9,27 @@ export interface Suggestion {
 }
 
 /**
+ * A search phrase offered while typing, already split for highlighting.
+ *
+ * The split is done once here rather than in the template. Doing it in the
+ * view would mean running string work on every change detection pass, for
+ * every row, forever — this way it happens once per keystroke.
+ */
+export interface TermSuggestion {
+  text: string;
+  pre: string;
+  mid: string;
+  post: string;
+}
+
+/** A row in the "trending" list shown before anything is typed. */
+export interface TrendingEntry {
+  rank: number;
+  text: string;
+  badge: 'hot' | 'new' | 'deal' | null;
+}
+
+/**
  * Search suggestions that survive typos.
  *
  * The catalogue is fetched ONCE and matched in the browser. For a shop this
@@ -27,6 +48,149 @@ export class SearchService {
 
   readonly ready = computed(() => this.index().length > 0);
 
+  /**
+   * What is currently typed.
+   *
+   * Held here so suggestions can be a computed over BOTH the term and the
+   * index. The first version called suggest() on each keystroke, which meant
+   * the earliest characters were matched against an empty index that had not
+   * downloaded yet — and nothing ever recomputed when it arrived.
+   */
+  private readonly term = signal('');
+
+  readonly suggestions = computed(() => this.match(this.term(), 6));
+
+  /**
+   * Every phrase a shopper might reasonably type, built from the catalogue.
+   *
+   * A computed over the index, so it is rebuilt only when products change —
+   * not on each keystroke. Typing then filters this pool, which is a plain
+   * scan over a few hundred short strings and finishes well inside a frame.
+   */
+  private readonly phrases = computed(() => {
+    const pool = new Set<string>();
+
+    for (const product of this.index()) {
+      const [modelPart, taglinePart] = product.title.split('—');
+      const model = modelPart.trim();
+      if (!model) continue;
+
+      pool.add(model);
+
+      // "iPhone 12 mini clean screen" — the descriptive half of the title,
+      // which is how people actually search a second-hand shop.
+      const tagline = (taglinePart ?? '').split(/[·,]/)[0].trim();
+      if (tagline) pool.add(`${model} ${tagline}`);
+
+      if (product.brand) pool.add(`${product.brand} ${product.category}`);
+
+      // A couple of shopping intents per product, not per phrase, or the
+      // pool triples in size for very little extra usefulness.
+      pool.add(`${model} second hand`);
+      pool.add(`${model} price`);
+
+      if (pool.size > 600) break;
+    }
+
+    return [...pool];
+  });
+
+  /**
+   * Phrases matching what is typed, best first, split ready for highlighting.
+   *
+   * Prefix matches rank above matches in the middle of a phrase, which is
+   * what makes the list feel like it is completing the sentence rather than
+   * showing everything containing those letters.
+   */
+  readonly termSuggestions = computed<TermSuggestion[]>(() => {
+    const raw = this.term().trim();
+    if (raw.length === 0) return [];
+
+    const needle = raw.toLowerCase();
+    const scored: { entry: TermSuggestion; score: number }[] = [];
+
+    for (const text of this.phrases()) {
+      const at = text.toLowerCase().indexOf(needle);
+      if (at === -1) continue;
+
+      scored.push({
+        entry: {
+          text,
+          pre: text.slice(0, at),
+          mid: text.slice(at, at + raw.length),
+          post: text.slice(at + raw.length),
+        },
+        // Earlier match wins; shorter phrase breaks the tie so the plain
+        // model name sits above its longer variations.
+        score: at * 100 + text.length,
+      });
+
+      if (scored.length > 60) break;
+    }
+
+    return scored
+      .sort((a, b) => a.score - b.score)
+      .slice(0, 10)
+      .map((row) => row.entry);
+  });
+
+  /**
+   * The trending list shown on an empty box.
+   *
+   * Ordered by how many people are watching each item, which is real data the
+   * shop already collects rather than an invented ranking.
+   */
+  readonly trending = computed<TrendingEntry[]>(() => {
+    const products = [...this.index()]
+      .sort((a, b) => (b.watchCount ?? 0) - (a.watchCount ?? 0))
+      .slice(0, 10);
+
+    if (products.length === 0) return FALLBACK_TRENDING;
+
+    return products.map((product, i) => {
+      const discount =
+        product.originalPrice > 0
+          ? 1 - product.price / product.originalPrice
+          : 0;
+
+      let badge: TrendingEntry['badge'] = null;
+      if (i < 3) badge = 'hot';
+      else if (discount >= 0.45) badge = 'deal';
+      else if (product.condition === 'new') badge = 'new';
+
+      return {
+        rank: i + 1,
+        text: product.title.split('—')[0].trim(),
+        badge,
+      };
+    });
+  });
+
+  setTerm(value: string): void {
+    this.term.set(value);
+    this.ensureLoaded();
+  }
+
+  /**
+   * The searches to offer before anyone types.
+   *
+   * Brands from the real catalogue once it has loaded, with a sensible default
+   * list until then — an empty panel on a first visit looks broken, and the
+   * index arrives a moment after the box is focused.
+   */
+  readonly popular = computed(() => {
+    const brands = new Set<string>();
+
+    for (const product of this.index()) {
+      if (product.brand) brands.add(product.brand);
+      if (brands.size >= 8) break;
+    }
+
+    if (brands.size > 0) return [...brands];
+
+    return ['iPhone', 'Xiaomi', 'ThinkPad', 'Apple Watch', 'Mouse', 'Laptop'];
+  });
+
   /** Loads the index on first use, then never again. */
   ensureLoaded(): void {
     if (this.loaded) return;
@@ -39,6 +203,10 @@ export class SearchService {
   }
 
   suggest(term: string, limit = 6): Suggestion[] {
+    return this.match(term, limit);
+  }
+
+  private match(term: string, limit: number): Suggestion[] {
     const query = normalise(term);
     if (query.length === 0) return [];
 
@@ -135,3 +303,20 @@ function editDistance(a: string, b: string): number {
 
   return previous[b.length];
 }
+
+/**
+ * Shown only when the catalogue has not downloaded yet. An empty dropdown on
+ * a first visit reads as a broken feature, so there is always something here.
+ */
+const FALLBACK_TRENDING: TrendingEntry[] = [
+  { rank: 1, text: 'iPhone 12 mini', badge: 'hot' },
+  { rank: 2, text: 'ThinkPad E14', badge: 'hot' },
+  { rank: 3, text: 'Apple Watch Series 7', badge: 'hot' },
+  { rank: 4, text: 'Xiaomi phones', badge: 'deal' },
+  { rank: 5, text: 'Gaming desktop', badge: null },
+  { rank: 6, text: 'Wireless mouse', badge: 'new' },
+  { rank: 7, text: 'Laptops under $300', badge: 'deal' },
+  { rank: 8, text: 'iPad second hand', badge: null },
+  { rank: 9, text: 'Monitors 144Hz', badge: null },
+  { rank: 10, text: 'Mechanical keyboard', badge: 'new' },
+];

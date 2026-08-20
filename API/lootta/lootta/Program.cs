@@ -115,17 +115,35 @@ builder.Services.AddAuthorization(options =>
 });
 
 // ---- rate limiting: slows brute-force attempts ---------------------------
+//
+// The limiter is always wired up, but the thresholds depend on where the API
+// is running.
+//
+// Eight login attempts per five minutes is the right number for a site on the
+// open internet. On a laptop it is the wrong number entirely: mistype your own
+// password twice while testing and you are locked out of your own project for
+// five minutes, with nothing malicious happening at all.
+//
+// So development gets numbers high enough never to be hit by a person, and
+// anything else keeps the strict ones. The protection is not removed — it is
+// the same code path, and deploying this API somewhere public turns the real
+// limits back on without a code change.
+var strictLimits = !builder.Environment.IsDevelopment();
+
+var authPermitLimit = strictLimits ? 8 : 1_000;
+var globalPermitLimit = strictLimits ? 300 : 10_000;
+
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
 
-    // Login and registration: 8 attempts per 5 minutes from one IP.
+    // Login and registration, counted per IP address.
     options.AddPolicy("auth", context =>
         RateLimitPartition.GetFixedWindowLimiter(
             context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
             _ => new FixedWindowRateLimiterOptions
             {
-                PermitLimit = 8,
+                PermitLimit = authPermitLimit,
                 Window = TimeSpan.FromMinutes(5),
                 QueueLimit = 0,
             }));
@@ -136,7 +154,7 @@ builder.Services.AddRateLimiter(options =>
             context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
             _ => new FixedWindowRateLimiterOptions
             {
-                PermitLimit = 300,
+                PermitLimit = globalPermitLimit,
                 Window = TimeSpan.FromMinutes(1),
                 QueueLimit = 0,
             }));
@@ -180,7 +198,7 @@ if (app.Environment.IsDevelopment())
             await db.Database.EnsureCreatedAsync();
         }
 
-        await DbSeeder.SeedAsync(db);
+        await DbSeeder.SeedAsync(db, app.Environment.ContentRootPath);
 
         Console.ForegroundColor = ConsoleColor.Green;
         Console.WriteLine();

@@ -53,6 +53,28 @@
         }
       </div>
 
+      <h2>Payment</h2>
+
+      @for (group of paymentGroups(); track group.name) {
+        <p class="pay-group">{{ group.name }}</p>
+
+        <div class="pay-options">
+          @for (option of group.options; track option.value) {
+            <label class="pay" [class.on]="form.controls.paymentMethod.value === option.value">
+              <input type="radio" [value]="option.value" formControlName="paymentMethod" />
+              <span class="p-name">{{ option.label }}</span>
+              <span class="p-note">{{ option.note }}</span>
+            </label>
+          }
+        </div>
+      }
+
+      <p class="pay-notice">
+        Nothing is charged now. LoottaTech collects payment on delivery or in
+        store — this records how you'd like to pay so we can bring the right
+        machine or QR code.
+      </p>
+
       @if (users.isLoggedIn()) {
         <div class="field">
           <label for="voucherCode">Voucher code (optional)</label>

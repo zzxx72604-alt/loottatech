@@ -157,7 +157,7 @@
 @if (alsoViewed().length > 0) {
   <section class="also-viewed">
     <h2>You looked at these</h2>
-    <div class="strip">
+    <app-scroll-strip>
       @for (item of alsoViewed(); track item.id) {
         <app-product-card
           [product]="item"
@@ -165,7 +165,7 @@
           (buyNow)="onRecentBuy($event)"
         />
       }
-    </div>
+    </app-scroll-strip>
   </section>
 }
 
@@ -186,11 +186,17 @@
   Recommendations sit BELOW the reviews, where someone who has read about this
   item and decided against it is looking for the next thing.
 -->
-@if (relatedProducts().length > 0) {
-  @defer (on viewport) {
-    <section class="related-strip">
-      <h2>You might also like</h2>
-      <div class="strip">
+<!--
+  Rendered as soon as the products arrive.
+  It was behind @defer AND a length check, so a request that returned nothing
+  left no trace at all — which looks identical to the feature being missing.
+-->
+@if (product(); as current) {
+  <section class="related-strip">
+    <h2>You might also like</h2>
+
+    @if (relatedProducts().length > 0) {
+      <app-scroll-strip>
         @for (item of relatedProducts(); track item.id) {
           <app-product-card
             [product]="item"
@@ -198,9 +204,9 @@
             (buyNow)="onRecentBuy($event)"
           />
         }
-      </div>
-    </section>
-  } @placeholder {
-    <div class="related-placeholder"></div>
-  }
+      </app-scroll-strip>
+    } @else {
+      <p class="related-empty">Nothing else to suggest right now.</p>
+    }
+  </section>
 }

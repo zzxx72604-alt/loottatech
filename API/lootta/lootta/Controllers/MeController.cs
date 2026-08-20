@@ -57,6 +57,7 @@ public class MeController : ControllerBase
         return Ok(new ProfileDto
         {
             Id = user.Id,
+            PublicId = user.PublicId,
             Name = user.Name,
             Email = user.Email,
             Phone = MaskPhone(user.Phone),

@@ -74,10 +74,17 @@ export const routes: Routes = [
     loadComponent: () => import('./features/arcade/arcade').then((m) => m.Arcade),
   },
   {
-    // Guest checkout is still allowed, so this works from saved order numbers
-    // as well as from the signed-in account.
+    /*
+     * An account page, so it needs an account.
+     *
+     * Guest checkout still works, and a guest can still track a parcel from
+     * the code on their receipt at /order/:orderNumber. What they cannot do
+     * is open a history page and be shown somebody's past purchases just
+     * because they are sitting at the same computer.
+     */
     path: 'my-orders',
     title: 'My orders — LoottaTech',
+    canActivate: [authGuard],
     loadComponent: () => import('./features/account/my-orders').then((m) => m.MyOrders),
   },
   {

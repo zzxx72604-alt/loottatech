@@ -1,0 +1,576 @@
+{
+  "$comment": [
+    "Demo data for LoottaTech.",
+    "Read once at startup by DbSeeder when the database has no products.",
+    "Edit this file and restart the API - no rebuild needed.",
+    "Images refer to files in uploads/products without the size suffix."
+  ],
+  "categories": [
+    {
+      "name": "Phones",
+      "slug": "phones",
+      "sortOrder": 1
+    },
+    {
+      "name": "Laptops",
+      "slug": "laptops",
+      "sortOrder": 2
+    },
+    {
+      "name": "Tablets",
+      "slug": "tablets",
+      "sortOrder": 3
+    },
+    {
+      "name": "Monitors",
+      "slug": "monitors",
+      "sortOrder": 4
+    },
+    {
+      "name": "Printers",
+      "slug": "printers",
+      "sortOrder": 5
+    },
+    {
+      "name": "PC Parts",
+      "slug": "pc-parts",
+      "sortOrder": 6
+    },
+    {
+      "name": "Wearables",
+      "slug": "wearables",
+      "sortOrder": 7
+    },
+    {
+      "name": "Gaming",
+      "slug": "gaming",
+      "sortOrder": 8
+    },
+    {
+      "name": "Accessories",
+      "slug": "accessories",
+      "sortOrder": 9
+    }
+  ],
+  "quickTags": [
+    {
+      "label": "iPhone",
+      "query": "iphone",
+      "sortOrder": 1
+    },
+    {
+      "label": "ThinkPad",
+      "query": "thinkpad",
+      "sortOrder": 2
+    },
+    {
+      "label": "Apple Watch",
+      "query": "apple watch",
+      "sortOrder": 3
+    },
+    {
+      "label": "Xiaomi",
+      "query": "xiaomi",
+      "sortOrder": 4
+    },
+    {
+      "label": "Mouse",
+      "query": "mouse",
+      "sortOrder": 5
+    },
+    {
+      "label": "Under $100",
+      "query": "under 100",
+      "sortOrder": 6
+    }
+  ],
+  "siteText": {
+    "shop.name": "LoottaTech",
+    "hero.headline": "Second-hand tech, honestly described",
+    "hero.subtitle": "Every item tested, photographed and graded before it is listed.",
+    "hero.cta": "Browse the shop",
+    "trust.one": "Tested before listing",
+    "trust.two": "Photos of every flaw",
+    "trust.three": "Warranty on most items",
+    "footer.note": "A student project by LoottaTech. Prices are demonstration data."
+  },
+  "products": [
+    {
+      "model": "iPhone 13",
+      "brand": "Apple",
+      "category": "phones",
+      "price": 329.0,
+      "retail": 799.0,
+      "image": "iphone-12-mini-1",
+      "tagline": "fast · great camera · all-day battery"
+    },
+    {
+      "model": "iPhone 13 Pro",
+      "brand": "Apple",
+      "category": "phones",
+      "price": 459.0,
+      "retail": 999.0,
+      "image": "iphone-12-mini-2",
+      "tagline": "120Hz · triple camera · pro video"
+    },
+    {
+      "model": "iPhone 14",
+      "brand": "Apple",
+      "category": "phones",
+      "price": 499.0,
+      "retail": 899.0,
+      "image": "iphone-12-mini-3",
+      "tagline": "bright screen · crash detection"
+    },
+    {
+      "model": "iPhone SE 2022",
+      "brand": "Apple",
+      "category": "phones",
+      "price": 179.0,
+      "retail": 429.0,
+      "image": "iphone-12-mini-1",
+      "tagline": "small · fast chip · budget pick"
+    },
+    {
+      "model": "Xiaomi 12",
+      "brand": "Xiaomi",
+      "category": "phones",
+      "price": 239.0,
+      "retail": 749.0,
+      "image": "xiaomi-mi-11-1",
+      "tagline": "120Hz AMOLED · fast charging"
+    },
+    {
+      "model": "Xiaomi 13",
+      "brand": "Xiaomi",
+      "category": "phones",
+      "price": 329.0,
+      "retail": 899.0,
+      "image": "xiaomi-mi-11-2",
+      "tagline": "Leica camera · flagship chip"
+    },
+    {
+      "model": "Xiaomi 13 Pro",
+      "brand": "Xiaomi",
+      "category": "phones",
+      "price": 429.0,
+      "retail": 1099.0,
+      "image": "xiaomi-mi-11-3",
+      "tagline": "1-inch sensor · best camera"
+    },
+    {
+      "model": "Xiaomi Redmi Note 12",
+      "brand": "Xiaomi",
+      "category": "phones",
+      "price": 129.0,
+      "retail": 299.0,
+      "image": "xiaomi-mi-11-1",
+      "tagline": "big battery · cheap and reliable"
+    },
+    {
+      "model": "Xiaomi Redmi Note 13",
+      "brand": "Xiaomi",
+      "category": "phones",
+      "price": 159.0,
+      "retail": 349.0,
+      "image": "xiaomi-mi-11-2",
+      "tagline": "108MP camera · fast internet"
+    },
+    {
+      "model": "Samsung Galaxy S21",
+      "brand": "Samsung",
+      "category": "phones",
+      "price": 269.0,
+      "retail": 849.0,
+      "image": "iphone-12-mini-2",
+      "tagline": "120Hz · wireless charging"
+    },
+    {
+      "model": "Samsung Galaxy S22",
+      "brand": "Samsung",
+      "category": "phones",
+      "price": 359.0,
+      "retail": 949.0,
+      "image": "iphone-12-mini-3",
+      "tagline": "compact flagship · great screen"
+    },
+    {
+      "model": "Google Pixel 6a",
+      "brand": "Google",
+      "category": "phones",
+      "price": 199.0,
+      "retail": 449.0,
+      "image": "iphone-12-mini-1",
+      "tagline": "clean Android · superb photos"
+    },
+    {
+      "model": "ThinkPad T14 Gen 3",
+      "brand": "Lenovo",
+      "category": "laptops",
+      "price": 429.0,
+      "retail": 1199.0,
+      "image": "thinkpad-e14-1",
+      "tagline": "i7 · 16GB · business build"
+    },
+    {
+      "model": "ThinkPad X1 Carbon",
+      "brand": "Lenovo",
+      "category": "laptops",
+      "price": 649.0,
+      "retail": 1799.0,
+      "image": "thinkpad-e14-2",
+      "tagline": "1.1kg · 14in · long battery"
+    },
+    {
+      "model": "ThinkPad E15",
+      "brand": "Lenovo",
+      "category": "laptops",
+      "price": 339.0,
+      "retail": 899.0,
+      "image": "thinkpad-e14-3",
+      "tagline": "15in · numeric keypad · SSD"
+    },
+    {
+      "model": "MacBook Air M1",
+      "brand": "Apple",
+      "category": "laptops",
+      "price": 549.0,
+      "retail": 1099.0,
+      "image": "thinkpad-e14-1",
+      "tagline": "silent · 15h battery · fast"
+    },
+    {
+      "model": "MacBook Pro 13 M1",
+      "brand": "Apple",
+      "category": "laptops",
+      "price": 699.0,
+      "retail": 1299.0,
+      "image": "thinkpad-e14-2",
+      "tagline": "bright screen · great speakers"
+    },
+    {
+      "model": "Dell XPS 13",
+      "brand": "Dell",
+      "category": "laptops",
+      "price": 499.0,
+      "retail": 1299.0,
+      "image": "thinkpad-e14-3",
+      "tagline": "thin bezels · premium build"
+    },
+    {
+      "model": "HP EliteBook 840",
+      "brand": "HP",
+      "category": "laptops",
+      "price": 319.0,
+      "retail": 999.0,
+      "image": "thinkpad-e14-1",
+      "tagline": "sturdy · docking · i5"
+    },
+    {
+      "model": "Asus Vivobook 15",
+      "brand": "Asus",
+      "category": "laptops",
+      "price": 279.0,
+      "retail": 649.0,
+      "image": "thinkpad-e14-2",
+      "tagline": "budget all-rounder · SSD"
+    },
+    {
+      "model": "Apple Watch SE",
+      "brand": "Apple",
+      "category": "wearables",
+      "price": 129.0,
+      "retail": 299.0,
+      "image": "apple-watch-s7-1",
+      "tagline": "fitness · notifications · light"
+    },
+    {
+      "model": "Apple Watch Series 8",
+      "brand": "Apple",
+      "category": "wearables",
+      "price": 229.0,
+      "retail": 499.0,
+      "image": "apple-watch-s7-2",
+      "tagline": "always-on · temperature sensor"
+    },
+    {
+      "model": "Galaxy Watch 5",
+      "brand": "Samsung",
+      "category": "wearables",
+      "price": 139.0,
+      "retail": 329.0,
+      "image": "apple-watch-s7-1",
+      "tagline": "sleep tracking · long battery"
+    },
+    {
+      "model": "Xiaomi Smart Band 8",
+      "brand": "Xiaomi",
+      "category": "wearables",
+      "price": 29.0,
+      "retail": 59.0,
+      "image": "apple-watch-s7-2",
+      "tagline": "14-day battery · cheap tracker"
+    },
+    {
+      "model": "Logitech MX Master 3",
+      "brand": "Logitech",
+      "category": "accessories",
+      "price": 59.0,
+      "retail": 119.0,
+      "image": "vxe-mouse-1",
+      "tagline": "quiet · precise · productivity"
+    },
+    {
+      "model": "Logitech G Pro X",
+      "brand": "Logitech",
+      "category": "accessories",
+      "price": 49.0,
+      "retail": 99.0,
+      "image": "vxe-mouse-2",
+      "tagline": "lightweight · esports sensor"
+    },
+    {
+      "model": "Razer DeathAdder V3",
+      "brand": "Razer",
+      "category": "accessories",
+      "price": 45.0,
+      "retail": 89.0,
+      "image": "vxe-mouse-1",
+      "tagline": "ergonomic · 8K polling"
+    },
+    {
+      "model": "Keychron K2 keyboard",
+      "brand": "Keychron",
+      "category": "accessories",
+      "price": 55.0,
+      "retail": 109.0,
+      "image": "vxe-mouse-2",
+      "tagline": "mechanical · wireless · compact"
+    },
+    {
+      "model": "Anker 65W charger",
+      "brand": "Anker",
+      "category": "accessories",
+      "price": 19.0,
+      "retail": 45.0,
+      "image": "vxe-mouse-1",
+      "tagline": "GaN · small · fast charge"
+    },
+    {
+      "model": "Anker PowerBank 20000",
+      "brand": "Anker",
+      "category": "accessories",
+      "price": 25.0,
+      "retail": 59.0,
+      "image": "vxe-mouse-2",
+      "tagline": "charges a laptop · USB-C"
+    },
+    {
+      "model": "USB-C to HDMI hub",
+      "brand": "Ugreen",
+      "category": "accessories",
+      "price": 15.0,
+      "retail": 35.0,
+      "image": "vxe-mouse-1",
+      "tagline": "7-in-1 · 4K output"
+    },
+    {
+      "model": "Sony WH-1000XM4",
+      "brand": "Sony",
+      "category": "accessories",
+      "price": 149.0,
+      "retail": 349.0,
+      "image": "vxe-mouse-2",
+      "tagline": "noise cancelling · 30h battery"
+    },
+    {
+      "model": "JBL Tune 760NC",
+      "brand": "JBL",
+      "category": "accessories",
+      "price": 59.0,
+      "retail": 129.0,
+      "image": "vxe-mouse-1",
+      "tagline": "over-ear · 50h battery"
+    },
+    {
+      "model": "AirPods Pro 2",
+      "brand": "Apple",
+      "category": "accessories",
+      "price": 129.0,
+      "retail": 249.0,
+      "image": "vxe-mouse-2",
+      "tagline": "active noise cancelling"
+    },
+    {
+      "model": "Samsung T7 1TB SSD",
+      "brand": "Samsung",
+      "category": "accessories",
+      "price": 75.0,
+      "retail": 149.0,
+      "image": "vxe-mouse-1",
+      "tagline": "portable · 1050MB/s"
+    },
+    {
+      "model": "SanDisk 128GB microSD",
+      "brand": "SanDisk",
+      "category": "accessories",
+      "price": 12.0,
+      "retail": 29.0,
+      "image": "vxe-mouse-2",
+      "tagline": "A2 · 4K ready"
+    },
+    {
+      "model": "iPad 9th gen 64GB",
+      "brand": "Apple",
+      "category": "tablets",
+      "price": 199.0,
+      "retail": 429.0,
+      "image": "iphone-12-mini-1",
+      "tagline": "10.2in · school and study"
+    },
+    {
+      "model": "iPad Air 4",
+      "brand": "Apple",
+      "category": "tablets",
+      "price": 319.0,
+      "retail": 749.0,
+      "image": "iphone-12-mini-2",
+      "tagline": "10.9in · USB-C · fast"
+    },
+    {
+      "model": "Samsung Tab S6 Lite",
+      "brand": "Samsung",
+      "category": "tablets",
+      "price": 149.0,
+      "retail": 349.0,
+      "image": "iphone-12-mini-3",
+      "tagline": "with S Pen · light"
+    },
+    {
+      "model": "Xiaomi Pad 5",
+      "brand": "Xiaomi",
+      "category": "tablets",
+      "price": 169.0,
+      "retail": 399.0,
+      "image": "xiaomi-mi-11-1",
+      "tagline": "120Hz · great for video"
+    },
+    {
+      "model": "Dell 24in P2419H",
+      "brand": "Dell",
+      "category": "monitors",
+      "price": 79.0,
+      "retail": 219.0,
+      "image": "thinkpad-e14-1",
+      "tagline": "1080p · IPS · height adjust"
+    },
+    {
+      "model": "LG 27in 27UL500",
+      "brand": "LG",
+      "category": "monitors",
+      "price": 169.0,
+      "retail": 399.0,
+      "image": "thinkpad-e14-2",
+      "tagline": "4K · IPS · HDR10"
+    },
+    {
+      "model": "AOC 24in 144Hz",
+      "brand": "AOC",
+      "category": "monitors",
+      "price": 109.0,
+      "retail": 249.0,
+      "image": "thinkpad-e14-3",
+      "tagline": "gaming · 1ms · FreeSync"
+    },
+    {
+      "model": "HP LaserJet M15w",
+      "brand": "HP",
+      "category": "printers",
+      "price": 59.0,
+      "retail": 149.0,
+      "image": "thinkpad-e14-1",
+      "tagline": "mono laser · wireless"
+    },
+    {
+      "model": "Canon PIXMA G2010",
+      "brand": "Canon",
+      "category": "printers",
+      "price": 79.0,
+      "retail": 189.0,
+      "image": "thinkpad-e14-2",
+      "tagline": "ink tank · cheap refills"
+    },
+    {
+      "model": "Epson L3110",
+      "brand": "Epson",
+      "category": "printers",
+      "price": 89.0,
+      "retail": 199.0,
+      "image": "thinkpad-e14-3",
+      "tagline": "print scan copy · ink tank"
+    },
+    {
+      "model": "RTX 3060 12GB",
+      "brand": "NVIDIA",
+      "category": "pc-parts",
+      "price": 189.0,
+      "retail": 449.0,
+      "image": "vxe-mouse-1",
+      "tagline": "1080p gaming · 12GB VRAM"
+    },
+    {
+      "model": "Ryzen 5 5600X",
+      "brand": "AMD",
+      "category": "pc-parts",
+      "price": 99.0,
+      "retail": 299.0,
+      "image": "vxe-mouse-2",
+      "tagline": "6 cores · great value"
+    },
+    {
+      "model": "Corsair 16GB DDR4",
+      "brand": "Corsair",
+      "category": "pc-parts",
+      "price": 29.0,
+      "retail": 79.0,
+      "image": "vxe-mouse-1",
+      "tagline": "3200MHz · 2x8GB"
+    },
+    {
+      "model": "Kingston 500GB NVMe",
+      "brand": "Kingston",
+      "category": "pc-parts",
+      "price": 35.0,
+      "retail": 89.0,
+      "image": "vxe-mouse-2",
+      "tagline": "PCIe 3.0 · fast boot"
+    },
+    {
+      "model": "PS5 DualSense pad",
+      "brand": "Sony",
+      "category": "gaming",
+      "price": 39.0,
+      "retail": 79.0,
+      "image": "vxe-mouse-1",
+      "tagline": "wireless · haptic triggers"
+    },
+    {
+      "model": "Xbox Series controller",
+      "brand": "Microsoft",
+      "category": "gaming",
+      "price": 35.0,
+      "retail": 69.0,
+      "image": "vxe-mouse-2",
+      "tagline": "wireless · works on PC"
+    },
+    {
+      "model": "Nintendo Switch Lite",
+      "brand": "Nintendo",
+      "category": "gaming",
+      "price": 119.0,
+      "retail": 219.0,
+      "image": "vxe-mouse-1",
+      "tagline": "handheld · light and cheap"
+    }
+  ]
+}

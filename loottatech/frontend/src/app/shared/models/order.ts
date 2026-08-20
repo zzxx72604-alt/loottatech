@@ -48,14 +48,41 @@ export interface Order {
   deliveryOption: DeliveryOption;
   note: string;
   voucherCode: string;
+  paymentMethod: string;
+  isPaid: boolean;
   status: OrderStatus;
   createdAt: string;
+}
+
+/**
+ * One row of the order list.
+ *
+ * Both sources — the signed-in account and the guest codes kept in this
+ * browser — are reduced to this shape, so the list does not need to know
+ * where any given row came from.
+ */
+export interface OrderSummary {
+  id: number;
+  orderNumber: string;
+  itemCount: number;
+  totalPrice: number;
+  status: OrderStatus;
+  createdAt: string;
+}
+
+export interface PaymentOption {
+  value: string;
+  label: string;
+  note: string;
+  group: string;
 }
 
 export interface CreateOrderRequest {
   items: { productId: number; quantity: number }[];
   /** Code only. The server looks up what it is worth. */
   voucherCode?: string;
+  /** How they intend to pay. No money moves at checkout. */
+  paymentMethod?: string;
   customerName: string;
   phone: string;
   address: string;

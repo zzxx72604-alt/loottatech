@@ -8,7 +8,12 @@ import { catchError, of } from 'rxjs';
 import { CartService } from '../../core/services/cart.service';
 import { OrderService } from '../../core/services/order.service';
 import { UserService } from '../../core/services/user.service';
-import { DELIVERY_OPTIONS, DeliveryOption, OrderPreview } from '../../shared/models/order';
+import {
+  DELIVERY_OPTIONS,
+  DeliveryOption,
+  OrderPreview,
+  PaymentOption,
+} from '../../shared/models/order';
 
 /**
  * REACTIVE form — the delivery option changes the total live, so the form
@@ -33,6 +38,22 @@ export class Checkout {
   protected readonly users = inject(UserService);
 
   protected readonly deliveryOptions = DELIVERY_OPTIONS;
+
+  /** Loaded from the API, so the page can never offer an unsupported method. */
+  protected readonly paymentOptions = signal<PaymentOption[]>([]);
+
+  /** Grouped for display: Pay later, Wallet, Card, Bank. */
+  protected readonly paymentGroups = computed(() => {
+    const groups = new Map<string, PaymentOption[]>();
+
+    for (const option of this.paymentOptions()) {
+      const list = groups.get(option.group) ?? [];
+      list.push(option);
+      groups.set(option.group, list);
+    }
+
+    return [...groups.entries()].map(([name, options]) => ({ name, options }));
+  });
 
   protected readonly submitting = signal(false);
   protected readonly error = signal('');
@@ -83,9 +104,15 @@ export class Checkout {
     deliveryOption: ['Standard Delivery' as DeliveryOption, [Validators.required]],
     note: [''],
     voucherCode: [''],
+    paymentMethod: ['CashOnDelivery'],
   });
 
   constructor() {
+    this.orders.paymentMethods().subscribe({
+      next: (options) => this.paymentOptions.set(options),
+      error: () => this.paymentOptions.set([]),
+    });
+
     this.form.controls.deliveryOption.valueChanges.subscribe((value) =>
       this.chosenDelivery.set(value),
     );

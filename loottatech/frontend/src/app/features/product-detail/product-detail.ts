@@ -19,6 +19,7 @@ import { ReviewsSection } from './reviews-section';
 import { ShareSheet } from '../../shared/components/share-sheet/share-sheet';
 import { ReportDialog } from '../../shared/components/report-dialog/report-dialog';
 import { ProductCard } from '../../shared/components/product-card/product-card';
+import { ScrollStrip } from '../../shared/components/scroll-strip/scroll-strip';
 import { ToastService } from '../../core/services/toast.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Product, discountPercent } from '../../shared/models/product';
@@ -36,6 +37,7 @@ import { Product, discountPercent } from '../../shared/models/product';
     ShareSheet,
     ReportDialog,
     ProductCard,
+    ScrollStrip,
     NgOptimizedImage,
     CurrencyPipe,
     ConditionBadge,

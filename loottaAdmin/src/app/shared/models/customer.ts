@@ -1,5 +1,7 @@
 export interface CustomerRow {
   id: number;
+  publicId: string;
+  avatarUrl: string;
   name: string;
   email: string;
   role: 'Customer' | 'Admin';
@@ -20,6 +22,8 @@ export interface CustomerOrderRow {
 
 export interface CustomerDetail {
   id: number;
+  publicId: string;
+  avatarUrl: string;
   name: string;
   email: string;
   role: string;

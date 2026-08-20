@@ -30,6 +30,9 @@ public class CreateOrderDto
     [MaxLength(300)]
     public string Note { get; set; } = string.Empty;
 
+    /// <summary>"CashOnDelivery", "Visa", "ABAPay"… See /api/orders/payment-methods.</summary>
+    public string PaymentMethod { get; set; } = "CashOnDelivery";
+
     /// <summary>Optional voucher CODE only. The server looks up its value.</summary>
     [MaxLength(20)]
     public string VoucherCode { get; set; } = string.Empty;
@@ -91,6 +94,8 @@ public class OrderDto
     public decimal TotalPrice { get; set; }
 
     public string VoucherCode { get; set; } = string.Empty;
+    public string PaymentMethod { get; set; } = string.Empty;
+    public bool IsPaid { get; set; }
 
     public string Status { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
@@ -137,6 +142,8 @@ public static class OrderMapping
         DeliveryOption = DeliveryPricing.Label(order.DeliveryOption),
         Note = order.Note,
         VoucherCode = order.VoucherCode,
+        PaymentMethod = PaymentMethods.Label(order.PaymentMethod),
+        IsPaid = order.IsPaid,
         Subtotal = order.Subtotal,
         DeliveryFee = order.DeliveryFee,
         Discount = order.Discount,
@@ -154,6 +161,65 @@ public static class OrderMapping
             LineTotal = i.UnitPrice * i.Quantity
         }).ToList()
     };
+
+    /// <summary>
+    /// The tracking view of an order, for a caller we cannot identify.
+    ///
+    /// Anyone holding the code from a receipt may look an order up — that is
+    /// the point of guest tracking, and parcel couriers work the same way.
+    /// What they must not receive is a delivery address, because the code
+    /// would then be enough to learn where a stranger lives.
+    ///
+    /// Status, items and totals are what somebody tracking a parcel actually
+    /// needs, so those stay in full. Only the contact details are reduced.
+    /// </summary>
+    public static OrderDto ToTrackingDto(this Order order)
+    {
+        var dto = order.ToDto();
+
+        dto.CustomerName = MaskName(order.CustomerName);
+        dto.Phone = MaskPhone(order.Phone);
+        dto.Address = MaskAddress(order.Address);
+
+        // Free text written by the buyer. It could contain anything, so it
+        // is not shown to anyone who has not proved who they are.
+        dto.Note = string.Empty;
+
+        return dto;
+    }
+
+    /// <summary>"Dara Kim" becomes "Dara K." — recognisable, not identifying.</summary>
+    private static string MaskName(string name)
+    {
+        var parts = name.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 0) return string.Empty;
+        if (parts.Length == 1) return parts[0];
+
+        return $"{parts[0]} {parts[^1][..1]}.";
+    }
+
+    /// <summary>Shows enough of a number to recognise, not enough to reuse.</summary>
+    private static string MaskPhone(string phone)
+    {
+        var digits = new string(phone.Where(char.IsDigit).ToArray());
+        if (digits.Length < 5) return digits.Length == 0 ? string.Empty : "•••";
+
+        return $"{digits[..1]}***-{digits[^4..]}";
+    }
+
+    /// <summary>
+    /// Keeps only the last segment, which is normally the city.
+    ///
+    /// Enough to confirm the parcel is heading to the right town; not enough
+    /// to put a street and house number in front of a stranger.
+    /// </summary>
+    private static string MaskAddress(string address)
+    {
+        if (string.IsNullOrWhiteSpace(address)) return string.Empty;
+
+        var parts = address.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        return parts.Length <= 1 ? "•••" : $"••• {parts[^1]}";
+    }
 
     public static OrderSummaryDto ToSummary(this Order order) => new()
     {

@@ -1,0 +1,92 @@
+<div class="card">
+  <!-- The avatar sits half outside the card, the way the reference does. -->
+  <a class="face" routerLink="/profile" [attr.aria-label]="users.user()?.name ?? 'My profile'">
+    @if (users.avatarUrl()) {
+      <img [src]="users.avatarUrl() + '-480.webp'" alt="" width="72" height="72" />
+    } @else {
+      <span>{{ initials() }}</span>
+    }
+  </a>
+
+  <a class="name" routerLink="/profile">{{ users.user()?.name ?? 'My account' }}</a>
+
+  @if (profile(); as me) {
+    <p class="wallet">
+      Coins: <b>{{ me.coins | number }}</b>
+      <span class="sep">·</span>
+      ID: <b>{{ me.publicId }}</b>
+    </p>
+
+    <!-- Level track: current level, a fill, and the level being worked towards. -->
+    <div class="level">
+      <div class="rail">
+        <span class="tag now">Lv{{ me.level }}</span>
+        <span class="track">
+          <span class="fill" [style.width.%]="me.levelProgress * 100"></span>
+        </span>
+        <span class="tag next">Lv{{ me.level + 1 }}</span>
+      </div>
+
+      <p class="level-note">
+        {{ me.levelTitle }} · {{ me.exp | number }} EXP
+        @if (me.nextTitle) {
+          <span>, {{ me.expToNext | number }} more to {{ me.nextTitle }}</span>
+        }
+      </p>
+    </div>
+
+    <div class="stats">
+      <a routerLink="/profile" fragment="likes">
+        <b>{{ me.likeCount | number }}</b><span>Likes</span>
+      </a>
+      <a routerLink="/profile" fragment="saved">
+        <b>{{ me.saveCount | number }}</b><span>Saved</span>
+      </a>
+      <a routerLink="/my-orders">
+        <b>{{ me.orderCount | number }}</b><span>Orders</span>
+      </a>
+    </div>
+  } @else {
+    <!-- Placeholder of the same height, so nothing jumps when the data lands. -->
+    <div class="loading" aria-hidden="true">
+      <span class="bar w60"></span>
+      <span class="bar w90"></span>
+      <span class="bar w40"></span>
+    </div>
+  }
+
+  <a class="promo" routerLink="/arcade">
+    <span>
+      <b>Lootta Arcade</b>
+      Play for coins and vouchers
+    </span>
+    <span class="promo-go">Open</span>
+  </a>
+
+  <nav class="menu">
+    <a routerLink="/profile"><span class="ic">◉</span> My profile <span class="go">›</span></a>
+    <a routerLink="/my-orders"><span class="ic">▤</span> My orders <span class="go">›</span></a>
+    <a routerLink="/settings"><span class="ic">☰</span> Settings <span class="go">›</span></a>
+
+    <button type="button" (click)="themeService.toggle()">
+      <span class="ic">{{ themeService.theme() === 'dark' ? '☀' : '☾' }}</span>
+      Theme: {{ themeService.theme() === 'dark' ? 'Dark' : 'Light' }}
+      <span class="go"></span>
+    </button>
+
+    <button type="button" class="out" (click)="confirmingSignOut.set(true)">
+      <span class="ic">⏻</span> Sign out <span class="go"></span>
+    </button>
+  </nav>
+</div>
+
+@if (confirmingSignOut()) {
+  <app-confirm-dialog
+    title="Sign out?"
+    message="You will need to sign in again to see your orders and coins."
+    confirmLabel="Sign out"
+    [danger]="true"
+    (confirmed)="signOut()"
+    (cancelled)="confirmingSignOut.set(false)"
+  />
+}

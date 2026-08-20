@@ -29,6 +29,11 @@ public class LoottaDbContext : DbContext
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<Report> Reports => Set<Report>();
 
+    // Content the shop owner edits from the admin site.
+    public DbSet<QuickTag> QuickTags => Set<QuickTag>();
+    public DbSet<SiteText> SiteTexts => Set<SiteText>();
+    public DbSet<PaymentMethodSetting> PaymentMethodSettings => Set<PaymentMethodSetting>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -68,6 +73,14 @@ public class LoottaDbContext : DbContext
         }
 
         // ---------------------------------------------------------- Category
+        modelBuilder.Entity<QuickTag>(entity =>
+        {
+            // Two shortcuts with the same label would be indistinguishable in
+            // the tag row, so the database refuses them.
+            entity.HasIndex(t => t.Label).IsUnique();
+            entity.HasIndex(t => t.SortOrder);
+        });
+
         modelBuilder.Entity<Category>(entity =>
         {
             entity.HasIndex(c => c.Slug).IsUnique();
@@ -123,6 +136,7 @@ public class LoottaDbContext : DbContext
 
             entity.Property(o => o.Status).HasConversion<string>().HasMaxLength(20);
             entity.Property(o => o.DeliveryOption).HasConversion<string>().HasMaxLength(20);
+            entity.Property(o => o.PaymentMethod).HasConversion<string>().HasMaxLength(30);
 
             // Deleting an order removes its lines — they mean nothing alone.
             entity.HasMany(o => o.Items)
@@ -151,6 +165,7 @@ public class LoottaDbContext : DbContext
         {
             // One account per email address, enforced by the database itself.
             entity.HasIndex(u => u.Email).IsUnique();
+            entity.HasIndex(u => u.PublicId).IsUnique();
             entity.Property(u => u.Role).HasConversion<string>().HasMaxLength(20);
 
             entity.HasMany(u => u.Vouchers)

@@ -12,6 +12,17 @@ public class User
 {
     public int Id { get; set; }
 
+    /// <summary>
+    /// The account number a person actually quotes, e.g. "UE8145".
+    ///
+    /// The primary key stays an int for joins, but "customer 2" tells anyone
+    /// who hears it how many customers the shop has, and it is trivially
+    /// guessable. A short prefixed code is what goes on screen and in support
+    /// conversations.
+    /// </summary>
+    [Required, MaxLength(12)]
+    public string PublicId { get; set; } = string.Empty;
+
     [Required, MaxLength(160)]
     public string Email { get; set; } = string.Empty;
 

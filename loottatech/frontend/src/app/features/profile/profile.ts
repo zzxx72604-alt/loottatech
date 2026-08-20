@@ -9,12 +9,13 @@ import { ToastService } from '../../core/services/toast.service';
 import { AchievementSet, Profile } from '../../shared/models/profile';
 import { Product } from '../../shared/models/product';
 import { ProductCard } from '../../shared/components/product-card/product-card';
+import { ConfirmDialog } from '../../shared/components/confirm-dialog/confirm-dialog';
 
 type Tab = 'saved' | 'liked' | 'orders' | 'badges';
 
 @Component({
   selector: 'app-profile',
-  imports: [CurrencyPipe, DatePipe, RouterLink, ProductCard],
+  imports: [CurrencyPipe, DatePipe, RouterLink, ProductCard, ConfirmDialog],
   templateUrl: './profile.html',
   styleUrl: './profile.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -54,6 +55,7 @@ export class ProfilePage {
     this.api.get().subscribe({
       next: (profile) => {
         this.profile.set(profile);
+        this.users.setAvatar(profile.avatarUrl);
         this.loading.set(false);
       },
       error: (err) => {
@@ -99,6 +101,8 @@ export class ProfilePage {
       link: '/cart',
     });
   }
+
+  protected readonly confirmingSignOut = signal(false);
 
   protected signOut(): void {
     this.users.logout();

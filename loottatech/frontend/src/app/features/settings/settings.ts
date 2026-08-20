@@ -12,9 +12,11 @@ import { ProfileService } from '../../core/services/profile.service';
 import { UserService } from '../../core/services/user.service';
 import { TOAST_CORNERS, ToastCorner, ToastService } from '../../core/services/toast.service';
 import { ApiService } from '../../core/services/api.service';
+import { SearchHistoryService } from '../../core/services/search-history.service';
+import { RecentlyViewedService } from '../../core/services/recently-viewed.service';
 import { EditableProfile } from '../../shared/models/profile';
 
-type Section = 'preference' | 'security';
+type Section = 'preference' | 'security' | 'wallet' | 'privacy';
 
 /**
  * Account settings.
@@ -34,6 +36,8 @@ export class Settings {
   private readonly fb = inject(FormBuilder);
   private readonly profiles = inject(ProfileService);
   private readonly api = inject(ApiService);
+  private readonly searches = inject(SearchHistoryService);
+  private readonly recent = inject(RecentlyViewedService);
   protected readonly toasts = inject(ToastService);
 
   protected readonly users = inject(UserService);
@@ -88,6 +92,7 @@ export class Settings {
       next: (profile) => {
         this.form.patchValue(profile);
         this.avatarUrl.set(profile.avatarUrl);
+        this.users.setAvatar(profile.avatarUrl);
         this.loading.set(false);
       },
       error: () => {
@@ -143,6 +148,7 @@ export class Settings {
     this.profiles.uploadAvatar(file).subscribe({
       next: (profile) => {
         this.avatarUrl.set(profile.avatarUrl);
+        this.users.setAvatar(profile.avatarUrl);
         this.uploading.set(false);
         this.toasts.success('Profile picture updated');
       },
@@ -157,6 +163,15 @@ export class Settings {
   protected avatarSrc(): string {
     const url = this.avatarUrl();
     return url ? `${url}-480.webp` : '';
+  }
+
+  /* ----------------------------------------------------------- privacy */
+
+  /** Clears what this browser remembers. The account is untouched. */
+  protected clearLocal(): void {
+    this.searches.clear();
+    this.recent.clear();
+    this.toasts.success('This browser\'s history is cleared');
   }
 
   /* ---------------------------------------------------------- security */

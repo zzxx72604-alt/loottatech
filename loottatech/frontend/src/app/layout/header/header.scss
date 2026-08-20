@@ -48,16 +48,26 @@
   display: flex;
   background: var(--surface);
   border-radius: var(--radius-pill);
-  overflow: hidden;
   max-width: 620px;
   border: 2px solid transparent;
   transition: border-color var(--dur) var(--ease);
+
+  /*
+   * NOT overflow: hidden.
+   *
+   * It was here to clip the input and button to the pill's rounded corners,
+   * but it also clipped the suggestions panel, which hangs below the form —
+   * so the dropdown could never appear no matter what state it was in.
+   * The children round themselves instead.
+   */
+  position: relative;
 }
 .search:focus-within {
   border-color: var(--brand-ink);
 }
 
 .search input {
+  border-radius: var(--radius-pill) 0 0 var(--radius-pill);
   flex: 1;
   border: 0;
   outline: 0;
@@ -69,6 +79,7 @@
 }
 
 .search button {
+  border-radius: 0 var(--radius-pill) var(--radius-pill) 0;
   border: 0;
   padding: 0 var(--sp-5);
   background: var(--brand-ink);
@@ -119,20 +130,23 @@
   place-items: center;
 }
 
-.quick {
+/* The layout lives on the INNER element now. The outer .quick is only a
+   collapsing wrapper, and putting display:grid on it wiped out the flex row —
+   which is why the tags ran together with no gaps. */
+.quick-inner {
   max-width: var(--page-max);
   margin: 0 auto;
   padding: 0 var(--sp-4) var(--sp-3);
   display: flex;
-  gap: var(--sp-4);
+  gap: var(--sp-5);
   overflow-x: auto;
   scrollbar-width: none;
 }
-.quick::-webkit-scrollbar {
+.quick-inner::-webkit-scrollbar {
   display: none;
 }
 
-.quick button {
+.quick-inner button {
   border: 0;
   background: transparent;
   color: rgba(0, 0, 0, 0.62);
@@ -141,7 +155,7 @@
   padding: 0;
   transition: color var(--dur) var(--ease);
 }
-.quick button:hover {
+.quick-inner button:hover {
   color: var(--brand-ink);
 }
 
@@ -171,15 +185,8 @@
   &:hover { background: #000; }
 }
 
-/* Make the theme toggle discoverable rather than a bare symbol */
-.icon-label {
-  margin-left: 5px;
-  font-size: 12px;
-}
-
-@media (max-width: 900px) {
-  .icon-label { display: none; }
-}
+/* Icon only. The sun/moon is understood everywhere and the word was just
+   taking space in a bar that needs it for search. */
 
 .coins {
   background: var(--brand-ink);
@@ -207,25 +214,153 @@
 
 /* ------------------------------------------------- search suggestions */
 
-.search { position: relative; }
-
-.suggestions {
+/*
+ * One panel, two modes: trending before typing, completions after.
+ *
+ * Deliberately borderless between rows. Dividers make a list of ten look
+ * like a table to read; without them the eye runs straight down the words,
+ * which is the whole point of a suggestion list.
+ */
+.search-panel {
   position: absolute;
-  top: calc(100% + 6px);
+  top: calc(100% + 8px);
   left: 0;
   right: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 10px 34px rgba(0, 0, 0, .16);
+  overflow: hidden;
+  z-index: 130;
+  padding: var(--sp-2) 0;
+  max-height: 70vh;
+  overflow-y: auto;
+  animation: panel-in 140ms cubic-bezier(.4, 0, .2, 1);
+}
+
+@keyframes panel-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--sp-2) var(--sp-4) var(--sp-1);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-3);
+}
+
+.clear {
+  border: 0;
+  background: none;
+  color: var(--text-3);
+  font-size: 12px;
+
+  &:hover { color: var(--price); }
+}
+
+/* ------------------------------------------------------- recent chips */
+
+.chips {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 4px var(--sp-4) var(--sp-2);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: 12px;
+  padding: 5px var(--sp-3);
+  border-radius: var(--radius-pill);
+
+  &:hover { background: var(--border); color: var(--text); }
+
+  /* A span, not a nested button — a button inside a button is invalid HTML
+     and browsers handle it inconsistently. */
+  .x {
+    font-size: 10px;
+    color: var(--text-3);
+
+    &:hover { color: var(--sale); }
+  }
+}
+
+/* ---------------------------------------------------------- trending */
+
+.hot {
   list-style: none;
   margin: 0;
   padding: 0;
-  background: var(--surface);
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, .18);
-  overflow: hidden;
-  z-index: 130;
+  counter-reset: none;
 }
 
-.suggestions li + li { border-top: 1px solid var(--border); }
+.hot button {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: none;
+  padding: 7px var(--sp-4);
+  color: var(--text);
+  font-size: 14px;
+
+  &:hover { background: var(--surface-2); }
+}
+
+/* Fixed width so the words line up whether the rank is 1 or 10. */
+.rank {
+  flex: none;
+  width: 16px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+.rank.top { color: var(--price); }
+
+.hot-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tagline {
+  flex: none;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .04em;
+  padding: 1px 4px;
+  border-radius: 3px;
+  color: #fff;
+
+  &.hot  { background: var(--price); }
+  &.new  { background: var(--cond-new); }
+  &.deal { background: var(--sale); }
+}
+
+/* ------------------------------------------------------- completions */
+
+.suggestions {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
 
 .suggestions button {
   display: flex;
@@ -235,17 +370,63 @@
   text-align: left;
   border: 0;
   background: none;
-  padding: var(--sp-2) var(--sp-3);
+  padding: 7px var(--sp-4);
   color: var(--text);
+  font-size: 14px;
 
   /* Hover and keyboard highlight share one style, so arrow keys and the
      mouse never disagree about what is selected. */
   &.active { background: var(--surface-2); }
 
-  img { width: 34px; height: 34px; object-fit: cover; border-radius: var(--radius-sm); flex: none; }
+  .glass { flex: none; color: var(--text-3); font-size: 13px; }
 }
 
-.s-text {
+.suggestions .s-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: block;
+}
+
+/* The part that was typed. Everything else is the completion. */
+.suggestions em {
+  font-style: normal;
+  color: var(--price);
+}
+
+/* ----------------------------------------------------- matching items */
+
+.items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.items button {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: none;
+  padding: 6px var(--sp-4);
+  color: var(--text);
+
+  &:hover { background: var(--surface-2); }
+
+  img {
+    width: 30px;
+    height: 30px;
+    object-fit: cover;
+    border-radius: var(--radius-sm);
+    flex: none;
+  }
+}
+
+.items .s-text {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -261,4 +442,124 @@
 }
 
 .s-meta { font-size: 11px; color: var(--text-3); }
+.s-price { flex: none; font-size: 12.5px; font-weight: 700; color: var(--price); }
+
+.no-match {
+  margin: 0;
+  padding: var(--sp-4);
+  font-size: 12.5px;
+  color: var(--text-3);
+  text-align: center;
+}
+
+/* ---------------------------------------------------- account card */
+
+.avatar-wrap {
+  position: relative;
+  display: flex;
+}
+
+/*
+ * The padding is the bridge. Without it the gap between the avatar and the
+ * card is dead space that counts as leaving, so the card closes while the
+ * pointer is still travelling towards it.
+ */
+.card-drop {
+  position: absolute;
+  top: 100%;
+  right: -8px;
+  padding-top: 14px;
+  z-index: 140;
+  animation: card-in 160ms cubic-bezier(.4, 0, .2, 1);
+}
+
+@keyframes card-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .search-panel, .card-drop { animation: none; }
+}
 .s-price { font-size: 13px; font-weight: 800; color: var(--price); white-space: nowrap; }
+
+/* ===================================================== scroll behaviour == */
+
+.bar {
+  transition: box-shadow var(--dur) var(--ease);
+
+  /* The suggestion panel hangs below the bar, so nothing in the header may
+     clip it. Easy to break by adding overflow to a parent later. */
+  overflow: visible;
+}
+
+.bar.scrolled {
+  box-shadow: 0 2px 12px rgba(0, 0, 0, .12);
+}
+
+/* The tag row collapses smoothly instead of vanishing. Animating rows rather
+   than height means no fixed pixel value to keep in sync with the content. */
+.quick {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows 220ms var(--ease), opacity 180ms var(--ease);
+  opacity: 1;
+}
+
+.quick > .quick-inner {
+  min-height: 0;
+}
+
+.bar.compact .quick {
+  grid-template-rows: 0fr;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* A slimmer bar on the way down, so more of the shop is visible. */
+.bar.compact .inner {
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+.bar.compact .logo .word {
+  /* The mark alone is enough once someone is deep in the page. */
+  display: none;
+}
+
+.bar.compact .search input {
+  border-radius: var(--radius-pill) 0 0 var(--radius-pill);
+  padding-top: 6px;
+  padding-bottom: 6px;
+  font-size: 12.5px;
+}
+
+.inner, .search input, .logo .word {
+  transition: padding var(--dur) var(--ease), font-size var(--dur) var(--ease);
+}
+
+/* Clicking the search always restores the full bar, so the box is never
+   cramped at the moment someone wants to type in it. */
+.bar:not(.compact) .search input {
+  border-radius: var(--radius-pill) 0 0 var(--radius-pill);
+  padding-top: 9px;
+  padding-bottom: 9px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .quick, .inner, .search input {
+  border-radius: var(--radius-pill) 0 0 var(--radius-pill); transition: none; }
+}
+
+@media (max-width: 700px) {
+  /* On a phone the tags are the first thing worth reclaiming. */
+  .bar.compact .logo .word { display: none; }
+}
+
+
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}

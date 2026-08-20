@@ -40,4 +40,14 @@
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!--
+      Demo data. Copied next to the built API so a published build seeds the
+      same shop; "dotnet run" reads it from the project folder either way.
+    -->
+    <None Update="seed-data.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

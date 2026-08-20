@@ -1,0 +1,67 @@
+<aside class="rail" aria-label="Quick actions">
+  <button
+    type="button"
+    class="tab"
+    [class.on]="panel() === 'qr'"
+    (click)="toggle('qr')"
+    aria-label="Get the app"
+  >
+    <span class="ico" aria-hidden="true">▣</span>
+    <span class="label">App</span>
+  </button>
+
+  <button
+    type="button"
+    class="tab"
+    [class.on]="panel() === 'chat'"
+    (click)="toggle('chat')"
+    aria-label="Chat with us"
+  >
+    <span class="ico" aria-hidden="true">✉</span>
+    <span class="label">Chat</span>
+  </button>
+
+  @if (scrolled()) {
+    <button type="button" class="tab" (click)="toTop()" aria-label="Back to top">
+      <span class="ico" aria-hidden="true">↑</span>
+      <span class="label">Top</span>
+    </button>
+  }
+</aside>
+
+@if (isOpen()) {
+  <div class="rail-panel" role="dialog" aria-modal="false">
+    <button type="button" class="x" (click)="close()" aria-label="Close">✕</button>
+
+    @if (panel() === 'qr') {
+      <h3>Get the app</h3>
+
+      <!-- A drawn placeholder rather than a real code: pointing a scanner at
+           a link that goes nowhere is worse than showing a mock-up. -->
+      <div class="qr" aria-hidden="true">
+        <span class="corner tl"></span>
+        <span class="corner tr"></span>
+        <span class="corner bl"></span>
+        <span class="mid"></span>
+      </div>
+
+      <p class="note">
+        Demo placeholder. The LoottaTech app isn't published yet — this is where
+        its download code will go.
+      </p>
+    } @else {
+      <h3>Chat with us</h3>
+
+      <div class="bubbles">
+        <p class="them">Hi! Ask us anything about an item's condition.</p>
+        <p class="them">We usually reply within an hour, 9am–7pm.</p>
+      </div>
+
+      <p class="note">
+        Live chat isn't connected yet. For now, quote the product code from the
+        item page and email
+        <a href="mailto:hello&#64;loottatech.com">hello&#64;loottatech.com</a>.
+      </p>
+    }
+  </div>
+}

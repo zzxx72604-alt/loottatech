@@ -1,11 +1,11 @@
-<header class="bar">
+<header class="bar" [class.compact]="compact()" [class.scrolled]="scrolled()">
   <div class="inner">
     <a class="logo" routerLink="/" aria-label="LoottaTech home">
       <span class="mark">L</span>
       <span class="word">Lootta<b>Tech</b></span>
     </a>
 
-    <form class="search" (ngSubmit)="onEnter()" role="search">
+    <form class="search" (ngSubmit)="onEnter()" (click)="expand()" role="search">
       <label class="sr-only" for="q">Search second-hand electronics</label>
       <input
         id="q"
@@ -18,37 +18,108 @@
         (blur)="onBlur()"
         (keydown.arrowdown)="move(1); $event.preventDefault()"
         (keydown.arrowup)="move(-1); $event.preventDefault()"
-        (keydown.escape)="showSuggestions.set(false)"
+        (keydown.escape)="showPanel.set(false)"
         autocomplete="off"
         role="combobox"
-        [attr.aria-expanded]="showSuggestions()"
+        [attr.aria-expanded]="showPanel()"
         aria-autocomplete="list"
       />
       <button type="submit">Search</button>
 
-      @if (showSuggestions()) {
-        <ul class="suggestions" role="listbox">
-          @for (item of suggestions(); track item.product.id; let i = $index) {
-            <li role="option" [attr.aria-selected]="activeIndex() === i">
-              <button
-                type="button"
-                [class.active]="activeIndex() === i"
-                (click)="choose(item)"
-                (mouseenter)="activeIndex.set(i)"
-              >
-                <img [src]="item.product.images[0] + '-480.webp'" alt="" width="34" height="34" />
+      @if (showPanel()) {
+        <!--
+          mousedown is cancelled so clicking a row never blurs the input.
+          Relying on the blur timeout alone makes fast clicks miss.
+        -->
+        <div class="search-panel" (mousedown)="$event.preventDefault()">
 
-                <span class="s-text">
-                  <b>{{ item.product.title }}</b>
-                  <span class="s-meta">{{ item.product.brand }} · {{ item.product.category }}</span>
-                </span>
+          @if (panelMode() === 'browse') {
 
-                <span class="s-price">{{ item.product.price | currency: 'USD' : 'symbol' : '1.0-0' }}</span>
-              </button>
-            </li>
+            @if (history.recent().length > 0) {
+              <div class="panel-head">
+                <span>Recent</span>
+                <button type="button" class="clear" (click)="history.clear()">Clear all</button>
+              </div>
+
+              <ul class="chips">
+                @for (item of history.recent(); track item) {
+                  <li>
+                    <button type="button" class="chip" (click)="runTerm(item)">
+                      {{ item }}
+                      <span class="x" (click)="forget(item, $event)" [attr.aria-label]="'Remove ' + item">✕</span>
+                    </button>
+                  </li>
+                }
+              </ul>
+            }
+
+            <div class="panel-head"><span>LoottaTech trending</span></div>
+
+            <ol class="hot">
+              @for (row of search$.trending(); track row.rank) {
+                <li>
+                  <button type="button" (click)="runTerm(row.text)">
+                    <span class="rank" [class.top]="row.rank <= 3">{{ row.rank }}</span>
+                    <span class="hot-text">{{ row.text }}</span>
+
+                    @if (row.badge) {
+                      <span class="tagline" [class]="'tagline ' + row.badge">
+                        {{ row.badge === 'hot' ? 'HOT' : row.badge === 'new' ? 'NEW' : 'DEAL' }}
+                      </span>
+                    }
+                  </button>
+                </li>
+              }
+            </ol>
+
+          } @else if (termSuggestions().length > 0 || suggestions().length > 0) {
+
+            <ul class="suggestions" role="listbox">
+              @for (item of termSuggestions(); track item.text; let i = $index) {
+                <li role="option" [attr.aria-selected]="activeIndex() === i">
+                  <button
+                    type="button"
+                    [class.active]="activeIndex() === i"
+                    (click)="runTerm(item.text)"
+                    (mouseenter)="activeIndex.set(i)"
+                  >
+                    <span class="glass" aria-hidden="true">⌕</span>
+                    <!-- The typed part is coloured; the rest is the completion. -->
+                    <span class="s-text">{{ item.pre }}<em>{{ item.mid }}</em>{{ item.post }}</span>
+                  </button>
+                </li>
+              }
+            </ul>
+
+            @if (suggestions().length > 0) {
+              <div class="panel-head"><span>Items in stock</span></div>
+
+              <ul class="items">
+                @for (item of suggestions(); track item.product.id) {
+                  <li>
+                    <button type="button" (click)="choose(item)">
+                      <img [src]="item.product.images[0] + '-480.webp'" alt="" width="30" height="30" />
+
+                      <span class="s-text">
+                        <b>{{ item.product.title }}</b>
+                        <span class="s-meta">{{ item.product.brand }} · {{ item.product.category }}</span>
+                      </span>
+
+                      <span class="s-price">{{ item.product.price | currency: 'USD' : 'symbol' : '1.0-0' }}</span>
+                    </button>
+                  </li>
+                }
+              </ul>
+            }
+
+          } @else if (!search$.ready()) {
+            <p class="no-match">Looking…</p>
+          } @else {
+            <p class="no-match">Nothing matches “{{ term() }}”. Try a brand or a model.</p>
           }
-        </ul>
+        </div>
       }
+
     </form>
 
     <nav class="actions">
@@ -59,7 +130,6 @@
         [attr.aria-label]="themeService.theme() === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'"
       >
         {{ themeService.theme() === 'dark' ? '☀' : '☾' }}
-        <span class="icon-label">{{ themeService.theme() === 'dark' ? 'Light' : 'Dark' }}</span>
       </button>
 
       @if (users.isLoggedIn()) {
@@ -70,10 +140,32 @@
 
         <app-notification-bell />
 
-        <!-- The avatar IS the profile entry. Sign out lives inside. -->
-        <a class="avatar" routerLink="/profile" [title]="users.user()?.name ?? 'My profile'">
-          {{ initials() }}
-        </a>
+        <!--
+          Resting on the avatar opens the account card. Clicking still goes
+          straight to the profile page, so the hover is a shortcut and never
+          the only way in — which also keeps it usable on a touch screen.
+        -->
+        <div
+          class="avatar-wrap"
+          (mouseenter)="openCard()"
+          (mouseleave)="closeCard()"
+          (focusin)="openCard()"
+          (focusout)="closeCard()"
+        >
+          <a class="avatar" routerLink="/profile" [title]="users.user()?.name ?? 'My profile'">
+            @if (users.avatarUrl()) {
+              <img [src]="users.avatarUrl() + '-480.webp'" alt="" width="30" height="30" />
+            } @else {
+              {{ initials() }}
+            }
+          </a>
+
+          @if (cardOpen()) {
+            <div class="card-drop">
+              <app-mini-profile />
+            </div>
+          }
+        </div>
       } @else {
         <a class="icon" routerLink="/my-orders">My orders</a>
         <a class="icon signin" routerLink="/login">Sign in</a>
@@ -88,9 +180,27 @@
     </nav>
   </div>
 
+  <!--
+    The shop tags collapse to zero height rather than being removed. Removing
+    them would change the page height mid-scroll and shove the content the
+    reader is looking at.
+  -->
   <div class="quick">
-    @for (link of quickLinks; track link) {
-      <button type="button" (click)="quickSearch(link)">{{ link }}</button>
-    }
+    <div class="quick-inner">
+      @for (link of quickLinks(); track link.label) {
+        <button type="button" (click)="quickSearch(link.query, link.label)">{{ link.label }}</button>
+      }
+    </div>
   </div>
 </header>
+
+@if (confirmingSignOut()) {
+  <app-confirm-dialog
+    title="Sign out?"
+    message="You will need to sign in again to see your orders and coins."
+    confirmLabel="Sign out"
+    [danger]="true"
+    (confirmed)="signOut()"
+    (cancelled)="confirmingSignOut.set(false)"
+  />
+}

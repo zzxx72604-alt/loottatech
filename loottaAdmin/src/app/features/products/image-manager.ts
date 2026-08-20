@@ -12,6 +12,7 @@ import { HttpEventType } from '@angular/common/http';
 import { ProductApi } from '../../core/services/product-api.service';
 import { ProductImage } from '../../shared/models/product';
 import { environment } from '../../../environments/environment';
+import { CropDialog, CropResult } from './crop-dialog';
 
 /**
  * Manages a product's photos: upload, replace, reorder-by-primary, delete.
@@ -29,6 +30,7 @@ import { environment } from '../../../environments/environment';
  */
 @Component({
   selector: 'app-image-manager',
+  imports: [CropDialog],
   templateUrl: './image-manager.html',
   styleUrl: './image-manager.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -55,6 +57,14 @@ export class ImageManager {
 
   /** Set when the picker is replacing a specific image rather than adding. */
   private replacingId: number | null = null;
+
+  /**
+   * The file waiting for a crop decision.
+   *
+   * Picking a file no longer uploads immediately: the admin chooses the square
+   * first, so a wide photo does not lose its subject to a centre crop.
+   */
+  protected readonly pendingFile = signal<File | null>(null);
 
   protected readonly fileBase = environment.fileBase;
 
@@ -89,14 +99,30 @@ export class ImageManager {
 
     if (!file || !this.productId) return;
 
+    // Ask for the crop first; the upload happens in startUpload().
+    this.pendingFile.set(file);
+    this.error.set('');
+    return;
+  }
+
+  protected cancelCrop(): void {
+    this.pendingFile.set(null);
+    this.replacingId = null;
+  }
+
+  protected startUpload(crop: CropResult): void {
+    const file = this.pendingFile();
+    if (!file || !this.productId) return;
+
+    this.pendingFile.set(null);
     this.error.set('');
     this.busy.set(true);
     this.progress.set(0);
     this.pendingPreview.set(URL.createObjectURL(file));
 
     const request = this.replacingId
-      ? this.api.replaceImage(this.productId, this.replacingId, file)
-      : this.api.uploadImage(this.productId, file);
+      ? this.api.replaceImage(this.productId, this.replacingId, file, crop)
+      : this.api.uploadImage(this.productId, file, crop);
 
     const wasReplacing = this.replacingId;
     this.replacingId = null;

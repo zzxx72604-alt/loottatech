@@ -1,5 +1,107 @@
 # LoottaTech
 
+> **Marking this project? Start here.** Everything below is a five-minute
+> walkthrough. You do not need to install SQL Server, edit a config file, or
+> read any code to see it working.
+
+## For the examiner — read this first
+
+### 1. Start it
+
+Double-click **`START.bat`** in this folder. Wait about 30 seconds.
+
+It checks .NET and Node are present, installs packages the first time, opens
+three windows and then opens two browser tabs for you.
+
+| What | Address |
+| --- | --- |
+| Customer shop | http://localhost:4200 |
+| Admin site | http://localhost:4300 |
+| API documentation | http://localhost:5197/swagger |
+
+**No SQL Server?** It still runs. The API tries SQL Server, and if it cannot
+reach one it creates a SQLite file next to itself instead. Nothing to install
+and nothing to configure — the console prints which one it chose.
+
+When you are finished, close the three windows, or run `STOP.bat`.
+
+### 2. Sign in
+
+| Role | Email | Password |
+| --- | --- | --- |
+| Admin | `admin@loottatech.com` | `Admin123` |
+| Customer | `dara@gmail.com` | `Dara123` |
+
+These are demonstration accounts published in this file, so they are not
+secrets. A real deployment would change them.
+
+### 3. Things worth trying, in order
+
+Each takes under a minute and shows a different part of the system.
+
+**Search that tolerates typos** — customer site, click the search box.
+With nothing typed it shows a trending list ranked by how many people are
+watching each item. Type `ipho` and the matched letters are highlighted in the
+suggestions. Now type `xioa` — deliberately misspelled — and Xiaomi still
+comes back. That is Levenshtein edit distance running in the browser, so there
+is no request per keystroke.
+
+**Buy something** — add an item to the cart, check out, choose a payment
+method. You get an order number like `LT-7K3QA2`.
+
+> No money moves. The order records how the customer *intends* to pay and the
+> shop settles it on delivery. There is no payment provider connected, and the
+> project does not pretend otherwise.
+
+**Watch the admin notice** — open the admin site. The order appears on its own
+within ten seconds. Change its status and the customer's tracker follows.
+
+**Edit the shop without touching code** — admin → **Store**. Add a shortcut to
+the tag row, rename a category, change the home page headline, or switch a
+payment method off. Reload the customer site: it is there. None of that text
+lives in the Angular code.
+
+**Try to break a rule** — in admin → Store → Categories, try deleting a
+category that still holds products. The API refuses and says why. Same for
+turning off every payment method at once.
+
+**Check the privacy handling** — copy an order number and open
+`http://localhost:5197/api/orders/number/LT-XXXXXX` in a private window.
+You get the status and items, but the name is cut to `Dara K.`, the phone to
+`0***-3457` and the address to `••• Phnom Penh`. Guest customers can track a
+parcel without an account, but an order code alone is not proof of identity.
+Sign in as the buyer and the same endpoint returns everything.
+
+**Hover the avatar** — the account card only requests the profile the first
+time you hover it, not on every page load.
+
+**The arcade** — customer site → the coin icon. Coins are earned by spending
+and paid to play. Prizes are decided by the server, never the browser.
+
+### 4. Where the code is
+
+| Looking for | Path |
+| --- | --- |
+| API endpoints | `API/lootta/lootta/Controllers/` |
+| Database tables | `API/lootta/lootta/Models/` |
+| Demo data | `API/lootta/lootta/seed-data.json` |
+| Customer pages | `loottatech/frontend/src/app/features/` |
+| Admin pages | `loottaAdmin/src/app/features/` |
+
+The demo shop is a **JSON file**, not code. Edit `seed-data.json`, delete the
+database, restart — a different shop, with no rebuild.
+
+### 5. If something goes wrong
+
+| Message | Cause | Fix |
+| --- | --- | --- |
+| `Invalid object name '...'` | Database is older than the code | `cd API/lootta/lootta` then `dotnet ef database update` |
+| `Cannot reach the shop` on the site | API window closed | Restart it, or run `START.bat` again |
+| `npm.ps1 cannot be loaded` | PowerShell blocks scripts by default | Use `START.bat`, which runs in CMD |
+| Port already in use | A previous run is still going | Run `STOP.bat` |
+
+---
+
 Affordable new and second-hand electronics. Three parts:
 
 ```
@@ -12,7 +114,7 @@ Angular never touches the database. Only the API does.
 
 ---
 
-## Quickest way to run it
+## Running it — more detail
 
 Double-click **`START.bat`**.
 
@@ -61,7 +163,7 @@ First run only: `npm install` in `loottatech/frontend` and `loottaAdmin`.
 The database is created and seeded automatically on first start — 9 categories,
 10 products, and two accounts.
 
-### Demo accounts
+### Demo accounts (repeated from the top)
 
 | Role | Email | Password |
 | --- | --- | --- |
@@ -73,7 +175,7 @@ The database is created and seeded automatically on first start — 9 categories
 
 ---
 
-## Testing the whole system in 5 minutes
+## Customer to admin, step by step
 
 **1. Shop as a customer**
 

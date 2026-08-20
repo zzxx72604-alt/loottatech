@@ -13,15 +13,28 @@ namespace lootta.Data;
 /// </summary>
 public static class DbSeeder
 {
-    public static async Task SeedAsync(LoottaDbContext db)
+    public static async Task SeedAsync(LoottaDbContext db, string contentRoot = "")
     {
+        // Null when the file is missing or unreadable; every use below falls
+        // back to the data built into this class.
+        var seed = SeedFile.Load(string.IsNullOrEmpty(contentRoot)
+            ? AppContext.BaseDirectory
+            : contentRoot);
+
         await SeedUsersAsync(db);
         await BackfillPublicIdsAsync(db);
+        await BackfillUserCodesAsync(db);
+        await SeedStoreContentAsync(db, seed);
 
         if (await db.Products.AnyAsync())
         {
-            // Already stocked, but a database seeded before reviews existed
-            // still needs them — so this runs either way.
+            /*
+             * Already stocked with the original ten, but a database created
+             * before the larger catalogue and the reviews existed still needs
+             * both. Each of these has its own guard, so running them again is
+             * harmless.
+             */
+            await SeedBulkAsync(db, seed);
             await SeedReviewsAsync(db);
             return;
         }
@@ -121,7 +134,102 @@ public static class DbSeeder
         db.Products.AddRange(products);
         await db.SaveChangesAsync();
 
+        await SeedBulkAsync(db, seed);
         await SeedReviewsAsync(db);
+    }
+
+    /// <summary>
+    /// A larger catalogue, so paging, endless scrolling and search have
+    /// something real to work against.
+    ///
+    /// Generated from a fixed seed, so every install gets the same shop and a
+    /// demo is reproducible.
+    /// </summary>
+    private static async Task SeedBulkAsync(LoottaDbContext db, SeedFile? seed)
+    {
+        /*
+         * Skip anything already present rather than bailing on a count.
+         * A count guard means the catalogue can never be extended later —
+         * matching on title lets new rows be added to an existing shop.
+         */
+        var existingTitles = (await db.Products.Select(p => p.Title).ToListAsync()).ToHashSet();
+
+        var categories = await db.Categories.ToDictionaryAsync(c => c.Slug, c => c.Id);
+        var random = new Random(42);
+
+        // (model, brand, category, base price, retail, image, taglines)
+        var lines = seed is not null
+            ? seed.Products
+                .Select(p => (Model: p.Model, Brand: p.Brand, Slug: p.Category,
+                              Price: p.Price, Retail: p.Retail, Image: p.Image, Tagline: p.Tagline))
+                .ToArray()
+            : BuiltInLines;
+
+
+        var conditions = new[]
+        {
+            ProductCondition.LikeNew, ProductCondition.Good,
+            ProductCondition.Good, ProductCondition.Fair, ProductCondition.New,
+        };
+
+        foreach (var line in lines)
+        {
+            if (!categories.TryGetValue(line.Slug, out var categoryId)) continue;
+
+            var condition = conditions[random.Next(conditions.Length)];
+
+            // Rougher condition means a bigger discount, so the numbers stay
+            // believable rather than random.
+            var multiplier = condition switch
+            {
+                ProductCondition.New => 1.15m,
+                ProductCondition.LikeNew => 1.0m,
+                ProductCondition.Good => 0.88m,
+                _ => 0.74m,
+            };
+
+            var price = Math.Round(line.Price * multiplier);
+
+            var title = $"{line.Model} — {line.Tagline}";
+            if (existingTitles.Contains(title)) continue;
+
+            var product = new Product
+            {
+                PublicId = PublicIdGenerator.Next(),
+                Title = title,
+                Brand = line.Brand,
+                CategoryId = categoryId,
+                Condition = condition,
+                Price = price,
+                OriginalPrice = line.Retail,
+                Stock = random.Next(0, 4),
+                WarrantyMonths = condition == ProductCondition.New ? 12 : random.Next(0, 7),
+                Tested = condition != ProductCondition.New,
+                WatchCount = random.Next(0, 60),
+                Description = $"{line.Model} in {condition} condition. {line.Tagline}. Checked and photographed by LoottaTech.",
+                FlawNotes = condition switch
+                {
+                    ProductCondition.New => "",
+                    ProductCondition.LikeNew => "No marks found.",
+                    ProductCondition.Good => "Light cosmetic wear, nothing structural.",
+                    _ => "Visible scuffing and wear. Fully working.",
+                },
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow.AddDays(-random.Next(1, 60)),
+            };
+
+            product.Images.Add(new ProductImage
+            {
+                FileName = line.Image,
+                Url = $"/uploads/products/{line.Image}",
+                IsPrimary = true,
+                SortOrder = 0,
+            });
+
+            db.Products.Add(product);
+        }
+
+        await db.SaveChangesAsync();
     }
 
     /// <summary>
@@ -272,6 +380,31 @@ public static class DbSeeder
         await db.SaveChangesAsync();
     }
 
+    /// <summary>Gives an account number to anyone created before the column.</summary>
+    private static async Task BackfillUserCodesAsync(LoottaDbContext db)
+    {
+        var missing = await db.Users
+            .Where(u => u.PublicId == null || u.PublicId == "")
+            .ToListAsync();
+
+        if (missing.Count == 0) return;
+
+        var taken = (await db.Users
+                .Where(u => u.PublicId != null && u.PublicId != "")
+                .Select(u => u.PublicId)
+                .ToListAsync())
+            .ToHashSet();
+
+        foreach (var user in missing)
+        {
+            string code;
+            do { code = PublicIdGenerator.NextUser(); } while (!taken.Add(code));
+            user.PublicId = code;
+        }
+
+        await db.SaveChangesAsync();
+    }
+
     private static Product Build(
         string title, string brand, int categoryId, ProductCondition condition,
         decimal price, decimal originalPrice, int stock, int warrantyMonths,
@@ -321,4 +454,177 @@ public static class DbSeeder
 
         return product;
     }
+
+    /// <summary>
+    /// The catalogue built into the code.
+    ///
+    /// Used only when seed-data.json is missing or unreadable. Keeping it
+    /// means a broken edit to the JSON degrades to the original demo shop
+    /// instead of leaving somebody with an empty storefront and no clue why.
+    /// </summary>
+    private static readonly (string Model, string Brand, string Slug, decimal Price, decimal Retail, string Image, string Tagline)[] BuiltInLines =
+    {
+            ("iPhone 13",              "Apple",   "phones",      329, 799, "iphone-12-mini-1", "fast · great camera · all-day battery"),
+            ("iPhone 13 Pro",          "Apple",   "phones",      459, 999, "iphone-12-mini-2", "120Hz · triple camera · pro video"),
+            ("iPhone 14",              "Apple",   "phones",      499, 899, "iphone-12-mini-3", "bright screen · crash detection"),
+            ("iPhone SE 2022",         "Apple",   "phones",      179, 429, "iphone-12-mini-1", "small · fast chip · budget pick"),
+            ("Xiaomi 12",              "Xiaomi",  "phones",      239, 749, "xiaomi-mi-11-1",   "120Hz AMOLED · fast charging"),
+            ("Xiaomi 13",              "Xiaomi",  "phones",      329, 899, "xiaomi-mi-11-2",   "Leica camera · flagship chip"),
+            ("Xiaomi 13 Pro",          "Xiaomi",  "phones",      429, 1099,"xiaomi-mi-11-3",   "1-inch sensor · best camera"),
+            ("Xiaomi Redmi Note 12",   "Xiaomi",  "phones",      129, 299, "xiaomi-mi-11-1",   "big battery · cheap and reliable"),
+            ("Xiaomi Redmi Note 13",   "Xiaomi",  "phones",      159, 349, "xiaomi-mi-11-2",   "108MP camera · fast internet"),
+            ("Samsung Galaxy S21",     "Samsung", "phones",      269, 849, "iphone-12-mini-2", "120Hz · wireless charging"),
+            ("Samsung Galaxy S22",     "Samsung", "phones",      359, 949, "iphone-12-mini-3", "compact flagship · great screen"),
+            ("Google Pixel 6a",        "Google",  "phones",      199, 449, "iphone-12-mini-1", "clean Android · superb photos"),
+
+            ("ThinkPad T14 Gen 3",     "Lenovo",  "laptops",     429, 1199,"thinkpad-e14-1",   "i7 · 16GB · business build"),
+            ("ThinkPad X1 Carbon",     "Lenovo",  "laptops",     649, 1799,"thinkpad-e14-2",   "1.1kg · 14in · long battery"),
+            ("ThinkPad E15",           "Lenovo",  "laptops",     339, 899, "thinkpad-e14-3",   "15in · numeric keypad · SSD"),
+            ("MacBook Air M1",         "Apple",   "laptops",     549, 1099,"thinkpad-e14-1",   "silent · 15h battery · fast"),
+            ("MacBook Pro 13 M1",      "Apple",   "laptops",     699, 1299,"thinkpad-e14-2",   "bright screen · great speakers"),
+            ("Dell XPS 13",            "Dell",    "laptops",     499, 1299,"thinkpad-e14-3",   "thin bezels · premium build"),
+            ("HP EliteBook 840",       "HP",      "laptops",     319, 999, "thinkpad-e14-1",   "sturdy · docking · i5"),
+            ("Asus Vivobook 15",       "Asus",    "laptops",     279, 649, "thinkpad-e14-2",   "budget all-rounder · SSD"),
+
+            ("Apple Watch SE",         "Apple",   "wearables",   129, 299, "apple-watch-s7-1", "fitness · notifications · light"),
+            ("Apple Watch Series 8",   "Apple",   "wearables",   229, 499, "apple-watch-s7-2", "always-on · temperature sensor"),
+            ("Galaxy Watch 5",         "Samsung", "wearables",   139, 329, "apple-watch-s7-1", "sleep tracking · long battery"),
+            ("Xiaomi Smart Band 8",    "Xiaomi",  "wearables",    29,  59, "apple-watch-s7-2", "14-day battery · cheap tracker"),
+
+            ("Logitech MX Master 3",   "Logitech","accessories",  59, 119, "vxe-mouse-1",      "quiet · precise · productivity"),
+            ("Logitech G Pro X",       "Logitech","accessories",  49,  99, "vxe-mouse-2",      "lightweight · esports sensor"),
+            ("Razer DeathAdder V3",    "Razer",   "accessories",  45,  89, "vxe-mouse-1",      "ergonomic · 8K polling"),
+            ("Keychron K2 keyboard",   "Keychron","accessories",  55, 109, "vxe-mouse-2",      "mechanical · wireless · compact"),
+            ("Anker 65W charger",      "Anker",   "accessories",  19,  45, "vxe-mouse-1",      "GaN · small · fast charge"),
+            ("Anker PowerBank 20000",  "Anker",   "accessories",  25,  59, "vxe-mouse-2",      "charges a laptop · USB-C"),
+            ("USB-C to HDMI hub",      "Ugreen",  "accessories",  15,  35, "vxe-mouse-1",      "7-in-1 · 4K output"),
+            ("Sony WH-1000XM4",        "Sony",    "accessories", 149, 349, "vxe-mouse-2",      "noise cancelling · 30h battery"),
+            ("JBL Tune 760NC",         "JBL",     "accessories",  59, 129, "vxe-mouse-1",      "over-ear · 50h battery"),
+            ("AirPods Pro 2",          "Apple",   "accessories", 129, 249, "vxe-mouse-2",      "active noise cancelling"),
+            ("Samsung T7 1TB SSD",     "Samsung", "accessories",  75, 149, "vxe-mouse-1",      "portable · 1050MB/s"),
+            ("SanDisk 128GB microSD",  "SanDisk", "accessories",  12,  29, "vxe-mouse-2",      "A2 · 4K ready"),
+
+            ("iPad 9th gen 64GB",      "Apple",   "tablets",     199, 429, "iphone-12-mini-1", "10.2in · school and study"),
+            ("iPad Air 4",             "Apple",   "tablets",     319, 749, "iphone-12-mini-2", "10.9in · USB-C · fast"),
+            ("Samsung Tab S6 Lite",    "Samsung", "tablets",     149, 349, "iphone-12-mini-3", "with S Pen · light"),
+            ("Xiaomi Pad 5",           "Xiaomi",  "tablets",     169, 399, "xiaomi-mi-11-1",   "120Hz · great for video"),
+
+            ("Dell 24in P2419H",       "Dell",    "monitors",     79, 219, "thinkpad-e14-1",   "1080p · IPS · height adjust"),
+            ("LG 27in 27UL500",        "LG",      "monitors",    169, 399, "thinkpad-e14-2",   "4K · IPS · HDR10"),
+            ("AOC 24in 144Hz",         "AOC",     "monitors",    109, 249, "thinkpad-e14-3",   "gaming · 1ms · FreeSync"),
+
+            ("HP LaserJet M15w",       "HP",      "printers",     59, 149, "thinkpad-e14-1",   "mono laser · wireless"),
+            ("Canon PIXMA G2010",      "Canon",   "printers",     79, 189, "thinkpad-e14-2",   "ink tank · cheap refills"),
+            ("Epson L3110",            "Epson",   "printers",     89, 199, "thinkpad-e14-3",   "print scan copy · ink tank"),
+
+            ("RTX 3060 12GB",          "NVIDIA",  "pc-parts",    189, 449, "vxe-mouse-1",      "1080p gaming · 12GB VRAM"),
+            ("Ryzen 5 5600X",          "AMD",     "pc-parts",     99, 299, "vxe-mouse-2",      "6 cores · great value"),
+            ("Corsair 16GB DDR4",      "Corsair", "pc-parts",     29,  79, "vxe-mouse-1",      "3200MHz · 2x8GB"),
+            ("Kingston 500GB NVMe",    "Kingston","pc-parts",     35,  89, "vxe-mouse-2",      "PCIe 3.0 · fast boot"),
+
+            ("PS5 DualSense pad",      "Sony",    "gaming",       39,  79, "vxe-mouse-1",      "wireless · haptic triggers"),
+            ("Xbox Series controller", "Microsoft","gaming",      35,  69, "vxe-mouse-2",      "wireless · works on PC"),
+            ("Nintendo Switch Lite",   "Nintendo","gaming",      119, 219, "vxe-mouse-1",      "handheld · light and cheap"),
+    };
+
+
+    /// <summary>
+    /// Categories, tag shortcuts and shop wording.
+    ///
+    /// Every part is additive and guarded on what is already there. That
+    /// matters because the shop owner edits all of this from the admin site:
+    /// re-running the seeder must never undo their work, so anything with a
+    /// matching slug, label or key is left exactly as it is.
+    /// </summary>
+    private static async Task SeedStoreContentAsync(LoottaDbContext db, SeedFile? seed)
+    {
+        /* ------------------------------------------------------ categories */
+
+        if (seed is not null && seed.Categories.Count > 0)
+        {
+            var existingSlugs = (await db.Categories.Select(c => c.Slug).ToListAsync()).ToHashSet();
+
+            foreach (var category in seed.Categories)
+            {
+                if (existingSlugs.Contains(category.Slug)) continue;
+
+                db.Categories.Add(new Category
+                {
+                    Name = category.Name,
+                    Slug = category.Slug,
+                    SortOrder = category.SortOrder,
+                });
+            }
+        }
+
+        /* ------------------------------------------------------ quick tags */
+
+        if (!await db.QuickTags.AnyAsync())
+        {
+            var tags = seed?.QuickTags.Count > 0
+                ? seed.QuickTags.Select(t => new QuickTag
+                {
+                    Label = t.Label,
+                    Query = string.IsNullOrWhiteSpace(t.Query) ? t.Label : t.Query,
+                    SortOrder = t.SortOrder,
+                })
+                : DefaultTags();
+
+            db.QuickTags.AddRange(tags);
+        }
+
+        /* ------------------------------------------------------- shop text */
+
+        var savedKeys = (await db.SiteTexts.Select(t => t.Key).ToListAsync()).ToHashSet();
+
+        foreach (var entry in SiteTextKeys.All)
+        {
+            if (savedKeys.Contains(entry.Key)) continue;
+
+            // The file wins over the default, and an admin edit wins over both
+            // because a key already in the table is skipped entirely.
+            var value = seed is not null && seed.SiteText.TryGetValue(entry.Key, out var fromFile)
+                ? fromFile
+                : entry.Default;
+
+            db.SiteTexts.Add(new SiteText
+            {
+                Key = entry.Key,
+                Value = value,
+                Description = entry.Description,
+                SortOrder = entry.SortOrder,
+            });
+        }
+
+        /* -------------------------------------------------- payment methods */
+
+        if (!await db.PaymentMethodSettings.AnyAsync())
+        {
+            var order = 0;
+
+            foreach (var option in PaymentMethods.All)
+            {
+                db.PaymentMethodSettings.Add(new PaymentMethodSetting
+                {
+                    Method = option.Value.ToString(),
+                    IsEnabled = true,
+                    SortOrder = order++,
+                });
+            }
+        }
+
+        await db.SaveChangesAsync();
+    }
+
+    /// <summary>Used only when seed-data.json has no tags of its own.</summary>
+    private static IEnumerable<QuickTag> DefaultTags() =>
+    [
+        new() { Label = "iPhone",      Query = "iphone",      SortOrder = 1 },
+        new() { Label = "ThinkPad",    Query = "thinkpad",    SortOrder = 2 },
+        new() { Label = "Apple Watch", Query = "apple watch", SortOrder = 3 },
+        new() { Label = "Xiaomi",      Query = "xiaomi",      SortOrder = 4 },
+        new() { Label = "Mouse",       Query = "mouse",       SortOrder = 5 },
+        new() { Label = "Under $100",  Query = "under 100",   SortOrder = 6 },
+    ];
+
 }

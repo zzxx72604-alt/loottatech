@@ -1,0 +1,81 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, .55);
+  z-index: 300;
+}
+
+.dialog {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(440px, calc(100vw - 2 * var(--sp-4)));
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  padding: var(--sp-4);
+  z-index: 301;
+}
+
+header {
+  margin-bottom: var(--sp-3);
+
+  h3 { margin: 0 0 3px; font-size: 15px; }
+  p { margin: 0; font-size: 11.5px; color: var(--text-3); line-height: 1.5; }
+}
+
+.frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  background: var(--surface-2);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  touch-action: none;   /* the box handles dragging, not the page */
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    user-select: none;
+    -webkit-user-drag: none;
+  }
+}
+
+/* Everything outside the box is dimmed by a huge shadow, which is cheaper
+   than drawing four separate overlay panels and keeps the edges exact. */
+.box {
+  position: absolute;
+  border: 2px solid var(--brand);
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, .5);
+  cursor: grab;
+
+  &:active { cursor: grabbing; }
+}
+
+/* Rule-of-thirds guides, the same hint every camera app gives. */
+.grid {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(to right, transparent 33%, rgba(255,255,255,.35) 33%, rgba(255,255,255,.35) 34%, transparent 34%,
+                    transparent 66%, rgba(255,255,255,.35) 66%, rgba(255,255,255,.35) 67%, transparent 67%),
+    linear-gradient(to bottom, transparent 33%, rgba(255,255,255,.35) 33%, rgba(255,255,255,.35) 34%, transparent 34%,
+                    transparent 66%, rgba(255,255,255,.35) 66%, rgba(255,255,255,.35) 67%, transparent 67%);
+  pointer-events: none;
+}
+
+.zoom {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  margin: var(--sp-3) 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-2);
+
+  input { flex: 1; }
+}
+
+.actions { display: flex; justify-content: flex-end; gap: var(--sp-2); }

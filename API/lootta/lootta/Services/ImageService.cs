@@ -36,7 +36,20 @@ public class ImageService
     /// Validates, crops to a square, and writes the three sizes.
     /// Returns the BASE path (no extension) that goes into the database.
     /// </summary>
-    public async Task<SaveResult> SaveAsync(IFormFile file, string? preferredName = null)
+    /// <summary>
+    /// Where to crop, as fractions of the source image (0–1).
+    ///
+    /// Fractions rather than pixels, because the admin drew the box on a
+    /// preview that was scaled to fit their screen. Sending pixels would mean
+    /// the browser has to know the original dimensions and get the maths right;
+    /// fractions survive any scaling.
+    /// </summary>
+    public record CropBox(double X, double Y, double Size);
+
+    public async Task<SaveResult> SaveAsync(
+        IFormFile file,
+        string? preferredName = null,
+        CropBox? crop = null)
     {
         // ---- validation ----
         if (file.Length == 0)
@@ -63,13 +76,37 @@ public class ImageService
             await using var stream = file.OpenReadStream();
             using var image = await Image.LoadAsync(stream);
 
-            // ---- crop to a centred square, so every card lines up ----
-            var side = Math.Min(image.Width, image.Height);
-            image.Mutate(x => x.Crop(new Rectangle(
-                (image.Width - side) / 2,
-                (image.Height - side) / 2,
-                side,
-                side)));
+            /*
+             * Crop to a square: the admin's chosen box when there is one,
+             * otherwise the centre. Every card is square, so this has to
+             * happen somewhere — doing it here means the customer never
+             * downloads pixels that will be cropped away.
+             */
+            if (crop is not null)
+            {
+                var size = (int)Math.Round(crop.Size * Math.Min(image.Width, image.Height));
+                size = Math.Max(16, size);
+
+                var x = (int)Math.Round(crop.X * image.Width);
+                var y = (int)Math.Round(crop.Y * image.Height);
+
+                // Clamp, so a rounding error or a hand-edited request can
+                // never ask for pixels outside the image.
+                x = Math.Clamp(x, 0, Math.Max(0, image.Width - size));
+                y = Math.Clamp(y, 0, Math.Max(0, image.Height - size));
+                size = Math.Min(size, Math.Min(image.Width - x, image.Height - y));
+
+                image.Mutate(op => op.Crop(new Rectangle(x, y, size, size)));
+            }
+            else
+            {
+                var side = Math.Min(image.Width, image.Height);
+                image.Mutate(op => op.Crop(new Rectangle(
+                    (image.Width - side) / 2,
+                    (image.Height - side) / 2,
+                    side,
+                    side)));
+            }
 
             foreach (var size in new[] { 480, 800 })
             {

@@ -81,6 +81,8 @@ public class ChangeRoleDto
 public class UserRowDto
 {
     public int Id { get; set; }
+    public string PublicId { get; set; } = string.Empty;
+    public string AvatarUrl { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public string Role { get; set; } = string.Empty;
@@ -97,6 +99,9 @@ public class UserRowDto
 public class CustomerDetailDto
 {
     public int Id { get; set; }
+    /// <summary>The number a customer quotes, e.g. "UE8145".</summary>
+    public string PublicId { get; set; } = string.Empty;
+    public string AvatarUrl { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public string Role { get; set; } = string.Empty;

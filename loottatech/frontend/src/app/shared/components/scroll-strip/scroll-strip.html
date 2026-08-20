@@ -1,0 +1,13 @@
+<div class="strip-wrap">
+  @if (canLeft()) {
+    <button type="button" class="nudge left" (click)="nudge(-1)" aria-label="Scroll left">‹</button>
+  }
+
+  <div class="track" #track (scroll)="measure()">
+    <ng-content />
+  </div>
+
+  @if (canRight()) {
+    <button type="button" class="nudge right" (click)="nudge(1)" aria-label="Scroll right">›</button>
+  }
+</div>

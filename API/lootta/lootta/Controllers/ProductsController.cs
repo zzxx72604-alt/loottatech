@@ -337,14 +337,19 @@ public class ProductsController : ControllerBase
     [HttpPost("{id:int}/images")]
     [Authorize(Policy = "CanManageProducts")]
     [RequestSizeLimit(10 * 1024 * 1024)]
-    public async Task<ActionResult<ProductImageDto>> UploadImage(int id, IFormFile file)
+    public async Task<ActionResult<ProductImageDto>> UploadImage(
+        int id,
+        IFormFile file,
+        [FromForm] double? cropX = null,
+        [FromForm] double? cropY = null,
+        [FromForm] double? cropSize = null)
     {
         var product = await _db.Products.Include(p => p.Images)
                                         .FirstOrDefaultAsync(p => p.Id == id);
         if (product is null) return NotFound($"No product with id {id}.");
         if (file is null) return BadRequest("No file was sent.");
 
-        var result = await _images.SaveAsync(file, product.Title);
+        var result = await _images.SaveAsync(file, product.Title, BuildCrop(cropX, cropY, cropSize));
         if (!result.Ok) return BadRequest(result.Error);
 
         var image = new ProductImage
@@ -373,7 +378,13 @@ public class ProductsController : ControllerBase
     [HttpPut("{id:int}/images/{imageId:int}")]
     [Authorize(Policy = "CanManageProducts")]
     [RequestSizeLimit(10 * 1024 * 1024)]
-    public async Task<ActionResult<ProductImageDto>> ReplaceImage(int id, int imageId, IFormFile file)
+    public async Task<ActionResult<ProductImageDto>> ReplaceImage(
+        int id,
+        int imageId,
+        IFormFile file,
+        [FromForm] double? cropX = null,
+        [FromForm] double? cropY = null,
+        [FromForm] double? cropSize = null)
     {
         var product = await _db.Products.Include(p => p.Images)
                                         .FirstOrDefaultAsync(p => p.Id == id);
@@ -383,7 +394,7 @@ public class ProductsController : ControllerBase
         if (image is null) return NotFound($"No image with id {imageId} on that product.");
         if (file is null) return BadRequest("No file was sent.");
 
-        var result = await _images.SaveAsync(file, product.Title);
+        var result = await _images.SaveAsync(file, product.Title, BuildCrop(cropX, cropY, cropSize));
         if (!result.Ok) return BadRequest(result.Error);
 
         // Only remove the old files once the new ones exist, so a failed
@@ -449,6 +460,18 @@ public class ProductsController : ControllerBase
 
         await _db.SaveChangesAsync();
         return NoContent();
+    }
+
+    /// <summary>Turns the posted fractions into a crop box, or null for centre.</summary>
+    private static ImageService.CropBox? BuildCrop(double? x, double? y, double? size)
+    {
+        if (x is null || y is null || size is null) return null;
+        if (size <= 0 || size > 1) return null;
+
+        return new ImageService.CropBox(
+            Math.Clamp(x.Value, 0, 1),
+            Math.Clamp(y.Value, 0, 1),
+            Math.Clamp(size.Value, 0.05, 1));
     }
 
     /* ------------------------------------------------------------ mapping */

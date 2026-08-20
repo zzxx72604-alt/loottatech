@@ -296,23 +296,6 @@ h1 {
   h2 { font-size: 15px; margin: 0 0 var(--sp-3); }
 }
 
-.also-viewed .strip {
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: minmax(170px, 1fr);
-  gap: var(--sp-3);
-  overflow-x: auto;
-  padding-bottom: var(--sp-2);
-  /* Snap so a swipe lands on a card rather than halfway between two. */
-  scroll-snap-type: x mandatory;
-
-  > * { scroll-snap-align: start; }
-}
-
-@media (max-width: 600px) {
-  .also-viewed .strip { grid-auto-columns: minmax(150px, 1fr); }
-}
-
 .report-btn {
   display: block;
   width: 100%;
@@ -334,20 +317,10 @@ h1 {
   h2 { font-size: 15px; margin: 0 0 var(--sp-3); }
 }
 
-.related-strip .strip {
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: minmax(180px, 1fr);
-  gap: var(--sp-3);
-  overflow-x: auto;
-  padding-bottom: var(--sp-2);
-  scroll-snap-type: x mandatory;
-
-  > * { scroll-snap-align: start; }
-}
-
 .related-placeholder { height: 300px; margin-top: var(--sp-5); }
 
-@media (max-width: 600px) {
-  .related-strip .strip { grid-auto-columns: minmax(155px, 1fr); }
+.related-empty {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--text-3);
 }

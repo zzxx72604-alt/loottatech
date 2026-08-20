@@ -318,6 +318,9 @@ namespace lootta.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<bool>("IsPaid")
+                        .HasColumnType("bit");
+
                     b.Property<string>("Note")
                         .IsRequired()
                         .HasMaxLength(300)
@@ -327,6 +330,11 @@ namespace lootta.Migrations
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("PaymentMethod")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
 
                     b.Property<string>("Phone")
                         .IsRequired()
@@ -415,6 +423,23 @@ namespace lootta.Migrations
                     b.HasIndex("ProductId");
 
                     b.ToTable("OrderItems");
+                });
+
+            modelBuilder.Entity("lootta.Models.PaymentMethodSetting", b =>
+                {
+                    b.Property<string>("Method")
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<bool>("IsEnabled")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.HasKey("Method");
+
+                    b.ToTable("PaymentMethodSettings");
                 });
 
             modelBuilder.Entity("lootta.Models.Product", b =>
@@ -610,6 +635,40 @@ namespace lootta.Migrations
                     b.ToTable("ProductSpecs");
                 });
 
+            modelBuilder.Entity("lootta.Models.QuickTag", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Label")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<string>("Query")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Label")
+                        .IsUnique();
+
+                    b.HasIndex("SortOrder");
+
+                    b.ToTable("QuickTags");
+                });
+
             modelBuilder.Entity("lootta.Models.RedeemCode", b =>
                 {
                     b.Property<int>("Id")
@@ -684,6 +743,61 @@ namespace lootta.Migrations
                     b.ToTable("RedeemCodeUses");
                 });
 
+            modelBuilder.Entity("lootta.Models.Report", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Details")
+                        .IsRequired()
+                        .HasMaxLength(600)
+                        .HasColumnType("nvarchar(600)");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)");
+
+                    b.Property<int>("ReporterId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Resolution")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<DateTime?>("ResolvedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("Target")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<int>("TargetId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Status", "CreatedAt");
+
+                    b.HasIndex("ReporterId", "Target", "TargetId")
+                        .IsUnique();
+
+                    b.ToTable("Reports");
+                });
+
             modelBuilder.Entity("lootta.Models.Review", b =>
                 {
                     b.Property<int>("Id")
@@ -730,6 +844,30 @@ namespace lootta.Migrations
                         .IsUnique();
 
                     b.ToTable("Reviews");
+                });
+
+            modelBuilder.Entity("lootta.Models.SiteText", b =>
+                {
+                    b.Property<string>("Key")
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Value")
+                        .IsRequired()
+                        .HasMaxLength(400)
+                        .HasColumnType("nvarchar(400)");
+
+                    b.HasKey("Key");
+
+                    b.ToTable("SiteTexts");
                 });
 
             modelBuilder.Entity("lootta.Models.User", b =>
@@ -802,6 +940,11 @@ namespace lootta.Migrations
                     b.Property<int>("PlaysUsedToday")
                         .HasColumnType("int");
 
+                    b.Property<string>("PublicId")
+                        .IsRequired()
+                        .HasMaxLength(12)
+                        .HasColumnType("nvarchar(12)");
+
                     b.Property<string>("Role")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -813,6 +956,9 @@ namespace lootta.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("Email")
+                        .IsUnique();
+
+                    b.HasIndex("PublicId")
                         .IsUnique();
 
                     b.ToTable("Users");
@@ -997,6 +1143,17 @@ namespace lootta.Migrations
                     b.Navigation("RedeemCode");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("lootta.Models.Report", b =>
+                {
+                    b.HasOne("lootta.Models.User", "Reporter")
+                        .WithMany()
+                        .HasForeignKey("ReporterId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Reporter");
                 });
 
             modelBuilder.Entity("lootta.Models.Review", b =>

@@ -1,0 +1,141 @@
+.rail {
+  position: fixed;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border-strong);
+  border-right: 0;
+  border-radius: var(--radius) 0 0 var(--radius);
+  overflow: hidden;
+  z-index: 90;
+}
+
+.tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  width: 52px;
+  padding: 9px 4px;
+  border: 0;
+  background: var(--surface);
+  color: var(--text-2);
+  transition: background-color var(--dur) var(--ease), color var(--dur) var(--ease);
+
+  &:hover { background: var(--surface-2); color: var(--text); }
+  &.on { background: var(--brand); color: var(--brand-ink); }
+
+  .ico { font-size: 15px; line-height: 1; }
+  .label { font-size: 9.5px; font-weight: 600; }
+}
+
+.rail-panel {
+  position: fixed;
+  right: 60px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: min(250px, calc(100vw - 80px));
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .18);
+  padding: var(--sp-4);
+  z-index: 91;
+  animation: slide-in 160ms cubic-bezier(.4, 0, .2, 1);
+
+  h3 { margin: 0 0 var(--sp-3); font-size: 14px; }
+}
+
+@keyframes slide-in {
+  from { opacity: 0; transform: translate(8px, -50%); }
+  to   { opacity: 1; transform: translate(0, -50%); }
+}
+
+.x {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  border: 0;
+  background: none;
+  color: var(--text-3);
+  font-size: 12px;
+
+  &:hover { color: var(--text); }
+}
+
+/* A stylised QR, drawn in CSS. No image request, and obviously a mock-up. */
+.qr {
+  position: relative;
+  width: 130px;
+  height: 130px;
+  margin: 0 auto var(--sp-3);
+  background:
+    repeating-linear-gradient(90deg, var(--text) 0 4px, transparent 4px 8px),
+    repeating-linear-gradient(0deg, var(--text) 0 4px, transparent 4px 8px);
+  background-color: var(--surface-2);
+  opacity: .5;
+  border-radius: 4px;
+}
+
+.corner {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  border: 5px solid var(--text);
+  background: var(--surface);
+
+  &.tl { top: 6px; left: 6px; }
+  &.tr { top: 6px; right: 6px; }
+  &.bl { bottom: 6px; left: 6px; }
+}
+
+.mid {
+  position: absolute;
+  inset: 42%;
+  background: var(--surface);
+  border: 3px solid var(--text);
+}
+
+.note {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--text-3);
+
+  a { color: var(--price); font-weight: 600; }
+}
+
+.bubbles {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: var(--sp-3);
+}
+
+.them {
+  margin: 0;
+  background: var(--surface-2);
+  border-radius: 10px 10px 10px 3px;
+  padding: 7px var(--sp-3);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+/* On a phone the rail would cover the content, so it moves out of the way. */
+@media (max-width: 720px) {
+  .rail { top: auto; bottom: 76px; transform: none; }
+  .rail-panel { top: auto; bottom: 76px; transform: none; right: 60px; }
+
+  @keyframes slide-in {
+    from { opacity: 0; transform: translateX(8px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rail-panel { animation: none; }
+}

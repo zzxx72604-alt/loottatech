@@ -1,19 +1,36 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable, tap } from 'rxjs';
 import { ApiService } from './api.service';
-import { CreateOrderRequest, Order, OrderPreview } from '../../shared/models/order';
-
-/** Order numbers this browser has placed, so "My orders" works without login. */
-const HISTORY_KEY = 'lootta-order-numbers';
+import { GuestOrderStore } from './guest-orders.service';
+import { UserService } from './user.service';
+import {
+  CreateOrderRequest,
+  Order,
+  OrderPreview,
+  OrderSummary,
+  PaymentOption,
+} from '../../shared/models/order';
 
 @Injectable({ providedIn: 'root' })
 export class OrderService {
   private readonly api = inject(ApiService);
+  private readonly guests = inject(GuestOrderStore);
+  private readonly users = inject(UserService);
 
   create(order: CreateOrderRequest): Observable<Order> {
-    return this.api
-      .post<Order>('orders', order)
-      .pipe(tap((created) => this.remember(created.orderNumber)));
+    return this.api.post<Order>('orders', order).pipe(
+      tap((created) => {
+        /*
+         * Only a guest order is written to this browser.
+         *
+         * A signed-in customer's order is already attached to their account
+         * and comes back from mine(). Saving it here too would leave it on
+         * display after they signed out, on a shared computer, to whoever
+         * sat down next.
+         */
+        if (!this.users.isLoggedIn()) this.guests.add(created.orderNumber);
+      }),
+    );
   }
 
   /**
@@ -26,6 +43,11 @@ export class OrderService {
     return this.api.post<OrderPreview>('orders/preview', order);
   }
 
+  /** What the shop accepts. Comes from the API, never hardcoded here. */
+  paymentMethods(): Observable<PaymentOption[]> {
+    return this.api.get<PaymentOption[]>('orders/payment-methods');
+  }
+
   byNumber(orderNumber: string): Observable<Order> {
     return this.api.get<Order>(`orders/number/${orderNumber}`);
   }
@@ -34,23 +56,20 @@ export class OrderService {
     return this.api.get<Order>(`orders/${id}`);
   }
 
-  /**
-   * The API has no login yet, so there is no server-side "my orders".
-   * Instead we remember the order numbers this browser created and look
-   * each one up. Honest, and it works for a guest checkout.
-   */
-  myOrderNumbers(): string[] {
-    try {
-      return JSON.parse(localStorage.getItem(HISTORY_KEY) ?? '[]') as string[];
-    } catch {
-      return [];
-    }
+  /** The signed-in customer's real history, straight from SQL Server. */
+  mine(): Observable<OrderSummary[]> {
+    return this.api.get<OrderSummary[]>('orders/mine');
   }
 
-  private remember(orderNumber: string): void {
-    const list = this.myOrderNumbers();
-    if (!list.includes(orderNumber)) {
-      localStorage.setItem(HISTORY_KEY, JSON.stringify([orderNumber, ...list].slice(0, 30)));
-    }
+  /**
+   * Codes from guest checkouts in this browser.
+   *
+   * Guest checkout has no account for an order to belong to, so the codes are
+   * kept locally and looked up one by one. A signed-in customer gets mine()
+   * instead, and the two lists are merged so creating an account after
+   * checking out as a guest loses nothing.
+   */
+  myOrderNumbers(): string[] {
+    return this.guests.all();
   }
 }

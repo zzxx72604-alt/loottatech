@@ -164,3 +164,65 @@ h3 {
   .detail { position: static; }
   .search { width: 100%; }
 }
+
+/* ------------------------------------------------- avatars and identity */
+
+.who-cell { display: flex; align-items: center; gap: var(--sp-2); }
+.who-text { display: flex; flex-direction: column; min-width: 0; }
+
+.mini-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex: none;
+}
+
+.mini-avatar.fallback {
+  display: grid;
+  place-items: center;
+  background: var(--surface-2);
+  color: var(--text-3);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.d-who { display: flex; gap: var(--sp-3); align-items: flex-start; }
+
+.d-avatar {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex: none;
+  border: 2px solid var(--brand);
+}
+
+.d-avatar.fallback {
+  display: grid;
+  place-items: center;
+  background: var(--surface-2);
+  color: var(--text-3);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+/* The account number is meant to be read out and pasted, so it is monospaced
+   and copies on click. */
+.code {
+  margin-top: 4px;
+  border: 1px dashed var(--border-strong);
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-family: ui-monospace, monospace;
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+
+  &:hover { border-color: var(--ink); color: var(--text); }
+}
+
+.id { font-size: 11px; }
+
+.actions { display: flex; flex-wrap: wrap; gap: var(--sp-2); }

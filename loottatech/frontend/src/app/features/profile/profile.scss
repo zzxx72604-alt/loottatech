@@ -291,3 +291,18 @@ img.avatar { object-fit: cover; }
 @media (max-width: 600px) {
   .badges { grid-template-columns: 1fr; }
 }
+
+
+/* Sign out is a destructive-ish action and rarely wanted, so it is smaller
+   and clearly separated from the shortcuts beside it. */
+.link.sign-out {
+  color: var(--sale);
+  border-color: rgba(255, 59, 48, .35);
+  font-size: 12px;
+  padding: var(--sp-2) var(--sp-3);
+
+  &:hover {
+    border-color: var(--sale);
+    background: rgba(255, 59, 48, .08);
+  }
+}

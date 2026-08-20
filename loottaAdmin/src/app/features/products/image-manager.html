@@ -55,6 +55,14 @@
   </div>
 }
 
+@if (pendingFile(); as file) {
+  <app-crop-dialog
+    [file]="file"
+    (cropped)="startUpload($event)"
+    (cancelled)="cancelCrop()"
+  />
+}
+
 <!-- Hidden picker, driven by the buttons above so we control the styling. -->
 <input
   #picker

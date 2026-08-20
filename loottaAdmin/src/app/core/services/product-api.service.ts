@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpEvent } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { ApiService } from './api.service';
 import { environment } from '../../../environments/environment';
 import {
@@ -17,8 +17,19 @@ export class ProductApi {
   private readonly http = inject(HttpClient);
 
   /** includeInactive=true so the admin sees hidden products too. */
+  /**
+   * The API now returns a PAGE rather than a bare array. The admin still wants
+   * one flat list, so it asks for a large page and unwraps it here — one place
+   * to change if the admin ever needs its own paging.
+   */
   list(search = ''): Observable<Product[]> {
-    return this.api.get<Product[]>('products', { search, includeInactive: true });
+    return this.api
+      .get<{ items: Product[]; total: number; hasMore: boolean }>('products', {
+        search,
+        includeInactive: true,
+        take: 60,
+      })
+      .pipe(map((page) => page.items));
   }
 
   get(id: number): Observable<ProductDetail> {
@@ -53,9 +64,14 @@ export class ProductApi {
    * `reportProgress` gives us upload events so the UI can show a bar rather
    * than freezing on a large photo.
    */
-  uploadImage(productId: number, file: File): Observable<HttpEvent<ProductImage>> {
+  uploadImage(
+    productId: number,
+    file: File,
+    crop?: { x: number; y: number; size: number },
+  ): Observable<HttpEvent<ProductImage>> {
     const body = new FormData();
     body.append('file', file, file.name);
+    this.appendCrop(body, crop);
 
     return this.http.post<ProductImage>(
       `${environment.apiBase}/products/${productId}/images`,
@@ -64,15 +80,30 @@ export class ProductApi {
     );
   }
 
-  replaceImage(productId: number, imageId: number, file: File): Observable<HttpEvent<ProductImage>> {
+  replaceImage(
+    productId: number,
+    imageId: number,
+    file: File,
+    crop?: { x: number; y: number; size: number },
+  ): Observable<HttpEvent<ProductImage>> {
     const body = new FormData();
     body.append('file', file, file.name);
+    this.appendCrop(body, crop);
 
     return this.http.put<ProductImage>(
       `${environment.apiBase}/products/${productId}/images/${imageId}`,
       body,
       { reportProgress: true, observe: 'events' },
     );
+  }
+
+  /** Fractions of the source image; omitted means "centre crop". */
+  private appendCrop(body: FormData, crop?: { x: number; y: number; size: number }): void {
+    if (!crop) return;
+
+    body.append('cropX', String(crop.x));
+    body.append('cropY', String(crop.y));
+    body.append('cropSize', String(crop.size));
   }
 
   deleteImage(productId: number, imageId: number): Observable<void> {

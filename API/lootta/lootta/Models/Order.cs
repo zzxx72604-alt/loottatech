@@ -22,6 +22,16 @@ public class Order
 
     public DeliveryOption DeliveryOption { get; set; } = DeliveryOption.Standard;
 
+    /// <summary>
+    /// How the customer intends to pay. No money moves at checkout — the shop
+    /// settles on delivery or in store.
+    /// </summary>
+    public PaymentMethod PaymentMethod { get; set; } = PaymentMethod.CashOnDelivery;
+
+    /// <summary>Always false today. The column exists so a real provider can
+    /// set it later without a schema change.</summary>
+    public bool IsPaid { get; set; }
+
     [MaxLength(300)]
     public string Note { get; set; } = string.Empty;
 

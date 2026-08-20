@@ -1,0 +1,30 @@
+<!-- Clicking away is a cancel, which is the safe answer. -->
+<div class="backdrop" (click)="cancelled.emit()"></div>
+
+<div
+  class="dialog"
+  role="alertdialog"
+  aria-modal="true"
+  [attr.aria-label]="title"
+  (keydown.escape)="cancelled.emit()"
+>
+  <h3>{{ title }}</h3>
+
+  @if (message) {
+    <p class="lede">{{ message }}</p>
+  }
+
+  <div class="actions">
+    <button type="button" class="ghost" (click)="cancelled.emit()">{{ cancelLabel }}</button>
+
+    <button
+      #confirmBtn
+      type="button"
+      class="primary"
+      [class.danger]="danger"
+      (click)="confirmed.emit()"
+    >
+      {{ confirmLabel }}
+    </button>
+  </div>
+</div>
