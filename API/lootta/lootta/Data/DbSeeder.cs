@@ -254,6 +254,8 @@ public static class DbSeeder
         };
 
         var users = new List<User>();
+        var codes = new HashSet<string>();
+
         foreach (var (name, email) in reviewers)
         {
             var existing = await db.Users.FirstOrDefaultAsync(u => u.Email == email);
@@ -267,6 +269,7 @@ public static class DbSeeder
                 Role = UserRole.Customer,
                 Address = "Phnom Penh",
                 Coins = 200,
+                PublicId = await NextUserCodeAsync(db, codes),
             };
             db.Users.Add(user);
             users.Add(user);
@@ -327,6 +330,8 @@ public static class DbSeeder
     {
         if (await db.Users.AnyAsync()) return;
 
+        var codes = new HashSet<string>();
+
         db.Users.AddRange(
             new User
             {
@@ -336,6 +341,7 @@ public static class DbSeeder
                 Role = UserRole.Admin,
                 Address = "Phnom Penh",
                 Coins = 0,
+                PublicId = await NextUserCodeAsync(db, codes),
             },
             new User
             {
@@ -345,9 +351,34 @@ public static class DbSeeder
                 Role = UserRole.Customer,
                 Address = "Phnom Penh",
                 Coins = 120,
+                PublicId = await NextUserCodeAsync(db, codes),
             });
 
         await db.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// An account number nobody holds yet.
+    ///
+    /// The column is unique, so seeded accounts cannot be left at the empty
+    /// default — the second row would be rejected and a brand new database
+    /// would never finish seeding. <paramref name="taken"/> keeps the codes
+    /// handed out within one batch apart from each other, before any of them
+    /// has reached the table.
+    /// </summary>
+    private static async Task<string> NextUserCodeAsync(LoottaDbContext db, HashSet<string> taken)
+    {
+        for (var attempt = 0; attempt < 10; attempt++)
+        {
+            var code = PublicIdGenerator.NextUser();
+            if (!taken.Add(code)) continue;
+            if (await db.Users.AnyAsync(u => u.PublicId == code)) continue;
+            return code;
+        }
+
+        // Five million combinations against a handful of rows: unreachable in
+        // practice, but a seeder must not spin forever either.
+        throw new InvalidOperationException("Could not allocate a unique account number.");
     }
 
     /// <summary>

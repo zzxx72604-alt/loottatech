@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -16,6 +17,17 @@ public class OrdersController : ControllerBase
     private readonly LoottaDbContext _db;
     private readonly EconomyService _economy;
     private readonly NotificationService _notifications;
+
+    /// <summary>
+    /// Money inside a message, always in US dollars.
+    ///
+    /// ":C" formats with whatever locale the machine happens to run under, so
+    /// the same build prints "$5.00" on one computer and "¥5" on another. The
+    /// shop prices in dollars, so the symbol is fixed here instead of being
+    /// inherited from the marker's Windows settings.
+    /// </summary>
+    private static string Money(decimal amount) =>
+        "$" + amount.ToString("#,##0.00", CultureInfo.InvariantCulture);
 
     public OrdersController(
         LoottaDbContext db,
@@ -115,7 +127,7 @@ public class OrdersController : ControllerBase
             if (voucher.IsExpired)
                 return BadRequest("That voucher has expired.");
             if (subtotal < voucher.MinSpend)
-                return BadRequest($"That voucher needs a subtotal of at least {voucher.MinSpend:C}.");
+                return BadRequest($"That voucher needs a subtotal of at least {Money(voucher.MinSpend)}.");
 
             order.Discount = voucher.DiscountFor(subtotal);
             order.VoucherCode = voucher.Code;
@@ -233,12 +245,12 @@ public class OrdersController : ControllerBase
             else if (DateTime.UtcNow > voucher.ExpiresAt)
                 preview.VoucherMessage = "That voucher has expired.";
             else if (subtotal < voucher.MinSpend)
-                preview.VoucherMessage = $"Spend at least {voucher.MinSpend:C} to use this voucher.";
+                preview.VoucherMessage = $"Spend at least {Money(voucher.MinSpend)} to use this voucher.";
             else
             {
                 preview.Discount = voucher.DiscountFor(subtotal);
                 preview.VoucherApplied = true;
-                preview.VoucherMessage = $"{voucher.Value:C} off applied.";
+                preview.VoucherMessage = $"{Money(voucher.Value)} off applied.";
             }
         }
 

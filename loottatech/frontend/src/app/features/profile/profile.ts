@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { CurrencyPipe, DatePipe } from '@angular/common';
+import { DatePipe } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { ProfileService } from '../../core/services/profile.service';
 import { InteractionStore } from '../../core/services/interaction.store';
@@ -15,7 +15,7 @@ type Tab = 'saved' | 'liked' | 'orders' | 'badges';
 
 @Component({
   selector: 'app-profile',
-  imports: [CurrencyPipe, DatePipe, RouterLink, ProductCard, ConfirmDialog],
+  imports: [DatePipe, RouterLink, ProductCard, ConfirmDialog],
   templateUrl: './profile.html',
   styleUrl: './profile.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
