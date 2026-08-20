@@ -26,6 +26,9 @@ export const STATUS_FLOW: OrderStatus[] = [
   'Completed',
 ];
 
+/** Where an order stands with the customer's money. */
+export type RefundState = 'None' | 'Requested' | 'Approved' | 'Declined';
+
 export interface OrderSummary {
   id: number;
   orderNumber: string;
@@ -35,6 +38,13 @@ export interface OrderSummary {
   totalPrice: number;
   itemCount: number;
   status: OrderStatus;
+
+  /** Asked for by the customer; answered here. */
+  refund: RefundState;
+
+  /** In the customer's own words. Empty unless they asked. */
+  refundReason: string;
+
   createdAt: string;
 }
 

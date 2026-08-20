@@ -86,6 +86,7 @@ function toSummary(order: Order): OrderSummary {
     itemCount: order.items.reduce((total, item) => total + item.quantity, 0),
     totalPrice: order.totalPrice,
     status: order.status,
+    refund: order.refund,
     createdAt: order.createdAt,
   };
 }

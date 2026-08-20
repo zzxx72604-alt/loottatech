@@ -170,7 +170,8 @@ public class OrdersController : ControllerBase
         }
 
         return CreatedAtAction(nameof(GetByNumber),
-            new { orderNumber = order.OrderNumber }, order.ToDto());
+            new { orderNumber = order.OrderNumber },
+            order.ToDto(viewerOwnsOrder: order.UserId is not null));
     }
 
     /// <summary>Admin: every order, newest first.</summary>
@@ -346,7 +347,7 @@ public class OrdersController : ControllerBase
         var isOwner = userId is not null && order.UserId == userId;
         var isStaff = User.IsInRole(nameof(UserRole.Admin));
 
-        return Ok(isOwner || isStaff ? order.ToDto() : order.ToTrackingDto());
+        return Ok(isOwner || isStaff ? order.ToDto(viewerOwnsOrder: isOwner) : order.ToTrackingDto());
     }
 
     /// <summary>Admin: move an order along. Cancelling puts the stock back.</summary>
@@ -365,18 +366,7 @@ public class OrdersController : ControllerBase
         // Cancelling returns the units to stock, so they can be sold again.
         if (status == OrderStatus.Cancelled && !wasCancelled)
         {
-            // Take back the coins it paid out, or cancelling would be free money.
-            if (order.UserId is not null && order.CoinsEarned > 0)
-            {
-                var buyer = await _db.Users.FindAsync(order.UserId.Value);
-                if (buyer is not null) buyer.Coins = Math.Max(0, buyer.Coins - order.CoinsEarned);
-            }
-
-            foreach (var item in order.Items.Where(i => i.ProductId.HasValue))
-            {
-                var product = await _db.Products.FindAsync(item.ProductId!.Value);
-                if (product is not null) product.Stock += item.Quantity;
-            }
+            await UnwindAsync(order);
         }
         // Un-cancelling takes them back out again.
         else if (wasCancelled && status != OrderStatus.Cancelled)
@@ -395,6 +385,110 @@ public class OrdersController : ControllerBase
         // land together or not at all.
         _notifications.OrderStatusChanged(order);
 
+        await _db.SaveChangesAsync();
+
+        return Ok(order.ToDto());
+    }
+
+    /// <summary>
+    /// Puts back what an order took: stock on the shelf, coins in the wallet.
+    ///
+    /// Shared by cancelling and by approving a refund, because they are the
+    /// same event as far as the shop's numbers are concerned — one is asked
+    /// for by the shop and the other by the customer.
+    /// </summary>
+    private async Task UnwindAsync(Order order)
+    {
+        // Take back the coins it paid out, or cancelling would be free money.
+        if (order.UserId is not null && order.CoinsEarned > 0)
+        {
+            var buyer = await _db.Users.FindAsync(order.UserId.Value);
+            if (buyer is not null) buyer.Coins = Math.Max(0, buyer.Coins - order.CoinsEarned);
+        }
+
+        foreach (var item in order.Items.Where(i => i.ProductId.HasValue))
+        {
+            var product = await _db.Products.FindAsync(item.ProductId!.Value);
+            if (product is not null) product.Stock += item.Quantity;
+        }
+    }
+
+    /* ---------------------------------------------------------------- */
+    /*  Refunds                                                          */
+    /* ---------------------------------------------------------------- */
+
+    /// <summary>
+    /// The customer asks for their money back.
+    ///
+    /// Nothing is decided here. The request is recorded on the order and every
+    /// admin is told; a person answers it. A refund moves real money, and no
+    /// rule this shop could write would be safe to apply on its own.
+    /// </summary>
+    [HttpPost("{id:int}/refund")]
+    [Authorize]
+    public async Task<ActionResult<OrderDto>> RequestRefund(int id, RefundRequestDto dto)
+    {
+        var order = await _db.Orders.Include(o => o.Items).FirstOrDefaultAsync(o => o.Id == id);
+        if (order is null) return NotFound($"No order with id {id}.");
+
+        // A guest order has no owner to check against, so the code alone would
+        // be enough for a stranger to unwind somebody else's purchase.
+        if (order.UserId is null || order.UserId != CurrentUserIdOrNull())
+            return StatusCode(StatusCodes.Status403Forbidden, "That isn't your order.");
+
+        if (order.Refund == RefundState.Requested)
+            return BadRequest("You've already asked for a refund on this order. We're looking at it.");
+
+        if (order.Refund == RefundState.Approved)
+            return BadRequest("This order has already been refunded.");
+
+        if (order.Status == OrderStatus.Cancelled)
+            return BadRequest("This order was cancelled, so there is nothing to refund.");
+
+        var reason = (dto.Reason ?? string.Empty).Trim();
+        if (reason.Length < 5)
+            return BadRequest("Tell us briefly what went wrong, so we can sort it out.");
+
+        order.Refund = RefundState.Requested;
+        order.RefundReason = reason.Length > 300 ? reason[..300] : reason;
+        order.RefundRequestedAt = DateTime.UtcNow;
+        order.RefundDecidedAt = null;
+        order.UpdatedAt = DateTime.UtcNow;
+
+        await _notifications.RefundRequestedAsync(order);
+        await _db.SaveChangesAsync();
+
+        return Ok(order.ToDto(viewerOwnsOrder: true));
+    }
+
+    /// <summary>
+    /// The shop answers a refund request.
+    ///
+    /// Approving unwinds the order the same way cancelling does — the units go
+    /// back on the shelf and the coins it paid out are taken back — and marks
+    /// it cancelled, because a refunded order is not one the shop still owes.
+    /// </summary>
+    [HttpPut("{id:int}/refund")]
+    [Authorize(Policy = "CanManageOrders")]
+    public async Task<ActionResult<OrderDto>> DecideRefund(int id, RefundDecisionDto dto)
+    {
+        var order = await _db.Orders.Include(o => o.Items).FirstOrDefaultAsync(o => o.Id == id);
+        if (order is null) return NotFound($"No order with id {id}.");
+
+        if (order.Refund != RefundState.Requested)
+            return BadRequest("There is no open refund request on this order.");
+
+        order.Refund = dto.Approve ? RefundState.Approved : RefundState.Declined;
+        order.RefundDecidedAt = DateTime.UtcNow;
+        order.UpdatedAt = DateTime.UtcNow;
+
+        if (dto.Approve && order.Status != OrderStatus.Cancelled)
+        {
+            await UnwindAsync(order);
+            order.Status = OrderStatus.Cancelled;
+        }
+
+        _notifications.RefundDecided(order);
         await _db.SaveChangesAsync();
 
         return Ok(order.ToDto());

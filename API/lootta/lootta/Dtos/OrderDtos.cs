@@ -30,8 +30,8 @@ public class CreateOrderDto
     [MaxLength(300)]
     public string Note { get; set; } = string.Empty;
 
-    /// <summary>"CashOnDelivery", "Visa", "ABAPay"… See /api/orders/payment-methods.</summary>
-    public string PaymentMethod { get; set; } = "CashOnDelivery";
+    /// <summary>"ABAPay", "Visa", "WingBank"… See /api/orders/payment-methods.</summary>
+    public string PaymentMethod { get; set; } = "ABAPay";
 
     /// <summary>Optional voucher CODE only. The server looks up its value.</summary>
     [MaxLength(20)]
@@ -98,6 +98,20 @@ public class OrderDto
     public bool IsPaid { get; set; }
 
     public string Status { get; set; } = string.Empty;
+
+    /// <summary>None | Requested | Approved | Declined.</summary>
+    public string Refund { get; set; } = "None";
+
+    /// <summary>Why the customer asked. Withheld from a guest holding the code.</summary>
+    public string RefundReason { get; set; } = string.Empty;
+
+    public DateTime? RefundRequestedAt { get; set; }
+    public DateTime? RefundDecidedAt { get; set; }
+
+    /// <summary>True only for the customer who placed the order, and only
+    /// while a request would actually be accepted.</summary>
+    public bool CanRequestRefund { get; set; }
+
     public DateTime CreatedAt { get; set; }
 
     public List<OrderItemDto> Items { get; set; } = new();
@@ -114,7 +128,25 @@ public class OrderSummaryDto
     public decimal TotalPrice { get; set; }
     public int ItemCount { get; set; }
     public string Status { get; set; } = string.Empty;
+
+    /// <summary>None | Requested | Approved | Declined.</summary>
+    public string Refund { get; set; } = "None";
+
+    public string RefundReason { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
+}
+
+/// <summary>A customer asking for their money back.</summary>
+public class RefundRequestDto
+{
+    [Required, MaxLength(300)]
+    public string Reason { get; set; } = string.Empty;
+}
+
+/// <summary>An admin answering that request.</summary>
+public class RefundDecisionDto
+{
+    public bool Approve { get; set; }
 }
 
 public class UpdateOrderStatusDto
@@ -132,7 +164,12 @@ public static class OrderMapping
     public static bool TryParseStatus(string? value, out OrderStatus status) =>
         Enum.TryParse(value, ignoreCase: true, out status);
 
-    public static OrderDto ToDto(this Order order) => new()
+    /// <param name="viewerOwnsOrder">
+    /// True only when the person asking placed this order themselves. It
+    /// decides whether the page may offer a refund button, which is a
+    /// question about the viewer rather than about the order.
+    /// </param>
+    public static OrderDto ToDto(this Order order, bool viewerOwnsOrder = false) => new()
     {
         Id = order.Id,
         OrderNumber = order.OrderNumber,
@@ -149,6 +186,13 @@ public static class OrderMapping
         Discount = order.Discount,
         TotalPrice = order.Total,
         Status = order.Status.ToString(),
+        Refund = order.Refund.ToString(),
+        RefundReason = order.RefundReason,
+        RefundRequestedAt = order.RefundRequestedAt,
+        RefundDecidedAt = order.RefundDecidedAt,
+        CanRequestRefund = viewerOwnsOrder
+                           && order.Refund == RefundState.None
+                           && order.Status != OrderStatus.Cancelled,
         CreatedAt = order.CreatedAt,
         Items = order.Items.Select(i => new OrderItemDto
         {
@@ -182,8 +226,10 @@ public static class OrderMapping
         dto.Address = MaskAddress(order.Address);
 
         // Free text written by the buyer. It could contain anything, so it
-        // is not shown to anyone who has not proved who they are.
+        // is not shown to anyone who has not proved who they are — the same
+        // goes for whatever they said when asking for their money back.
         dto.Note = string.Empty;
+        dto.RefundReason = string.Empty;
 
         return dto;
     }
@@ -231,6 +277,8 @@ public static class OrderMapping
         TotalPrice = order.Total,
         ItemCount = order.Items.Sum(i => i.Quantity),
         Status = order.Status.ToString(),
+        Refund = order.Refund.ToString(),
+        RefundReason = order.RefundReason,
         CreatedAt = order.CreatedAt
     };
 }

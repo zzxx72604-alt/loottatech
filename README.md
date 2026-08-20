@@ -49,12 +49,21 @@ is no request per keystroke.
 **Buy something** — add an item to the cart, check out, choose a payment
 method. You get an order number like `LT-7K3QA2`.
 
-> No money moves. The order records how the customer *intends* to pay and the
-> shop settles it on delivery. There is no payment provider connected, and the
-> project does not pretend otherwise.
+> No money moves. The order records how the customer *intends* to pay — by bank,
+> card or wallet — and the shop collects before the parcel leaves. There is no
+> payment provider connected, and the project does not pretend otherwise.
+> Cash on delivery is deliberately not offered: every item is guaranteed, and a
+> refund needs something to give back.
 
 **Watch the admin notice** — open the admin site. The order appears on its own
 within ten seconds. Change its status and the customer's tracker follows.
+
+**Ask for a refund** — on the order page, sign in as the buyer and click
+**Request a refund**. The request lands on the admin's Orders page as a badge
+with the customer's words behind **Details**; **Refund** approves it and
+**Decline** turns it down. Approving cancels the order, puts the items back
+into stock and takes back the coins it paid out — the customer gets a
+notification either way. Nothing about it is automatic: a person decides.
 
 **Edit the shop without touching code** — admin → **Store**. Add a shortcut to
 the tag row, rename a category, change the home page headline, or switch a

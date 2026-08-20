@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using lootta.Data;
 using lootta.Models;
 
@@ -53,5 +54,47 @@ public class NotificationService
 
         Add(order.UserId.Value, NotificationKind.Order,
             $"{title} · {order.OrderNumber}", body, $"/order/{order.OrderNumber}");
+    }
+
+    /// <summary>
+    /// Tells the shop a customer wants their money back.
+    ///
+    /// Every admin is told rather than one of them, because a refund waiting
+    /// on the one person who happens to be away is how a customer ends up
+    /// waiting a week for an answer.
+    /// </summary>
+    public async Task RefundRequestedAsync(Order order)
+    {
+        var admins = await _db.Users
+            .Where(u => u.Role == UserRole.Admin && u.IsActive)
+            .Select(u => u.Id)
+            .ToListAsync();
+
+        foreach (var adminId in admins)
+        {
+            Add(adminId, NotificationKind.Order,
+                $"Refund requested · {order.OrderNumber}",
+                string.IsNullOrWhiteSpace(order.RefundReason)
+                    ? "No reason given."
+                    : order.RefundReason,
+                "/orders");
+        }
+    }
+
+    /// <summary>Tells the customer what the shop decided.</summary>
+    public void RefundDecided(Order order)
+    {
+        if (order.UserId is null) return;
+
+        var approved = order.Refund == RefundState.Approved;
+
+        Add(order.UserId.Value, NotificationKind.Order,
+            approved
+                ? $"Refund approved · {order.OrderNumber}"
+                : $"Refund declined · {order.OrderNumber}",
+            approved
+                ? "Your refund was approved. The order is cancelled and the money goes back the way it came."
+                : "We looked at your request and cannot refund this order. Get in touch if you think that is wrong.",
+            $"/order/{order.OrderNumber}");
     }
 }

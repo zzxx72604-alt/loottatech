@@ -24,9 +24,9 @@ public class Order
 
     /// <summary>
     /// How the customer intends to pay. No money moves at checkout — the shop
-    /// settles on delivery or in store.
+    /// collects before the parcel leaves.
     /// </summary>
-    public PaymentMethod PaymentMethod { get; set; } = PaymentMethod.CashOnDelivery;
+    public PaymentMethod PaymentMethod { get; set; } = PaymentMethod.ABAPay;
 
     /// <summary>Always false today. The column exists so a real provider can
     /// set it later without a schema change.</summary>
@@ -55,6 +55,17 @@ public class Order
     public int CoinsEarned { get; set; }
 
     public OrderStatus Status { get; set; } = OrderStatus.Pending;
+
+    // ---- refunds: asked for by the customer, decided by a person ----
+
+    public RefundState Refund { get; set; } = RefundState.None;
+
+    /// <summary>In the customer's own words. Empty until they ask.</summary>
+    [MaxLength(300)]
+    public string RefundReason { get; set; } = string.Empty;
+
+    public DateTime? RefundRequestedAt { get; set; }
+    public DateTime? RefundDecidedAt { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;

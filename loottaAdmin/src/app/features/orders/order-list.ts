@@ -46,6 +46,11 @@ export class OrderList {
     () => this.orders().filter((o) => o.status === 'Pending').length,
   );
 
+  /** Refund requests waiting on a person. */
+  protected readonly refundsWaiting = computed(
+    () => this.orders().filter((o) => o.refund === 'Requested').length,
+  );
+
   protected readonly revenue = computed(() =>
     this.orders()
       .filter((o) => o.status !== 'Cancelled')
@@ -103,6 +108,26 @@ export class OrderList {
         this.patch(order.id, { status: previous });   // put it back if rejected
         this.error.set(this.explain(err));
       },
+    });
+  }
+
+  /**
+   * Approve or decline a refund the customer asked for.
+   *
+   * Approving cancels the order and puts the stock back, so it asks first —
+   * the same courtesy the status dropdown gives before cancelling.
+   */
+  protected decideRefund(order: OrderSummary, approve: boolean): void {
+    const question = approve
+      ? `Refund ${order.orderNumber}? The order is cancelled and the items go back into stock.`
+      : `Decline the refund on ${order.orderNumber}?`;
+
+    if (!confirm(question)) return;
+
+    this.api.decideRefund(order.id, approve).subscribe({
+      next: (updated) =>
+        this.patch(order.id, { refund: updated.refund, status: updated.status }),
+      error: (err) => this.error.set(this.explain(err)),
     });
   }
 

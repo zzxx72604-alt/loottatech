@@ -50,6 +50,11 @@
                 {{ o.orderNumber }}
               </button>
               <span class="date">{{ o.createdAt | date: 'MMM d, HH:mm' }}</span>
+              @if (o.refund !== 'None') {
+                <span class="refund-tag" [class]="'r-' + o.refund.toLowerCase()">
+                  {{ o.refund === 'Requested' ? 'Refund asked' : 'Refund ' + o.refund.toLowerCase() }}
+                </span>
+              }
             </td>
 
             <td>
@@ -78,7 +83,14 @@
             </td>
 
             <td class="c-act">
-              @if (next(o.status); as n) {
+              @if (o.refund === 'Requested') {
+                <button type="button" class="btn btn-sm btn-refund" (click)="decideRefund(o, true)">
+                  Refund
+                </button>
+                <button type="button" class="btn btn-sm" (click)="decideRefund(o, false)">
+                  Decline
+                </button>
+              } @else if (next(o.status); as n) {
                 <button type="button" class="btn btn-sm btn-primary" (click)="advance(o)">
                   → {{ n }}
                 </button>
@@ -103,6 +115,13 @@
                       <p>{{ d.phone }}</p>
                       <p class="opt">{{ d.deliveryOption }}</p>
                       @if (d.note) { <p class="note">“{{ d.note }}”</p> }
+
+                      @if (o.refund !== 'None') {
+                        <h3 class="refund-head">Refund {{ o.refund.toLowerCase() }}</h3>
+                        <p class="note">
+                          {{ o.refundReason || 'No reason given.' }}
+                        </p>
+                      }
                     </div>
 
                     <div class="lines">

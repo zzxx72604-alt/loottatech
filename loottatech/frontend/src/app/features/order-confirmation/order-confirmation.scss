@@ -105,12 +105,26 @@ h2 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: 
 
   li {
     display: flex;
+    align-items: center;
     gap: var(--sp-3);
     font-size: 13px;
     padding: 7px 0;
     border-bottom: 1px solid var(--border);
   }
   .q { color: var(--text-3); }
+
+  /* Same snapshot the customer saw in the cart, so the order is recognisable
+     at a glance rather than a list of names. */
+  .shot {
+    width: 48px;
+    height: 48px;
+    flex: none;
+    object-fit: cover;
+    border-radius: var(--radius-sm, 6px);
+    background: var(--surface-2);
+  }
+  .missing { display: inline-block; }
+  .p { margin-left: auto; }
   .t { flex: 1; }
 }
 
@@ -146,4 +160,52 @@ h2 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: 
   .grid { grid-template-columns: 1fr; }
   .track .label { font-size: 9px; }
   .number { font-size: 18px; }
+}
+
+/* ---- refunds ------------------------------------------------------------ */
+
+.refund {
+  margin: var(--sp-4) 0 var(--sp-3);
+  padding: var(--sp-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+
+  h2 { margin: 0 0 4px; font-size: 14px; }
+  p { margin: 0 0 var(--sp-2); font-size: 13px; color: var(--text-2); }
+  label { display: block; font-size: 12px; color: var(--text-2); margin-bottom: 4px; }
+
+  textarea {
+    width: 100%;
+    resize: vertical;
+    font: inherit;
+    font-size: 13px;
+    padding: 8px 10px;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--text);
+  }
+
+  .row { display: flex; gap: var(--sp-2); margin-top: var(--sp-2); }
+  .row button { flex: 1; }
+
+  .ghost {
+    padding: 9px 14px;
+    border: 1px solid var(--border-strong);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--text);
+    font-weight: 600;
+    font-size: 13px;
+  }
+
+  .send { padding: 9px 14px; font-size: 13px; }
+  .error { color: var(--danger, #c0392b); margin: var(--sp-2) 0 0; }
+  .said { font-style: italic; color: var(--text-2); }
+
+  /* The state of the request, at a glance. */
+  &.waiting { border-left: 3px solid var(--warning, #e8a33d); }
+  &.good    { border-left: 3px solid var(--success, #2e9e5b); }
+  &.bad     { border-left: 3px solid var(--danger, #c0392b); }
 }

@@ -104,12 +104,20 @@ export class Checkout {
     deliveryOption: ['Standard Delivery' as DeliveryOption, [Validators.required]],
     note: [''],
     voucherCode: [''],
-    paymentMethod: ['CashOnDelivery'],
+    paymentMethod: [''],
   });
 
   constructor() {
     this.orders.paymentMethods().subscribe({
-      next: (options) => this.paymentOptions.set(options),
+      next: (options) => {
+        this.paymentOptions.set(options);
+
+        // Whatever the shop puts first, rather than a method named here that
+        // it might have switched off since.
+        if (!this.form.controls.paymentMethod.value && options.length) {
+          this.form.controls.paymentMethod.setValue(options[0].value);
+        }
+      },
       error: () => this.paymentOptions.set([]),
     });
 

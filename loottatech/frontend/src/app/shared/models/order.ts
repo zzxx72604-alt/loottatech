@@ -34,6 +34,9 @@ export interface OrderItem {
   quantity: number;
 }
 
+/** Where an order stands with the customer's money. */
+export type RefundState = 'None' | 'Requested' | 'Approved' | 'Declined';
+
 export interface Order {
   id: number;
   orderNumber: string;
@@ -51,6 +54,13 @@ export interface Order {
   paymentMethod: string;
   isPaid: boolean;
   status: OrderStatus;
+  refund: RefundState;
+  /** Withheld from a guest tracking by code. */
+  refundReason: string;
+  refundRequestedAt: string | null;
+  refundDecidedAt: string | null;
+  /** The API decides this: only the buyer, and only while it would be taken. */
+  canRequestRefund: boolean;
   createdAt: string;
 }
 
@@ -67,6 +77,7 @@ export interface OrderSummary {
   itemCount: number;
   totalPrice: number;
   status: OrderStatus;
+  refund: RefundState;
   createdAt: string;
 }
 

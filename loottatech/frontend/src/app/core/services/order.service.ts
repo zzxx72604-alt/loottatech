@@ -56,6 +56,16 @@ export class OrderService {
     return this.api.get<Order>(`orders/${id}`);
   }
 
+  /**
+   * Ask the shop for the money back.
+   *
+   * Nothing is decided here or on the way over: the API records the request
+   * and tells the admins, and a person answers it.
+   */
+  requestRefund(id: number, reason: string): Observable<Order> {
+    return this.api.post<Order>(`orders/${id}/refund`, { reason });
+  }
+
   /** The signed-in customer's real history, straight from SQL Server. */
   mine(): Observable<OrderSummary[]> {
     return this.api.get<OrderSummary[]>('orders/mine');

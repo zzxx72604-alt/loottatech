@@ -18,4 +18,14 @@ export class OrderApi {
   setStatus(id: number, status: OrderStatus): Observable<Order> {
     return this.api.put<Order>(`orders/${id}/status`, { status });
   }
+
+  /**
+   * Answer a refund request.
+   *
+   * Approving unwinds the order on the server — stock back on the shelf,
+   * coins back out of the customer's balance — so nothing here has to.
+   */
+  decideRefund(id: number, approve: boolean): Observable<Order> {
+    return this.api.put<Order>(`orders/${id}/refund`, { approve });
+  }
 }

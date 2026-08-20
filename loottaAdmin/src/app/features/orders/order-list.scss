@@ -133,3 +133,27 @@ h3 {
   .line { grid-template-columns: 36px 1fr auto; }
   .line .c, .line .q { display: none; }
 }
+
+/* ---- refunds ------------------------------------------------------------ */
+
+.refund-tag {
+  display: inline-block;
+  margin-top: 3px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .01em;
+
+  &.r-requested { background: #fff3d6; color: #8a5b00; }
+  &.r-approved  { background: #e2f5e9; color: #1d6b3c; }
+  &.r-declined  { background: #fde8e6; color: #8f2c22; }
+}
+
+.btn-refund {
+  background: #8a5b00;
+  border-color: #8a5b00;
+  color: #fff;
+}
+
+.refund-head { margin-top: var(--sp-3, 12px); }

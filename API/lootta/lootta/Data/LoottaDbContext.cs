@@ -135,6 +135,7 @@ public class LoottaDbContext : DbContext
             entity.Property(o => o.Total).HasPrecision(18, 2);
 
             entity.Property(o => o.Status).HasConversion<string>().HasMaxLength(20);
+            entity.Property(o => o.Refund).HasConversion<string>().HasMaxLength(20);
             entity.Property(o => o.DeliveryOption).HasConversion<string>().HasMaxLength(20);
             entity.Property(o => o.PaymentMethod).HasConversion<string>().HasMaxLength(30);
 

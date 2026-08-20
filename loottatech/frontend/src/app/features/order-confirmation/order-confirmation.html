@@ -17,6 +17,8 @@
           </li>
         }
       </ol>
+    } @else if (o.refund === 'Approved') {
+      <p class="cancelled">Refunded. The order was cancelled and the money goes back the way it came.</p>
     } @else {
       <p class="cancelled">This order was cancelled.</p>
     }
@@ -38,11 +40,24 @@
 
     <h2 class="items-title">Items</h2>
     <ul class="items">
-      @for (item of o.items; track item.productId) {
+      @for (item of o.items; track $index) {
         <li>
+          @if (item.image) {
+            <img
+              class="shot"
+              [ngSrc]="item.image"
+              ngSrcset="480w, 800w"
+              sizes="48px"
+              width="480"
+              height="480"
+              [alt]="item.title"
+            />
+          } @else {
+            <span class="shot missing" aria-hidden="true"></span>
+          }
           <span class="q">{{ item.quantity }}×</span>
           <span class="t">{{ item.title }}</span>
-          <span>{{ item.price * item.quantity | currency: 'USD' : 'symbol' : '1.2-2' }}</span>
+          <span class="p">{{ item.price * item.quantity | currency: 'USD' : 'symbol' : '1.2-2' }}</span>
         </li>
       }
     </ul>
@@ -52,6 +67,67 @@
       <div><dt>Delivery</dt><dd>{{ o.deliveryFee | currency: 'USD' : 'symbol' : '1.2-2' }}</dd></div>
       <div class="grand"><dt>Total</dt><dd>{{ o.totalPrice | currency: 'USD' : 'symbol' : '1.2-2' }}</dd></div>
     </dl>
+
+    @switch (o.refund) {
+      @case ('Requested') {
+        <section class="refund waiting">
+          <h2>Refund requested</h2>
+          <p>
+            Sent {{ o.refundRequestedAt | date: 'medium' }}. Someone at the shop
+            reads every one of these — you'll get a notification with the answer.
+          </p>
+          @if (o.refundReason) { <p class="said">“{{ o.refundReason }}”</p> }
+        </section>
+      }
+      @case ('Approved') {
+        <section class="refund good">
+          <h2>Refund approved</h2>
+          <p>Approved {{ o.refundDecidedAt | date: 'medium' }}. The money goes back the way it came.</p>
+        </section>
+      }
+      @case ('Declined') {
+        <section class="refund bad">
+          <h2>Refund declined</h2>
+          <p>
+            We looked at this on {{ o.refundDecidedAt | date: 'mediumDate' }} and
+            could not refund it. Get in touch if you think that is wrong.
+          </p>
+        </section>
+      }
+      @default {
+        @if (o.canRequestRefund) {
+          <section class="refund">
+            @if (!asking()) {
+              <h2>Something wrong with this order?</h2>
+              <p>Every item is guaranteed, so you can ask for your money back.</p>
+              <button type="button" class="ghost" (click)="asking.set(true)">Request a refund</button>
+            } @else {
+              <h2>Ask for a refund</h2>
+              <label for="refund-reason">What went wrong?</label>
+              <textarea
+                id="refund-reason"
+                rows="3"
+                maxlength="300"
+                placeholder="A sentence is enough — the shop reads these."
+                [value]="reason()"
+                (input)="reason.set($any($event.target).value)"
+              ></textarea>
+
+              @if (refundError()) { <p class="error">{{ refundError() }}</p> }
+
+              <div class="row">
+                <button type="button" class="ghost" (click)="cancelRefund()" [disabled]="sending()">
+                  Never mind
+                </button>
+                <button type="button" class="primary send" (click)="sendRefund(o)" [disabled]="sending()">
+                  {{ sending() ? 'Sending…' : 'Send request' }}
+                </button>
+              </div>
+            }
+          </section>
+        }
+      }
+    }
 
     <a routerLink="/" class="primary">Keep shopping</a>
   </div>

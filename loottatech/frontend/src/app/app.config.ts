@@ -24,8 +24,15 @@ import { authInterceptor } from './core/interceptors/auth.interceptor';
  * The browser picks one from the srcset, so a phone never downloads the big file.
  */
 export function loottaImageLoader(config: ImageLoaderConfig): string {
+  /*
+   * Only two widths were ever generated, so only two may be asked for. A
+   * template that sets width and height without ngSrcset gets a 1x/2x srcset
+   * from Angular instead, and on a screen at 150% scaling the browser then
+   * wants a "-960.webp" that was never written — a broken thumbnail on every
+   * HiDPI laptop. Anything above 480 rounds to the 800.
+   */
   const width = config.width ?? 800;
-  return `${config.src}-${width}.webp`;
+  return `${config.src}-${width <= 480 ? 480 : 800}.webp`;
 }
 
 export const appConfig: ApplicationConfig = {

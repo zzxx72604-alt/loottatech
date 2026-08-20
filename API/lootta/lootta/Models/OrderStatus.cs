@@ -14,6 +14,21 @@ public enum OrderStatus
     Cancelled
 }
 
+/// <summary>
+/// Where an order stands with the customer's money.
+///
+/// Separate from <see cref="OrderStatus"/> on purpose: an order can be on its
+/// way and refused, or completed and refunded, and squeezing both into one
+/// column would lose whichever half was written second.
+/// </summary>
+public enum RefundState
+{
+    None,
+    Requested,
+    Approved,
+    Declined
+}
+
 public enum DeliveryOption
 {
     Standard,
