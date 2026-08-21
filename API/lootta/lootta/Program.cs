@@ -198,6 +198,7 @@ if (app.Environment.IsDevelopment())
             await db.Database.EnsureCreatedAsync();
         }
 
+        await NormaliseLegacyValuesAsync(db);
         await DbSeeder.SeedAsync(db, app.Environment.ContentRootPath);
 
         Console.ForegroundColor = ConsoleColor.Green;
@@ -293,6 +294,32 @@ app.Run();
 /// there. Two seconds is long enough for a local instance and short enough
 /// that nobody notices when it is missing.
 /// </summary>
+/// <summary>
+/// Rewrites enum values that older builds wrote and this one no longer knows.
+///
+/// A database outlives the code that filled it. Refunds used to stop at a
+/// single "Approved" state; they now go on to a return or straight to the
+/// money, so a row still saying Approved has no home in the enum and EVERY
+/// read of the orders table throws — the whole admin goes down over one stale
+/// string. Approved always meant the order was unwound and the money sent
+/// back, which is exactly what Refunded means today.
+///
+/// Plain SQL because EF cannot read the rows it cannot map.
+/// </summary>
+static async Task NormaliseLegacyValuesAsync(LoottaDbContext db)
+{
+    try
+    {
+        await db.Database.ExecuteSqlRawAsync(
+            "UPDATE Orders SET Refund = 'Refunded' WHERE Refund = 'Approved'");
+    }
+    catch
+    {
+        // A brand-new database has nothing to fix, and a startup must not fall
+        // over on a tidy-up. Any real problem surfaces on the next read.
+    }
+}
+
 static bool CanReachSqlServer(string connectionString)
 {
     try

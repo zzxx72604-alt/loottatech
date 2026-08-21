@@ -99,7 +99,7 @@ public class OrderDto
 
     public string Status { get; set; } = string.Empty;
 
-    /// <summary>None | Requested | Approved | Declined.</summary>
+    /// <summary>None | Requested | Declined | ReturnPending | ReturnArranged | Refunded.</summary>
     public string Refund { get; set; } = "None";
 
     /// <summary>Why the customer asked. Withheld from a guest holding the code.</summary>
@@ -143,7 +143,7 @@ public class OrderSummaryDto
     public int ItemCount { get; set; }
     public string Status { get; set; } = string.Empty;
 
-    /// <summary>None | Requested | Approved | Declined.</summary>
+    /// <summary>None | Requested | Declined | ReturnPending | ReturnArranged | Refunded.</summary>
     public string Refund { get; set; } = "None";
 
     public string RefundReason { get; set; } = string.Empty;
